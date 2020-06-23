@@ -175,6 +175,8 @@ func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
 	mine.Remark = db.Remark
 	mine.Table = db.Table
 	mine.Cover = db.Cover
+	mine.UpdateTime = db.UpdatedTime
+	mine.CreateTime = db.CreatedTime
 	mine.attributes = make([]*AttributeInfo, 0, len(db.Attributes))
 	for i := 0;i < len(db.Attributes);i += 1{
 		attr := GetAttribute(db.Attributes[i])

@@ -193,18 +193,18 @@ func createSampleEntity(name string, concept string) (*EntityInfo, *NodeInfo, er
 	}
 
 	if node == nil {
-		node = createNode(name, info.UID, concept)
+		node = createNode(name, info.UID)
 	}
 	return info, node, err
 }
 
-func createNode(name string, entity string, concept string) *NodeInfo {
+func createNode(name string, entity string) *NodeInfo {
 	node := cacheCtx.graph.GetNode(entity)
 	if node != nil {
 		//fmt.Println("the node(" + name + ") is exist !")
 		return node
 	}
-	node,_ = cacheCtx.graph.createNode(name, entity, name+".jpg", "", concept)
+	node,_ = cacheCtx.graph.CreateNode(name, entity, name+".jpg", "")
 	return node
 }
 
@@ -222,6 +222,7 @@ func (mine *EntityInfo)initInfo(db *nosql.Entity) bool {
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID
 	mine.CreateTime = db.CreatedTime
+	mine.UpdateTime = db.UpdatedTime
 	mine.Tags = db.Tags
 	mine.Name = db.Name
 	mine.Add = db.Add
@@ -352,7 +353,7 @@ func (mine *EntityInfo)AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, desc
 		from := GetGraphNode(mine.UID)
 		for i := 0;i < len(links);i += 1 {
 			node := GetGraphNode(links[i].Entity)
-			_,_ = CreateLink(from, node, LinkType(links[i].Category), links[i].Name, DirectionType(links[i].Direction))
+			_,_ = CreateLink(from, node, LinkType(links[i].Category), links[i].Name,"", DirectionType(links[i].Direction))
 		}
 		concept := GetConceptByName("地理")
 		_, _,_ = createSampleEntity(place.Name, concept.Name)

@@ -40,9 +40,9 @@ func setupEnvironment() {
 	//registry address
 	registryAddress := os.Getenv("MSA_REGISTRY_ADDRESS")
 	if "" == registryAddress {
-		registryPlugin = "127.0.0.1:8500"
+		registryAddress = "127.0.0.1:8500"
 	}
-	os.Setenv("MICRO_REGISTRY_ADDRESS", registryAddress)
+	_ = os.Setenv("MICRO_REGISTRY_ADDRESS", registryAddress)
 
 	//config
 	envConfigDefine := os.Getenv("MSA_CONFIG_DEFINE")

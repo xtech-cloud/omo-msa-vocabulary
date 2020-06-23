@@ -17,6 +17,7 @@ type BaseInfo struct {
 	UID        string `json:"uid"`
 	Name       string `json:"name"`
 	CreateTime time.Time
+	UpdateTime time.Time
 }
 
 type WritingInfo struct {
@@ -104,7 +105,7 @@ func InitData() error {
 		}
 	}
 	logger.Info("init entities!!! ", zap.Int("number", len(cacheCtx.entities)))
-	initDefConcepts()
+	//initDefConcepts()
 	//readLocalExcels()
 	//exportLocalJsons()
 	return nil

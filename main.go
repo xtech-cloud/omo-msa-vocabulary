@@ -4,6 +4,10 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"github.com/micro/go-micro/v2"
+	"github.com/micro/go-micro/v2/logger"
+	_ "github.com/micro/go-plugins/registry/consul/v2"
+	_ "github.com/micro/go-plugins/registry/etcdv3/v2"
+	proto "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"io"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/config"
@@ -11,9 +15,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/micro/go-micro/v2/logger"
-	proto "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 )
 
 func main() {
@@ -30,10 +31,8 @@ func main() {
 		micro.RegisterInterval(time.Second*time.Duration(config.Schema.Service.Interval)),
 		micro.Address(config.Schema.Service.Address),
 	)
-
 	// Initialise service
 	service.Init()
-
 	// Register Handler
 	_ = proto.RegisterEntityServiceHandler(service.Server(), new(grpc.EntityService))
 	_ = proto.RegisterConceptServiceHandler(service.Server(), new(grpc.ConceptService))
@@ -43,6 +42,7 @@ func main() {
 	_ = proto.RegisterRelationServiceHandler(service.Server(), new(grpc.RelationService))
 
 	app, _ := filepath.Abs(os.Args[0])
+
 	BuildVersion := "1.0.1"
 	BuildTime := time.Now().String()
 	CommitID := "1"

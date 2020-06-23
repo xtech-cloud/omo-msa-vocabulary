@@ -108,4 +108,5 @@ func (mine *AttributeInfo)initInfo(db *nosql.Attribute)  {
 	mine.Begin = db.Begin
 	mine.End = db.End
 	mine.CreateTime = db.CreatedTime
+	mine.UpdateTime = db.UpdatedTime
 }

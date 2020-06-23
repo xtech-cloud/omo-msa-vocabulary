@@ -15,6 +15,8 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 	tmp.Name = info.Name
 	tmp.Type = info.Key
 	tmp.Remark = info.Remark
+	tmp.Custom = info.Custom
+	tmp.Time = info.CreateTime.Unix()
 	children := info.Children()
 	num := len(children)
 	if num > 0 {
@@ -38,7 +40,7 @@ func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, o
 	}else{
 		out.ErrorCode = pb.ResultStatus_DBException
 	}
-	
+
 	return err
 }
 

@@ -83,6 +83,7 @@ func (mine *RelationshipInfo)initInfo(db *nosql.Relation)  {
 	mine.Name = db.Name
 	mine.Remark = db.Remark
 	mine.CreateTime = db.CreatedTime
+	mine.UpdateTime = db.UpdatedTime
 	mine.Key = db.Key
 	array, err := nosql.GetRelationsByParent(mine.UID)
 	num := len(array)
