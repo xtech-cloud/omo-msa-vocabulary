@@ -26,8 +26,6 @@ type Entity struct {
 	Synonyms    []string 			  `json:"synonyms" bson:"synonyms"`
 	Tags        []string              `json:"tags" bson:"tags"`
 	Properties  []*proxy.PropertyInfo `json:"props" bson:"props"`
-	Events      []*proxy.EventPoint   `json:"events" bson:"events"`
-
 }
 
 func CreateEntity(info interface{}, table string) error {
@@ -67,11 +65,6 @@ func GetNodeNextID() uint64 {
 
 func GetLinkNextID() uint64 {
 	num, _ := getSequenceNext("links")
-	return num
-}
-
-func GetEventNextID() uint64 {
-	num, _ := getSequenceNext("events")
 	return num
 }
 
@@ -153,20 +146,3 @@ func SubtractEntityProperty(table string, uid string, key string) error {
 	return err
 }
 
-func AppendEntityEvent(table string, uid string, event *proxy.EventPoint) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
-	msg := bson.M{"events": event}
-	_, err := appendElement(table, uid, msg)
-	return err
-}
-
-func SubtractEntityEvent(table string, uid string, event uint64) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
-	msg := bson.M{"events": bson.M{ "id": event }}
-	_, err := removeElement(table, uid, msg)
-	return err
-}

@@ -34,7 +34,7 @@ func CreateAttribute(info *Attribute) error {
 }
 
 func GetAttributeNextID() uint64 {
-	num, _ := getSequenceNext(TableConcept)
+	num, _ := getSequenceNext(TableAttribute)
 	return num
 }
 

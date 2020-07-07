@@ -27,7 +27,7 @@ type PairInfo struct {
 }
 
 type RelationInfo struct {
-	UID 	   string `json:"uid" bson:"uid"`
+	UID 	   string `json:"uid" bson:"uid"` //关系UID
 	Direction  uint8  `json:"direction" bson:"direction"`
 	Name       string `json:"relation" bson:"relation"`
 	Category   string `json:"category" bson:"category"`
@@ -53,15 +53,6 @@ type PlaceInfo struct {
 	UID      string `json:"uid" bson:"uid"` //实体UID
 	Name     string `json:"name" bson:"name"`
 	Location string `json:"location" bson:"location"`
-}
-
-type EventPoint struct {
-	ID          uint64         `json:"id" bson:"id"`
-	Description string         `json:"desc" bson:"desc"`
-	Date        DateInfo       `json:"date" bson:"date"`
-	Place       PlaceInfo      `json:"place" bson:"place"`
-	Assets      []string       `json:"assets" bson:"assets"`
-	Relations   []RelationInfo `json:"relations" bson:"relations"`
 }
 
 type Location struct {
