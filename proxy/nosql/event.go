@@ -15,6 +15,8 @@ type Event struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Creator     string                `json:"creator" bson:"creator"`
+	Operator    string                `json:"operator" bson:"operator"`
 
 	Entity      string               `json:"entity" bson:"entity"`
 	Name        string               `json:"name" bson:"name"`
@@ -71,13 +73,13 @@ func GetEventsByParent(parent string) ([]*Event, error) {
 	return items, nil
 }
 
-func RemoveEvent(uid string) error {
-	_, err := removeOne(TableEvent, uid)
+func RemoveEvent(uid string, operator string) error {
+	_, err := removeOne(TableEvent, uid, operator)
 	return err
 }
 
-func UpdateEventBase(uid, name, desc string, date proxy.DateInfo, place proxy.PlaceInfo) error {
-	msg := bson.M{"name": name, "desc": desc, "updatedAt": time.Now()}
+func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, place proxy.PlaceInfo) error {
+	msg := bson.M{"name": name, "desc": desc, "date":date, "place":place, "operator":operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }

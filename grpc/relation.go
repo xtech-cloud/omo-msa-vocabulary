@@ -34,7 +34,7 @@ func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, o
 	info := new(cache.RelationshipInfo)
 	info.Name = in.Name
 	info.Remark = in.Remark
-	err := cache.CreateRelation(in.Parent, info)
+	err := cache.CreateRelation(in.Parent, in.Operator, info)
 	if err == nil{
 		out.Info = switchRelation(info)
 	}else{
@@ -70,9 +70,9 @@ func (mine *RelationService)RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 			out.ErrorCode = pb.ResultStatus_NotExisted
 			return errors.New("not found the relation by parent")
 		}
-		err = parent.RemoveChild(in.Uid)
+		err = parent.RemoveChild(in.Uid,in.Operator)
 	}else{
-		err = cache.RemoveRelation(in.Uid)
+		err = cache.RemoveRelation(in.Uid,in.Operator)
 	}
 	out.Uid = in.Uid
 	out.Key = in.Key

@@ -58,7 +58,9 @@ func CreateEntity(info *EntityInfo) (*NodeInfo, error) {
 	db.ID = nosql.GetEntityNextID(info.table())
 	db.Name = info.Name
 	db.Description = info.Description
-	db.Owner = ""
+	db.Scene = info.Owner
+	db.Creator = info.Creator
+	db.Operator = info.Operator
 	db.Add = info.Add
 	db.Cover = info.Cover
 	db.Concept = info.Concept
@@ -145,12 +147,12 @@ func HadEntity(uid string) bool {
 	return false
 }
 
-func RemoveEntity(uid string) error {
+func RemoveEntity(uid, operator string) error {
 	if len(uid) < 1 {
 		return errors.New("the micro course uid is empty")
 	}
 	tmp := GetEntity(uid)
-	err := nosql.RemoveEntity(tmp.table(), uid)
+	err := nosql.RemoveEntity(tmp.table(), uid, operator)
 	if err == nil {
 		length := len(cacheCtx.entities)
 		for i := 0; i < length; i++ {
@@ -222,13 +224,15 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.ID = db.ID
 	mine.CreateTime = db.CreatedTime
 	mine.UpdateTime = db.UpdatedTime
+	mine.Creator = db.Creator
+	mine.Operator = db.Operator
 	mine.Tags = db.Tags
 	mine.Name = db.Name
 	mine.Add = db.Add
 	mine.Description = db.Description
 	mine.Concept = db.Concept
 	mine.Status = EntityStatus(db.Status)
-	mine.Owner = db.Owner
+	mine.Owner = db.Scene
 	mine.Cover = db.Cover
 
 	mine.properties = make([]*proxy.PropertyInfo, 0, 10)
@@ -278,55 +282,60 @@ func (mine *EntityInfo) table() string {
 	}
 }
 
-func (mine *EntityInfo) UpdateBase(name, remark, add, concept string) error {
-	err := nosql.UpdateEntityBase(mine.table(), mine.UID, name, remark, add, concept)
+func (mine *EntityInfo) UpdateBase(name, remark, add, concept, operator string) error {
+	err := nosql.UpdateEntityBase(mine.table(), mine.UID, name, remark, add, concept, operator)
 	if err == nil {
 		mine.Name = name
 		mine.Description = remark
 		mine.Add = add
 		mine.Concept = concept
+		mine.Operator = operator
 	}
 	return err
 }
 
-func (mine *EntityInfo) UpdateCover(cover string) error {
-	err := nosql.UpdateEntityCover(mine.table(), mine.UID, cover)
+func (mine *EntityInfo) UpdateCover(cover, operator string) error {
+	err := nosql.UpdateEntityCover(mine.table(), mine.UID, cover, operator)
 	if err == nil {
 		mine.Cover = cover
+		mine.Operator = operator
 		cacheCtx.graph.UpdateNodeCover(mine.UID, cover)
 	}
 	return err
 }
 
-func (mine *EntityInfo) UpdateTags(tags []string) error {
+func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
 	if len(tags) > config.Schema.Basic.TagMax {
 		return errors.New(fmt.Sprintf("the tag max number is %d", config.Schema.Basic.TagMax))
 	}
-	err := nosql.UpdateEntityTags(mine.table(), mine.UID, tags)
+	err := nosql.UpdateEntityTags(mine.table(), mine.UID, operator, tags)
 	if err == nil {
 		mine.Tags = tags
+		mine.Operator = operator
 	}
 	return err
 }
 
-func (mine *EntityInfo) UpdateSynonyms(list []string) error {
+func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
 	if len(list) > config.Schema.Basic.SynonymMax {
 		return errors.New(fmt.Sprintf("the tag max number is %d", config.Schema.Basic.SynonymMax))
 	}
-	err := nosql.UpdateEntitySynonyms(mine.table(), mine.UID, list)
+	err := nosql.UpdateEntitySynonyms(mine.table(), mine.UID, operator, list)
 	if err == nil {
 		mine.Synonyms = list
+		mine.Operator = operator
 	}
 	return err
 }
 
-func (mine *EntityInfo) UpdateStatus(status EntityStatus) error {
+func (mine *EntityInfo) UpdateStatus(status EntityStatus ,operator string) error {
 	if mine.Status != EntityStatusPending {
 		return errors.New("the micro course had deal")
 	}
-	err := nosql.UpdateEntityStatus(mine.table(), mine.UID, uint8(status))
+	err := nosql.UpdateEntityStatus(mine.table(), mine.UID, uint8(status), operator)
 	if err == nil {
 		mine.Status = status
+		mine.Operator = operator
 	}
 	return err
 }
@@ -344,7 +353,7 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 	return mine.events
 }
 
-func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, desc string, links []proxy.RelationInfo, assets []string) (*EventInfo, error) {
+func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo,name, desc, operator string, links []proxy.RelationInfo, assets []string) (*EventInfo, error) {
 	if mine.events == nil {
 		return nil, errors.New("must call construct fist")
 	}
@@ -353,6 +362,8 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, des
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetEventNextID()
 	db.CreatedTime = time.Now()
+	db.Creator = operator
+	db.Name = name
 	db.Date = date
 	db.Place = place
 	db.Entity = mine.UID
@@ -385,14 +396,14 @@ func (mine *EntityInfo) HadEvent(uid string) bool {
 	return false
 }
 
-func (mine *EntityInfo) RemoveEvent(uid string) error {
+func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
 	if mine.events == nil {
 		return errors.New("must call construct fist")
 	}
 	if !mine.HadEvent(uid) {
 		return errors.New("not found the event")
 	}
-	err := nosql.RemoveEvent(uid)
+	err := nosql.RemoveEvent(uid, operator)
 	if err == nil {
 		for i := 0; i < len(mine.events); i += 1 {
 			if mine.events[i].UID == uid {
@@ -441,8 +452,8 @@ func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
 	return err
 }
 
-func (mine *EntityInfo) AddProperties(array []*proxy.PropertyInfo) error {
-	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, array)
+func (mine *EntityInfo) AddProperties(array []*proxy.PropertyInfo, operator string) error {
+	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, operator, array)
 	if err == nil {
 		mine.properties = array
 	}
@@ -568,8 +579,8 @@ func (mine *EntityInfo) GetAsset(uid string) *AssetInfo {
 	return nil
 }
 
-func (mine *EntityInfo) RemoveAsset(uid string) error {
-	err := nosql.RemoveAsset(uid)
+func (mine *EntityInfo) RemoveAsset(uid string,operator string) error {
+	err := nosql.RemoveAsset(uid, operator)
 	if err == nil {
 		length := len(mine.assets)
 		for i := 0; i < length; i++ {

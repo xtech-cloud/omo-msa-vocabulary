@@ -54,11 +54,11 @@ func GetAssetFile(uid string) (*FileInfo, error) {
 	return info, err1
 }
 
-func RemoveAsset(uid string) error {
+func RemoveAsset(uid, operator string) error {
 	if len(uid) < 2 {
 		return errors.New("db asset uid is empty ")
 	}
-	_, err := removeOne(TableAsset, uid)
+	_, err := removeOne(TableAsset, uid, operator)
 	return err
 }
 

@@ -16,6 +16,8 @@ type Attribute struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Creator     string                `json:"creator" bson:"creator"`
+	Operator    string                `json:"operator" bson:"operator"`
 
 	Kind  uint8 `json:"type" bson:"type"`
 	Key   string        `json:"key" bson:"key"`
@@ -69,13 +71,13 @@ func GetAllAttributes() ([]*Attribute, error) {
 	return items, nil
 }
 
-func RemoveAttribute(uid string) error {
-	_, err := removeOne(TableAttribute, uid)
+func RemoveAttribute(uid, operator string) error {
+	_, err := removeOne(TableAttribute, uid, operator)
 	return err
 }
 
-func UpdateAttributeBase(uid, name, desc string) error {
-	msg := bson.M{"name": name, "remark": desc, "updatedAt": time.Now()}
+func UpdateAttributeBase(uid, name, desc, begin, end, operator string) error {
+	msg := bson.M{"name": name, "remark": desc,"begin": begin,"end": end,"operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableAttribute, uid, msg)
 	return err
 }

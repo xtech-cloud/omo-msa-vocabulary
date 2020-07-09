@@ -12,6 +12,8 @@ type ConceptService struct {}
 func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	tmp := new(pb.ConceptInfo)
 	tmp.Uid = info.UID
+	tmp.Updated = info.UpdateTime.Unix()
+	tmp.Created = info.CreateTime.Unix()
 	tmp.Type = pb.ConceptType(info.Type)
 	tmp.Name = info.Name
 	tmp.Remark = info.Remark
@@ -88,7 +90,7 @@ func (mine *ConceptService)RemoveOne(ctx context.Context, in *pb.RequestInfo, ou
 		return errors.New("the concept uid is empty")
 	}
 
-	err := cache.RemoveConcept(in.Uid)
+	err := cache.RemoveConcept(in.Uid, in.Operator)
 	if err == nil {
 		out.Uid = in.Uid
 	}else {
@@ -104,6 +106,21 @@ func (mine *ConceptService)GetAll(ctx context.Context, in *pb.RequestInfo, out *
 		out.List = append(out.List, switchConcept(value))
 	}
 
+	return nil
+}
+
+func (mine *ConceptService)Update(ctx context.Context, in *pb.ReqConceptUpdate, out *pb.ReplyConceptInfo) error {
+	info := cache.GetConcept(in.Uid)
+	if info == nil {
+		out.ErrorCode = pb.ResultStatus_NotExisted
+		return errors.New("not found the concept")
+	}
+	err := info.UpdateBase(in.Name, in.Remark, in.Operator)
+	if err != nil {
+		out.ErrorCode = pb.ResultStatus_DBException
+		return err
+	}
+	out.Info = switchConcept(info)
 	return nil
 }
 

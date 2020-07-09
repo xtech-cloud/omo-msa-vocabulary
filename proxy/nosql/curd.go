@@ -68,7 +68,7 @@ func deleteOne(collection string, uid string) (int64, error) {
 	return result.DeletedCount, nil
 }
 
-func removeOne(collection string, uid string) (int64, error) {
+func removeOne(collection string, uid string, operator string) (int64, error) {
 	if len(collection) < 1 {
 		return 0,	errors.New("the collection is empty")
 	}
@@ -83,7 +83,7 @@ func removeOne(collection string, uid string) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 	defer cancel()
 	filter := bson.M{"_id": objID}
-	node := bson.M{"$set": bson.M{"deleteAt": time.Now()}}
+	node := bson.M{"$set": bson.M{"operator":operator, "deleteAt": time.Now()}}
 	result, err := c.UpdateOne(ctx, filter, node)
 	if err != nil {
 		return 0, err

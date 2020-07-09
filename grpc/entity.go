@@ -16,6 +16,8 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp.Concept = info.Concept
 	tmp.Cover = info.Cover
 	tmp.Name = info.Name
+	tmp.Created = info.CreateTime.Unix()
+	tmp.Updated = info.UpdateTime.Unix()
 	tmp.Description = info.Description
 	tmp.Owner = info.Owner
 	l := len(info.GetAssets())
@@ -26,39 +28,12 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp.Tags = info.Tags
 	tmp.Synonyms = info.Synonyms
 	tmp.Add = info.Add
-
-	num := len(info.AllEvents())
-	tmp.Events = make([]*pb.EventInfo, 0, num)
-	for _, value := range info.AllEvents() {
-		tmp.Events = append(tmp.Events, switchEntityEvent(value))
-	}
-
 	length := len(info.Properties())
 	tmp.Properties = make([]*pb.PropertyInfo, 0, length)
 	for _, value := range info.Properties() {
 		tmp.Properties = append(tmp.Properties, switchEntityProperty(value))
 	}
 
-	return tmp
-}
-
-func switchEntityEvent(info *proxy.EventPoint) *pb.EventInfo {
-	tmp := new(pb.EventInfo)
-	tmp.Id = info.ID
-	tmp.Description = info.Description
-	tmp.Date = &pb.DateInfo{Uid:info.Date.UID, Name:info.Date.Name, Begin:info.Date.Begin.String(), End:info.Date.End.String()}
-	tmp.Place = &pb.PlaceInfo{Uid:info.Place.UID, Name:info.Place.Name, Location:info.Place.Location}
-	tmp.Assets = info.Assets
-	tmp.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
-	for i := 0;i < len(info.Relations);i +=1 {
-		r := new(pb.RelationshipInfo)
-		r.Name = info.Relations[i].Name
-		r.Uid = info.Relations[i].UID
-		r.Entity = info.Relations[i].Entity
-		r.Category = info.Relations[i].Category
-		r.Direction = pb.DirectionType(int32(info.Relations[i].Direction))
-		tmp.Relations = append(tmp.Relations, r)
-	}
 	return tmp
 }
 
@@ -118,7 +93,7 @@ func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")
 	}
-	err := cache.RemoveEntity(in.Uid)
+	err := cache.RemoveEntity(in.Uid, in.Operator)
 	out.Uid = in.Uid
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
@@ -146,7 +121,7 @@ func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.ReqEntityUpdate
 		out.ErrorCode = pb.ResultStatus_NotExisted
 		return errors.New("not found the entity by uid")
 	}
-	err := info.UpdateTags(in.List)
+	err := info.UpdateTags(in.List, in.Operator)
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
 	}
@@ -165,9 +140,9 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 	}
 	var err error
 	if len(in.Cover) > 0 {
-		err = info.UpdateCover(in.Cover)
+		err = info.UpdateCover(in.Cover, in.Operator)
 	}else{
-		err = info.UpdateBase(in.Name, in.Desc, in.Add, in.Concept)
+		err = info.UpdateBase(in.Name, in.Desc, in.Add, in.Concept, in.Operator)
 	}
 
 	if err != nil {
@@ -186,7 +161,7 @@ func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStat
 		//out.ErrorCode = pb.ResultStatus_NotExisted
 		return errors.New("not found the entity by uid")
 	}
-	err := info.UpdateStatus(cache.EntityStatus(in.Status))
+	err := info.UpdateStatus(cache.EntityStatus(in.Status), in.Operator)
 	out.Uid = in.Uid
 	out.Status = in.Status
 	return err
@@ -202,7 +177,7 @@ func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.ReqEntityUp
 		out.ErrorCode = pb.ResultStatus_NotExisted
 		return errors.New("not found the entity by uid")
 	}
-	err := info.UpdateSynonyms(in.List)
+	err := info.UpdateSynonyms(in.List, in.Operator)
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
 	}
@@ -240,75 +215,9 @@ func (mine *EntityService)SubtractAsset(ctx context.Context, in *pb.RequestInfo,
 		out.ErrorCode = pb.ResultStatus_NotExisted
 		return errors.New("not found the entity by uid")
 	}
-	err := info.RemoveAsset(in.Key)
+	err := info.RemoveAsset(in.Key, in.Operator)
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
-	}
-	return err
-}
-
-func (mine *EntityService)AppendEvent(ctx context.Context, in *pb.ReqEntityEvent, out *pb.ReplyEntityEvents) error {
-	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
-	}
-	if in.Event == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not event that in is empty")
-	}
-	info := cache.GetEntity(in.Uid)
-	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
-	}
-	begin := proxy.Date{}
-	end := proxy.Date{}
-	if in.Event.Date != nil {
-		_ = begin.Parse(in.Event.Date.Begin)
-		_ = end.Parse(in.Event.Date.End)
-	}
-
-	date := proxy.DateInfo{UID:in.Event.Date.Uid, Name:in.Event.Date.Name, Begin:begin, End:end}
-	place := proxy.PlaceInfo{UID:in.Event.Place.Uid, Name:in.Event.Place.Name, Location:in.Event.Place.Location}
-	relations := make([]proxy.RelationInfo, 0, len(in.Event.Relations))
-	for _, value := range in.Event.Relations {
-		relations = append(relations, proxy.RelationInfo{UID:value.Uid, Direction:uint8(value.Direction),
-			Name:value.Name, Category:value.Category, Entity:value.Entity})
-	}
-	_,err := info.AddEvent(date, place, in.Event.Description, relations, in.Event.Assets)
-	if err == nil {
-		events := info.AllEvents()
-		out.Events = make([]*pb.EventInfo, 0, len(events))
-		for _, event := range events {
-			tmp := switchEntityEvent(event)
-			out.Events = append(out.Events, tmp)
-		}
-	}else{
-		out.ErrorCode = pb.ResultStatus_DBException
-	}
-	return err
-}
-
-func (mine *EntityService)SubtractEvent(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityEvents) error {
-	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
-	}
-	info := cache.GetEntity(in.Uid)
-	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
-	}
-	err := info.RemoveEvent(in.Id)
-	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
-	}else{
-		events := info.AllEvents()
-		out.Events = make([]*pb.EventInfo, 0, len(events))
-		for _, event := range events {
-			tmp := switchEntityEvent(event)
-			out.Events = append(out.Events, tmp)
-		}
 	}
 	return err
 }

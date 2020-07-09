@@ -40,6 +40,7 @@ func main() {
 	_ = proto.RegisterGraphServiceHandler(service.Server(), new(grpc.GraphService))
 	_ = proto.RegisterAttributeServiceHandler(service.Server(), new(grpc.AttributeService))
 	_ = proto.RegisterRelationServiceHandler(service.Server(), new(grpc.RelationService))
+	_ = proto.RegisterEventServiceHandler(service.Server(), new(grpc.EventService))
 
 	app, _ := filepath.Abs(os.Args[0])
 

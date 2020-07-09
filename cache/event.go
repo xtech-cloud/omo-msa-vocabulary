@@ -8,10 +8,30 @@ import (
 type EventInfo struct {
 	BaseInfo
 	Description string
+	Parent string
 	Date        proxy.DateInfo
 	Place       proxy.PlaceInfo
 	Assets      []string
 	Relations   []proxy.RelationInfo
+}
+
+func GetEvent(uid string) *EventInfo {
+	for i := 0;i < len(cacheCtx.entities);i += 1 {
+		info := cacheCtx.entities[i].GetEvent(uid)
+		if info != nil {
+			return info
+		}
+	}
+	return nil
+}
+
+func RemoveEvent(uid, operator string) error {
+	for i := 0;i < len(cacheCtx.entities);i += 1 {
+		if cacheCtx.entities[i].HadEvent(uid) {
+			return cacheCtx.entities[i].RemoveEvent(uid, operator)
+		}
+	}
+	return nil
 }
 
 func (mine *EventInfo)initInfo(db *nosql.Event)  {
@@ -19,7 +39,10 @@ func (mine *EventInfo)initInfo(db *nosql.Event)  {
 	mine.ID = db.ID
 	mine.CreateTime = db.CreatedTime
 	mine.UpdateTime = db.UpdatedTime
+	mine.Operator = db.Operator
+	mine.Creator = db.Creator
 	mine.Name = db.Name
+	mine.Parent = db.Entity
 	mine.Description = db.Description
 	mine.Date = db.Date
 	mine.Place = db.Place
@@ -27,13 +50,14 @@ func (mine *EventInfo)initInfo(db *nosql.Event)  {
 	mine.Relations = db.Relations
 }
 
-func (mine *EventInfo)UpdateBase(name, remark string, date proxy.DateInfo, place proxy.PlaceInfo) error {
-	err := nosql.UpdateEventBase(mine.UID, name, remark, date, place)
+func (mine *EventInfo)UpdateBase(name, remark, operator string, date proxy.DateInfo, place proxy.PlaceInfo) error {
+	err := nosql.UpdateEventBase(mine.UID, name, remark,operator, date, place)
 	if err == nil {
 		mine.Name = name
 		mine.Description = remark
 		mine.Date = date
 		mine.Place = place
+		mine.Operator = operator
 	}
 	return err
 }

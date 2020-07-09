@@ -19,7 +19,7 @@ func AllRelations() []*RelationshipInfo {
 	return cacheCtx.relations
 }
 
-func CreateRelation(parent string, info *RelationshipInfo) error {
+func CreateRelation(parent, creator string, info *RelationshipInfo) error {
 	if info == nil {
 		return errors.New("the attribute info is nil")
 	}
@@ -27,6 +27,7 @@ func CreateRelation(parent string, info *RelationshipInfo) error {
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetRelationNextID()
 	db.CreatedTime = time.Now()
+	db.Creator = creator
 	db.Name = info.Name
 	db.Remark = info.Remark
 	db.Key = info.Key
@@ -55,8 +56,8 @@ func HadRelation(uid string) bool {
 	return false
 }
 
-func RemoveRelation(uid string) error {
-	err := nosql.RemoveRelation(uid)
+func RemoveRelation(uid, operator string) error {
+	err := nosql.RemoveRelation(uid, operator)
 	if err == nil {
 		for i := 0;i < len(cacheCtx.relations);i += 1 {
 			if cacheCtx.relations[i].UID == uid {
@@ -84,6 +85,8 @@ func (mine *RelationshipInfo)initInfo(db *nosql.Relation)  {
 	mine.Remark = db.Remark
 	mine.CreateTime = db.CreatedTime
 	mine.UpdateTime = db.UpdatedTime
+	mine.Creator = db.Creator
+	mine.Operator = db.Operator
 	mine.Key = db.Key
 	array, err := nosql.GetRelationsByParent(mine.UID)
 	num := len(array)
@@ -101,8 +104,8 @@ func (mine *RelationshipInfo)Children() []*RelationshipInfo {
 	return mine.children
 }
 
-func (mine *RelationshipInfo)RemoveChild(uid string) error {
-	err := nosql.RemoveRelation(uid)
+func (mine *RelationshipInfo)RemoveChild(uid, operator string) error {
+	err := nosql.RemoveRelation(uid, operator)
 	if err == nil {
 		for i := 0;i < len(mine.children);i += 1 {
 			if mine.children[i].UID == uid {

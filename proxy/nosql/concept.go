@@ -14,6 +14,8 @@ type Concept struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Creator     string                `json:"creator" bson:"creator"`
+	Operator    string                `json:"operator" bson:"operator"`
 
 	Type   uint8 				 `json:"type" bson:"type"`
 	Name   string                `json:"name" bson:"name"`
@@ -95,8 +97,8 @@ func HadConceptByName(name string) (bool, error) {
 	return hadOne(TableConcept, msg)
 }
 
-func UpdateConceptBase(uid, name, desc string) error {
-	msg := bson.M{"name": name, "remark": desc, "updatedAt": time.Now()}
+func UpdateConceptBase(uid, name, desc, operator string) error {
+	msg := bson.M{"name": name, "remark": desc,"operator":operator,  "updatedAt": time.Now()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }
@@ -107,8 +109,8 @@ func UpdateConceptCover(uid string, icon string) error {
 	return err
 }
 
-func RemoveConcept(uid string) error {
-	_, err := removeOne(TableConcept, uid)
+func RemoveConcept(uid, operator string) error {
+	_, err := removeOne(TableConcept, uid, operator)
 	return err
 }
 

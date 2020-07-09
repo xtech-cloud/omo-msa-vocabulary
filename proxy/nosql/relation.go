@@ -13,6 +13,8 @@ type Relation struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Creator     string                `json:"creator" bson:"creator"`
+	Operator    string                `json:"operator" bson:"operator"`
 
 	Key      string `json:"key" bson:"key"`
 	Name      string `json:"name" bson:"name"`
@@ -85,13 +87,13 @@ func GetAllRelations() ([]*Relation, error) {
 	return items, nil
 }
 
-func RemoveRelation(uid string) error {
-	_, err := removeOne(TableRelation, uid)
+func RemoveRelation(uid, operator string) error {
+	_, err := removeOne(TableRelation, uid, operator)
 	return err
 }
 
-func UpdateRelationBase(uid, name, desc string) error {
-	msg := bson.M{"name": name, "remark": desc, "updatedAt": time.Now()}
+func UpdateRelationBase(uid, name, desc, operator string) error {
+	msg := bson.M{"name": name, "remark": desc,"operator":operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableRelation, uid, msg)
 	return err
 }

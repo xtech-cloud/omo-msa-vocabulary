@@ -37,6 +37,7 @@ func CreateAttribute(info *AttributeInfo) error {
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetAttributeNextID()
 	db.CreatedTime = time.Now()
+	db.Creator = info.Creator
 	db.Key = info.Key
 	db.Name = info.Name
 	db.Kind = uint8(info.Kind)
@@ -82,11 +83,11 @@ func GetAttributeByKey(key string) *AttributeInfo {
 	return nil
 }
 
-func RemoveAttribute(uid string) error {
+func RemoveAttribute(uid, operator string) error {
 	if len(uid) <  1 {
 		return errors.New("the attribute uid is empty")
 	}
-	err := nosql.RemoveAttribute(uid)
+	err := nosql.RemoveAttribute(uid, operator)
 	if err == nil {
 		for i := 0;i < len(cacheCtx.attributes);i +=1 {
 			if cacheCtx.attributes[i].UID == uid {
@@ -109,4 +110,16 @@ func (mine *AttributeInfo)initInfo(db *nosql.Attribute)  {
 	mine.End = db.End
 	mine.CreateTime = db.CreatedTime
 	mine.UpdateTime = db.UpdatedTime
+}
+
+func (mine *AttributeInfo)UpdateBase(name, remark, begin, end, operator string) error {
+	err := nosql.UpdateAttributeBase(mine.UID, name, remark, begin, end, operator)
+	if err == nil {
+		mine.Name = name
+		mine.Remark = remark
+		mine.Begin = begin
+		mine.End = end
+		mine.Operator = operator
+	}
+	return err
 }

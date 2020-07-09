@@ -18,6 +18,8 @@ type BaseInfo struct {
 	Name       string `json:"name"`
 	CreateTime time.Time
 	UpdateTime time.Time
+	Creator string
+	Operator string
 }
 
 type WritingInfo struct {

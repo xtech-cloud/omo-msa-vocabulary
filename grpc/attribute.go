@@ -11,6 +11,8 @@ type AttributeService struct {}
 
 func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 	tmp := new(pb.AttributeInfo)
+	tmp.Created = info.CreateTime.Unix()
+	tmp.Updated = info.UpdateTime.Unix()
 	tmp.Key = info.Key
 	tmp.Uid = info.UID
 	tmp.Id = info.ID
@@ -50,11 +52,11 @@ func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out
 		out.Info = switchAttribute(info)
 	}else if len(in.Key) > 0 {
 		info := cache.GetAttributeByKey(in.Key)
-		out.Info = switchAttribute(info)
 		if info == nil {
 			out.ErrorCode  = pb.ResultStatus_NotExisted
 			return errors.New("nou found the attribute by key")
 		}
+		out.Info = switchAttribute(info)
 	}else{
 		out.ErrorCode  = pb.ResultStatus_Empty
 		return errors.New("the uid or key all is empty")
@@ -63,19 +65,30 @@ func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out
 }
 
 func (mine *AttributeService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
-	err := cache.RemoveAttribute(in.Uid)
+	err := cache.RemoveAttribute(in.Uid, in.Operator)
 	out.Uid = in.Uid
 	return err
 }
 
-func (mine *AttributeService)GetList(ctx context.Context, in *pb.ReqAttributeList, out *pb.ReplyAttributeList) error {
+func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeList) error {
 	out.List = make([]*pb.AttributeInfo, 0, 10)
-	for _, value := range in.List {
-		info := cache.GetAttribute(value)
-		if info != nil {
-			out.List = append(out.List, switchAttribute(info))
-		}
+	for _, value := range cache.AllAttributes() {
+		out.List = append(out.List, switchAttribute(value))
 	}
+	return nil
+}
+
+func (mine *AttributeService)Update(ctx context.Context, in *pb.ReqAttributeUpdate, out *pb.ReplyAttributeOne) error {
+	info := cache.GetAttribute(in.Uid)
+	if info == nil {
+		out.ErrorCode  = pb.ResultStatus_NotExisted
+		return errors.New("not found the attribute by uid")
+	}
+	err := info.UpdateBase(in.Name, in.Remark, in.Begin, in.End, in.Operator)
+	if err != nil {
+		return err
+	}
+	out.Info = switchAttribute(info)
 	return nil
 }
 

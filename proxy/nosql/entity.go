@@ -15,15 +15,17 @@ type Entity struct {
 	CreatedTime time.Time             `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time             `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time             `json:"deleteAt" bson:"deleteAt"`
+	Creator     string                `json:"creator" bson:"creator"`
+	Operator    string                `json:"operator" bson:"operator"`
+
 	Name        string                `json:"name" bson:"name"`
 	Description string                `json:"desc" bson:"desc"`
 	Cover       string                `json:"cover" bson:"cover"`
 	Concept     string                `json:"concept" bson:"concept"`
 	Status      uint8                 `json:"status" bson:"status"`
-	Creator     string 				  `json:"creator" bson:"creator"`
-	Owner       string                `json:"owner" bson:"owner"`
-	Add       	string 			  	  `json:"add" bson:"add"`
-	Synonyms    []string 			  `json:"synonyms" bson:"synonyms"`
+	Scene       string                `json:"scene" bson:"scene"` // 所属场景
+	Add         string                `json:"add" bson:"add"`
+	Synonyms    []string              `json:"synonyms" bson:"synonyms"`
 	Tags        []string              `json:"tags" bson:"tags"`
 	Properties  []*proxy.PropertyInfo `json:"props" bson:"props"`
 }
@@ -68,8 +70,8 @@ func GetLinkNextID() uint64 {
 	return num
 }
 
-func RemoveEntity(table string, uid string) error {
-	_, err := removeOne(table, uid)
+func RemoveEntity(table string, uid string, operator string) error {
+	_, err := removeOne(table, uid, operator)
 	return err
 }
 
@@ -86,44 +88,44 @@ func GetEntity(table string, uid string) (*Entity, error) {
 	return model, nil
 }
 
-func UpdateEntityBase(table, uid, name, remark, add, concept string) error {
-	msg := bson.M{"name": name, "remark": remark, "add":add, "concept":concept, "updatedAt": time.Now()}
+func UpdateEntityBase(table, uid, name, remark, add, concept, operator string) error {
+	msg := bson.M{"name": name, "remark": remark, "add": add, "concept": concept, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntityStatus(table string, uid string, state uint8) error {
-	msg := bson.M{"status": state, "updatedAt": time.Now()}
+func UpdateEntityStatus(table string, uid string, state uint8, operator string) error {
+	msg := bson.M{"status": state, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntityCover(table string, uid string, cover string) error {
-	msg := bson.M{"cover": cover, "updatedAt": time.Now()}
+func UpdateEntityCover(table string, uid string, cover string, operator string) error {
+	msg := bson.M{"cover": cover, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntityTags(table string, uid string, tags []string) error {
-	msg := bson.M{"tags": tags, "updatedAt": time.Now()}
+func UpdateEntityTags(table string, uid string, operator string, tags []string) error {
+	msg := bson.M{"tags": tags, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntityAdd(table string, uid string, add string) error {
-	msg := bson.M{"add": add, "updatedAt": time.Now()}
+func UpdateEntityAdd(table string, uid string, add string, operator string) error {
+	msg := bson.M{"add": add, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntitySynonyms(table string, uid string, synonyms []string) error {
-	msg := bson.M{"synonyms": synonyms, "updatedAt": time.Now()}
+func UpdateEntitySynonyms(table string, uid string, operator string, synonyms []string) error {
+	msg := bson.M{"synonyms": synonyms, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntityProperties(table, uid string, array []*proxy.PropertyInfo) error {
-	msg := bson.M{"props": array, "updatedAt": time.Now()}
+func UpdateEntityProperties(table, uid string, operator string, array []*proxy.PropertyInfo) error {
+	msg := bson.M{"props": array, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
@@ -141,8 +143,7 @@ func SubtractEntityProperty(table string, uid string, key string) error {
 	if len(uid) < 1 {
 		return errors.New("the uid is empty")
 	}
-	msg := bson.M{"props": bson.M{ "key": key }}
+	msg := bson.M{"props": bson.M{"key": key}}
 	_, err := removeElement(table, uid, msg)
 	return err
 }
-

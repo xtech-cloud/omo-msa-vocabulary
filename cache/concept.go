@@ -105,6 +105,7 @@ func CreateTopConcept(info *ConceptInfo) error {
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetConceptNextID()
 	db.CreatedTime = time.Now()
+	db.Creator = info.Creator
 	db.Name = info.Name
 	db.Table = info.Table
 	db.Cover = info.Cover
@@ -119,8 +120,8 @@ func CreateTopConcept(info *ConceptInfo) error {
 	return err
 }
 
-func RemoveConcept(uid string) error {
-	err := nosql.RemoveConcept(uid)
+func RemoveConcept(uid, operator string) error {
+	err := nosql.RemoveConcept(uid, operator)
 	if err == nil {
 		for i := 0; i < len(cacheCtx.concerts); i += 1 {
 			if cacheCtx.concerts[i].UID == uid {
@@ -177,6 +178,8 @@ func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
 	mine.Cover = db.Cover
 	mine.UpdateTime = db.UpdatedTime
 	mine.CreateTime = db.CreatedTime
+	mine.Operator = db.Operator
+	mine.Creator = db.Creator
 	mine.attributes = make([]*AttributeInfo, 0, len(db.Attributes))
 	for i := 0;i < len(db.Attributes);i += 1{
 		attr := GetAttribute(db.Attributes[i])
@@ -205,6 +208,7 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetConceptNextID()
 	db.CreatedTime = time.Now()
+	db.Creator = info.Creator
 	db.Name = info.Name
 	db.Table = ""
 	db.Cover = info.Cover
@@ -375,11 +379,12 @@ func (mine *ConceptInfo) RemoveAttribute(uid string) error {
 	return err
 }
 
-func (mine *ConceptInfo) UpdateBase(name, remark string) error {
-	err := nosql.UpdateConceptBase(mine.UID, name, remark)
+func (mine *ConceptInfo) UpdateBase(name, remark,operator string) error {
+	err := nosql.UpdateConceptBase(mine.UID, name, remark, operator)
 	if err == nil {
 		mine.Name = name
 		mine.Remark = remark
+		mine.Operator = operator
 	}
 	return err
 }
