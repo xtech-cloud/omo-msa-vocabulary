@@ -92,8 +92,8 @@ func RemoveRelation(uid, operator string) error {
 	return err
 }
 
-func UpdateRelationBase(uid, name, desc, operator string) error {
-	msg := bson.M{"name": name, "remark": desc,"operator":operator, "updatedAt": time.Now()}
+func UpdateRelationBase(uid, name, desc, operator string, custom bool) error {
+	msg := bson.M{"name": name, "remark": desc, "custom":custom,"operator":operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableRelation, uid, msg)
 	return err
 }

@@ -31,6 +31,7 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 }
 
 func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, out *pb.ReplyRelationOne) error {
+	inLog("relation.add", in)
 	info := new(cache.RelationshipInfo)
 	info.Name = in.Name
 	info.Remark = in.Remark
@@ -59,6 +60,7 @@ func (mine *RelationService)GetOne(ctx context.Context, in *pb.RequestInfo, out 
 }
 
 func (mine *RelationService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+	inLog("relation.remove", in)
 	var err error
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
@@ -89,4 +91,23 @@ func (mine *RelationService)GetAll(ctx context.Context, in *pb.RequestInfo, out 
 		out.List = append(out.List, switchRelation(value))
 	}
 	return nil
+}
+
+func (mine *RelationService)UpdateInfo(ctx context.Context, in *pb.ReqRelationUpdate, out *pb.ReplyRelationOne) error {
+	inLog("relation.update", in)
+	var err error
+	if len(in.Uid) < 1 {
+		out.ErrorCode = pb.ResultStatus_Empty
+		return errors.New("the relation uid is empty")
+	}
+	info := cache.GetRelation(in.Uid)
+	if info == nil {
+		out.ErrorCode = pb.ResultStatus_NotExisted
+		return errors.New("not found the relation by uid")
+	}
+	err = info.UpdateBase(in.Name, in.Remark, in.Operator, in.Custom)
+	if err != nil {
+		out.ErrorCode = pb.ResultStatus_DBException
+	}
+	return err
 }

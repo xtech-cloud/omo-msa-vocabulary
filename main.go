@@ -36,7 +36,6 @@ func main() {
 	// Register Handler
 	_ = proto.RegisterEntityServiceHandler(service.Server(), new(grpc.EntityService))
 	_ = proto.RegisterConceptServiceHandler(service.Server(), new(grpc.ConceptService))
-	_ = proto.RegisterAssetServiceHandler(service.Server(), new(grpc.AssetService))
 	_ = proto.RegisterGraphServiceHandler(service.Server(), new(grpc.GraphService))
 	_ = proto.RegisterAttributeServiceHandler(service.Server(), new(grpc.AttributeService))
 	_ = proto.RegisterRelationServiceHandler(service.Server(), new(grpc.RelationService))

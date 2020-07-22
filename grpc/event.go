@@ -14,26 +14,35 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp := new(pb.EventInfo)
 	tmp.Id = info.ID
 	tmp.Uid = info.UID
+	tmp.Operator = info.Operator
+	tmp.Creator = info.Creator
 	tmp.Created = info.CreateTime.Unix()
 	tmp.Updated = info.UpdateTime.Unix()
+	tmp.Parent = info.Parent
+	tmp.Name = info.Name
 	tmp.Description = info.Description
 	tmp.Date = &pb.DateInfo{Uid:info.Date.UID, Name:info.Date.Name, Begin:info.Date.Begin.String(), End:info.Date.End.String()}
 	tmp.Place = &pb.PlaceInfo{Uid:info.Place.UID, Name:info.Place.Name, Location:info.Place.Location}
 	tmp.Assets = info.Assets
 	tmp.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
 	for i := 0;i < len(info.Relations);i +=1 {
-		r := new(pb.RelationshipInfo)
-		r.Name = info.Relations[i].Name
-		r.Uid = info.Relations[i].UID
-		r.Entity = info.Relations[i].Entity
-		r.Category = info.Relations[i].Category
-		r.Direction = pb.DirectionType(int32(info.Relations[i].Direction))
-		tmp.Relations = append(tmp.Relations, r)
+		tmp.Relations = append(tmp.Relations, switchRelationIns(&info.Relations[i]))
 	}
 	return tmp
 }
 
+func switchRelationIns(info *proxy.RelationInfo) *pb.RelationshipInfo {
+	r := new(pb.RelationshipInfo)
+	r.Name = info.Name
+	r.Uid = info.UID
+	r.Entity = info.Entity
+	r.Category = info.Category
+	r.Direction = pb.DirectionType(int32(info.Direction))
+	return r
+}
+
 func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb.ReplyEventOne) error {
+	inLog("event.add", in)
 	info := cache.GetEntity(in.Parent)
 	if info == nil {
 		out.ErrorCode  = pb.ResultStatus_NotExisted
@@ -63,6 +72,7 @@ func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb
 }
 
 func (mine *EventService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventOne) error {
+	inLog("event.one", in)
 	if len(in.Uid) > 0 {
 		info := cache.GetEvent(in.Uid)
 		if info == nil {
@@ -78,12 +88,14 @@ func (mine *EventService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb
 }
 
 func (mine *EventService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+	inLog("event.remove", in)
 	err := cache.RemoveEvent(in.Uid, in.Operator)
 	out.Uid = in.Uid
 	return err
 }
 
 func (mine *EventService)GetList(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventList) error {
+	inLog("event.list", in)
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
 		return errors.New("not found the entity by uid")
@@ -96,6 +108,7 @@ func (mine *EventService)GetList(ctx context.Context, in *pb.RequestInfo, out *p
 }
 
 func (mine *EventService)Update(ctx context.Context, in *pb.ReqEventUpdate, out *pb.ReplyEventOne) error {
+	inLog("event.update", in)
 	info := cache.GetEvent(in.Uid)
 	if info == nil {
 		out.ErrorCode  = pb.ResultStatus_NotExisted
@@ -114,5 +127,69 @@ func (mine *EventService)Update(ctx context.Context, in *pb.ReqEventUpdate, out 
 		return err
 	}
 	out.Info = switchEntityEvent(info)
+	return nil
+}
+
+func (mine *EventService)AppendAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAsset) error {
+	info := cache.GetEvent(in.Uid)
+	if info == nil {
+		return errors.New("not found the attribute by uid")
+	}
+
+	err := info.AppendAsset(in.Asset)
+	if err != nil {
+		return err
+	}
+	out.Uid = in.Uid
+	out.Assets = info.Assets
+	return nil
+}
+
+func (mine *EventService)SubtractAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAsset) error {
+	info := cache.GetEvent(in.Uid)
+	if info == nil {
+		return errors.New("not found the attribute by uid")
+	}
+
+	err := info.SubtractAsset(in.Asset)
+	if err != nil {
+		return err
+	}
+	out.Uid = in.Uid
+	out.Assets = info.Assets
+	return nil
+}
+
+func (mine *EventService)AppendRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
+	info := cache.GetEvent(in.Uid)
+	if info == nil {
+		return errors.New("not found the attribute by uid")
+	}
+	tmp := proxy.RelationInfo{UID:in.Relation.Uid, Direction:uint8(in.Relation.Direction),
+		Name:in.Relation.Name, Category:in.Relation.Category, Entity:in.Relation.Entity}
+	err := info.AppendRelation(tmp)
+	if err != nil {
+		return err
+	}
+	out.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
+	for i := 0;i < len(info.Relations);i +=1 {
+		out.Relations = append(out.Relations, switchRelationIns(&info.Relations[i]))
+	}
+	return nil
+}
+
+func (mine *EventService)SubtractRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
+	info := cache.GetEvent(in.Uid)
+	if info == nil {
+		return errors.New("not found the attribute by uid")
+	}
+	err := info.SubtractRelation(in.Relation.Uid)
+	if err != nil {
+		return err
+	}
+	out.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
+	for i := 0;i < len(info.Relations);i +=1 {
+		out.Relations = append(out.Relations, switchRelationIns(&info.Relations[i]))
+	}
 	return nil
 }

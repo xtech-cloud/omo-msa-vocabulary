@@ -100,6 +100,23 @@ func (mine *RelationshipInfo)initInfo(db *nosql.Relation)  {
 	}
 }
 
+func (mine *RelationshipInfo)UpdateBase(name, remark, operator string, custom bool) error {
+	if len(name) < 1{
+		name = mine.Name
+	}
+	if len(remark) < 1 {
+		remark = mine.Remark
+	}
+	err := nosql.UpdateRelationBase(mine.UID, name, remark, operator, custom)
+	if err == nil {
+		mine.Name = name
+		mine.Remark = remark
+		mine.Operator = operator
+		mine.Custom = custom
+	}
+	return err
+}
+
 func (mine *RelationshipInfo)Children() []*RelationshipInfo {
 	return mine.children
 }

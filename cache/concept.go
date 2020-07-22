@@ -98,9 +98,9 @@ func GetTopConcepts() []*ConceptInfo {
 }
 
 func CreateTopConcept(info *ConceptInfo) error {
-	if len(info.Table) < 1 {
-		return errors.New("the table must not null")
-	}
+	//if len(info.Table) < 1 {
+	//	return errors.New("the table must not null")
+	//}
 	db := new(nosql.Concept)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetConceptNextID()
@@ -111,6 +111,7 @@ func CreateTopConcept(info *ConceptInfo) error {
 	db.Cover = info.Cover
 	db.Remark = info.Remark
 	db.Parent = ""
+	db.Type = uint8(info.Type)
 	db.Attributes = make([]string, 0, 5)
 	err := nosql.CreateConcept(db)
 	if err == nil {

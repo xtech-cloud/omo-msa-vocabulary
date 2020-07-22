@@ -32,7 +32,6 @@ type EntityInfo struct {
 	Tags        []string //标签
 	properties  []*proxy.PropertyInfo
 	events      []*EventInfo
-	assets      []*AssetInfo
 }
 
 func switchEntityName(concept string) string {
@@ -69,7 +68,6 @@ func CreateEntity(info *EntityInfo) (*NodeInfo, error) {
 	info.events = make([]*EventInfo, 0, 1)
 	info.properties = make([]*proxy.PropertyInfo, 0, 1)
 	db.Properties = info.properties
-	info.assets = make([]*AssetInfo, 0, 1)
 	if db.Tags == nil {
 		db.Tags = make([]string, 0, 1)
 	}
@@ -213,7 +211,6 @@ func (mine *EntityInfo) Construct() {
 	mine.Tags = make([]string, 0, 5)
 	mine.events = make([]*EventInfo, 0, 10)
 	mine.properties = make([]*proxy.PropertyInfo, 0, 10)
-	mine.assets = make([]*AssetInfo, 0, 2)
 }
 
 func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
@@ -251,22 +248,11 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	} else {
 		mine.events = make([]*EventInfo, 0, 2)
 	}
-
-	assets, _ := nosql.GetAssetsByOwner(mine.UID)
-	mine.assets = make([]*AssetInfo, 0, 2)
-	for i := 0; i < len(assets); i += 1 {
-		var info = new(AssetInfo)
-		if info.initInfo(assets[i]) {
-			mine.assets = append(mine.assets, info)
-		}
-	}
 	return true
 }
 
 func (mine *EntityInfo) clear() {
 	mine.UID = ""
-	mine.assets = mine.assets[0:0]
-	mine.assets = nil
 }
 
 func (mine *EntityInfo) table() string {
@@ -275,7 +261,11 @@ func (mine *EntityInfo) table() string {
 	} else {
 		top := GetTopConcept(mine.Concept)
 		if top != nil {
-			return top.Table
+			if len(top.Table) > 0 {
+				return top.Table
+			}else{
+				return "entities"
+			}
 		} else {
 			return "entities"
 		}
@@ -338,14 +328,6 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus ,operator string) error
 		mine.Operator = operator
 	}
 	return err
-}
-
-func (mine *EntityInfo) DefaultURL() string {
-	info := mine.GetAssetByFilter(AssetTypeVideo, AssetLanguageCN)
-	if info != nil {
-		return info.URL()
-	}
-	return ""
 }
 
 //region Event Fun
@@ -517,80 +499,6 @@ func (mine *EntityInfo) GetProperty(key string) *proxy.PropertyInfo {
 		}
 	}
 	return nil
-}
-
-//endregion
-
-//region Asset Fun
-func (mine *EntityInfo) GetAssets() []*AssetInfo {
-	return mine.assets
-}
-
-func (mine *EntityInfo) HadAsset(kind uint8, language string) bool {
-	for i := 0; i < len(mine.assets); i += 1 {
-		if mine.assets[i].Type == kind && mine.assets[i].Language == language {
-			return true
-		}
-	}
-	return false
-}
-
-func (mine *EntityInfo) AddAsset(uid string) bool {
-	var info = new(AssetInfo)
-	if !info.initAsset(uid) {
-		return false
-	}
-	mine.assets = append(mine.assets, info)
-	return true
-}
-
-func (mine *EntityInfo) AddAssetInfo(asset *AssetInfo) bool {
-	if asset == nil {
-		return false
-	}
-	mine.assets = append(mine.assets, asset)
-	return true
-}
-
-func (mine *EntityInfo) GetAssetByFilter(kind uint8, language string) *AssetInfo {
-	for i := 0; i < len(mine.assets); i += 1 {
-		if mine.assets[i].Type == kind && mine.assets[i].Language == language {
-			return mine.assets[i]
-		}
-	}
-	return nil
-}
-
-func (mine *EntityInfo) GetAssetByType(kind uint8) *AssetInfo {
-	for i := 0; i < len(mine.assets); i += 1 {
-		if mine.assets[i].Type == kind {
-			return mine.assets[i]
-		}
-	}
-	return nil
-}
-
-func (mine *EntityInfo) GetAsset(uid string) *AssetInfo {
-	for i := 0; i < len(mine.assets); i += 1 {
-		if mine.assets[i].UID == uid {
-			return mine.assets[i]
-		}
-	}
-	return nil
-}
-
-func (mine *EntityInfo) RemoveAsset(uid string,operator string) error {
-	err := nosql.RemoveAsset(uid, operator)
-	if err == nil {
-		length := len(mine.assets)
-		for i := 0; i < length; i++ {
-			if mine.assets[i].UID == uid {
-				mine.assets = append(mine.assets[:i], mine.assets[i+1:]...)
-				break
-			}
-		}
-	}
-	return err
 }
 
 //endregion

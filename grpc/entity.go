@@ -19,12 +19,9 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp.Created = info.CreateTime.Unix()
 	tmp.Updated = info.UpdateTime.Unix()
 	tmp.Description = info.Description
+	tmp.Operator = info.Operator
+	tmp.Creator = info.Creator
 	tmp.Owner = info.Owner
-	l := len(info.GetAssets())
-	tmp.Assets = make([]string, 0, l)
-	for _, value := range info.GetAssets() {
-		tmp.Assets = append(tmp.Assets, value.UID)
-	}
 	tmp.Tags = info.Tags
 	tmp.Synonyms = info.Synonyms
 	tmp.Add = info.Add
@@ -48,6 +45,7 @@ func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
 }
 
 func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityOne) error {
+	inLog("entity.add", in)
 	tmp := cache.GetEntityByName(in.Name)
 	if tmp != nil {
 		if tmp.Concept == in.Name {
@@ -75,6 +73,7 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 }
 
 func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityOne) error {
+	inLog("entity.one", in)
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")
@@ -89,6 +88,7 @@ func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 }
 
 func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+	inLog("entity.remove", in)
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")
@@ -101,7 +101,8 @@ func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 	return err
 }
 
-func (mine *EntityService)GetListByOwner(ctx context.Context, in *pb.ReqEntityBy, out *pb.ReplyEntityList) error {
+func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy, out *pb.ReplyEntityAll) error {
+	out.Flag = in.Owner
 	out.List = make([]*pb.EntityInfo, 0, 10)
 	for _, value := range cache.AllEntities() {
 		if value.Owner == in.Owner && value.Status == cache.EntityStatus(in.Status) {
@@ -178,44 +179,6 @@ func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.ReqEntityUp
 		return errors.New("not found the entity by uid")
 	}
 	err := info.UpdateSynonyms(in.List, in.Operator)
-	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
-	}
-	return err
-}
-
-func (mine *EntityService)AppendAsset(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityAsset) error {
-	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
-	}
-	if len(in.Key) < 1 {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("the entity asset uid is empty")
-	}
-	info := cache.GetEntity(in.Uid)
-	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
-	}
-	if info.AddAsset(in.Key) {
-		return nil
-	}else{
-		return errors.New("add asset to entity error")
-	}
-}
-
-func (mine *EntityService)SubtractAsset(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityAsset) error {
-	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
-	}
-	info := cache.GetEntity(in.Uid)
-	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
-	}
-	err := info.RemoveAsset(in.Key, in.Operator)
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
 	}

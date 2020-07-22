@@ -19,6 +19,7 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	tmp.Remark = info.Remark
 	tmp.Table = info.Table
 	tmp.Cover = info.Cover
+
 	length := len(info.Children())
 	if length > 0 {
 		tmp.Children = make([]*pb.ConceptInfo, 0, length)
@@ -33,6 +34,7 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 }
 
 func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out *pb.ReplyConceptInfo) error {
+	inLog("concept.add", in)
 	if len(in.Parent) > 0 {
 		parent := cache.GetConcept(in.Parent)
 		if parent == nil {
@@ -53,7 +55,7 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 			out.Info = switchConcept(info)
 		}
 	}else{
-		if cache.HadTopConceptByTable(in.Table) {
+		if len(in.Table) > 0 && cache.HadTopConceptByTable(in.Table) {
 			out.ErrorCode = pb.ResultStatus_Repeated
 			return errors.New("the table name is repeated")
 		}
@@ -85,6 +87,7 @@ func (mine *ConceptService)GetOne(ctx context.Context, in *pb.RequestInfo, out *
 }
 
 func (mine *ConceptService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+	inLog("concept.remove", in)
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the concept uid is empty")
@@ -110,6 +113,7 @@ func (mine *ConceptService)GetAll(ctx context.Context, in *pb.RequestInfo, out *
 }
 
 func (mine *ConceptService)Update(ctx context.Context, in *pb.ReqConceptUpdate, out *pb.ReplyConceptInfo) error {
+	inLog("concept.update", in)
 	info := cache.GetConcept(in.Uid)
 	if info == nil {
 		out.ErrorCode = pb.ResultStatus_NotExisted

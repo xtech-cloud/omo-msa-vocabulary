@@ -16,7 +16,7 @@ type PropertyInfo struct {
 }
 
 type WordInfo struct {
-	//实体UID,如果存在说明该属性对应一个实体
+	// 实体UID,如果存在说明该属性对应一个实体
 	UID  string `json:"key" bson:"key"`
 	Name string `json:"value" bson:"value"`
 }
@@ -29,7 +29,7 @@ type PairInfo struct {
 type RelationInfo struct {
 	UID 	   string `json:"uid" bson:"uid"` //关系UID
 	Direction  uint8  `json:"direction" bson:"direction"`
-	Name       string `json:"relation" bson:"relation"`
+	Name       string `json:"relation" bson:"relation"` // 如果是定制则是显示定制名称，否则显示类型名称
 	Category   string `json:"category" bson:"category"`
 	Entity  	string `json:"entity" bson:"entity"`
 }

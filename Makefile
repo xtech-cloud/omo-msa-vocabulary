@@ -19,7 +19,7 @@ run:
 
 .PHONY: call
 call:
-	MICRO_REGISTRY=consul micro call omo.msa.vocabulary Echo.Call '{"name":"John"}'
+	MICRO_REGISTRY=consul micro call omo.msa.vocabulary RelationService.GetAll '{"uid":""}'
 
 .PHONY: tester
 tester:

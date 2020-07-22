@@ -24,6 +24,7 @@ func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 }
 
 func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd, out *pb.ReplyAttributeOne) error {
+	inLog("attribute.add", in)
 	if cache.HadAttribute(in.Key) {
 		out.ErrorCode = pb.ResultStatus_Repeated
 		return errors.New("the key of attribute is repeated")
@@ -65,6 +66,7 @@ func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out
 }
 
 func (mine *AttributeService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+	inLog("attribute.remove", in)
 	err := cache.RemoveAttribute(in.Uid, in.Operator)
 	out.Uid = in.Uid
 	return err
@@ -79,6 +81,7 @@ func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *p
 }
 
 func (mine *AttributeService)Update(ctx context.Context, in *pb.ReqAttributeUpdate, out *pb.ReplyAttributeOne) error {
+	inLog("attribute.update", in)
 	info := cache.GetAttribute(in.Uid)
 	if info == nil {
 		out.ErrorCode  = pb.ResultStatus_NotExisted
