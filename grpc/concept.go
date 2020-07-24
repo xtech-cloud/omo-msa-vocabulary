@@ -29,6 +29,10 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	}else {
 		tmp.Children = make([]*pb.ConceptInfo, 0, 1)
 	}
+	tmp.Attributes = make([]*pb.AttributeInfo, 0, 5)
+	for _, att := range info.Attributes() {
+		tmp.Attributes = append(tmp.Attributes, switchAttribute(att))
+	}
 
 	return tmp
 }

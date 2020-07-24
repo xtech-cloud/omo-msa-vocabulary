@@ -47,9 +47,9 @@ func switchEntityName(concept string) string {
 	}
 }
 
-func CreateEntity(info *EntityInfo) (*NodeInfo, error) {
+func CreateEntity(info *EntityInfo) error {
 	if info == nil {
-		return nil, errors.New("the entity info is nil")
+		return errors.New("the entity info is nil")
 	}
 	db := new(nosql.Entity)
 	db.UID = primitive.NewObjectID()
@@ -73,13 +73,17 @@ func CreateEntity(info *EntityInfo) (*NodeInfo, error) {
 	}
 	var err error
 	err = nosql.CreateEntity(db, info.table())
-	var node *NodeInfo
 	if err == nil {
 		info.initInfo(db)
 		cacheCtx.entities = append(cacheCtx.entities, info)
-		node, err = cacheCtx.graph.CreateNodeByEntity(info)
+		go createGraphNode(info)
 	}
-	return node, err
+	return err
+}
+
+func createGraphNode(info *EntityInfo) (*NodeInfo,error) {
+	node, err := cacheCtx.graph.CreateNodeByEntity(info)
+	return node,err
 }
 
 func AllEntities() []*EntityInfo {
@@ -188,7 +192,10 @@ func createSampleEntity(name string, concept string) (*EntityInfo, *NodeInfo, er
 		info.Name = name
 		info.Concept = concept
 		info.Cover = ""
-		node, err = CreateEntity(info)
+		err = CreateEntity(info)
+		if err == nil {
+			node,err = createGraphNode(info)
+		}
 	}
 
 	if node == nil {

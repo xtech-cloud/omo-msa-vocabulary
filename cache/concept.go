@@ -55,7 +55,7 @@ func initDefConcepts()  {
 				for _, result := range array {
 					key := result.Get("key").String()
 					if !info.HadAttribute(key) {
-						_ = info.AddAttribute(key, result.Get("value").String(),
+						_ = info.CreateAttribute(key, result.Get("value").String(),
 							"", "",  AttributeType(result.Get("type").Uint()))
 					}
 				}
@@ -279,7 +279,7 @@ func (mine *ConceptInfo) Attributes() []*AttributeInfo {
 	return mine.attributes
 }
 
-func (mine *ConceptInfo) AddAttribute(key, val, begin, end string,kind AttributeType) error {
+func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string,kind AttributeType) error {
 	if mine.attributes == nil {
 		return errors.New("must call construct fist")
 	}
@@ -306,6 +306,9 @@ func (mine *ConceptInfo) AddAttribute(key, val, begin, end string,kind Attribute
 func (mine *ConceptInfo)AppendAttribute(info *AttributeInfo) error {
 	if info == nil {
 		return errors.New("the attribute is nil when append")
+	}
+	if mine.HadAttributeByUID(info.UID) {
+		return nil
 	}
 	err := nosql.AppendConceptAttribute(mine.UID, info.UID)
 	if err == nil {

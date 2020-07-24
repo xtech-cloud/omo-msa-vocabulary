@@ -63,13 +63,13 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 	info.Concept = in.Concept
 	info.Synonyms = in.Synonyms
 	info.Tags = in.Tags
-	_,err := cache.CreateEntity(info)
-	if err == nil {
-		out.Info = switchEntity(info)
-	}else{
+	err := cache.CreateEntity(info)
+	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
+		return err
 	}
-	return err
+	out.Info = switchEntity(info)
+	return nil
 }
 
 func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityOne) error {
@@ -197,7 +197,7 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 	}
 	if info.HadProperty(in.Property.Key) {
 		out.ErrorCode = pb.ResultStatus_Repeated
-		return errors.New("the key of entity is sxisted")
+		return errors.New("the key of entity is existed")
 	}
 	words := make([]proxy.WordInfo, 0, len(in.Property.Words))
 	for _, value := range in.Property.Words {
