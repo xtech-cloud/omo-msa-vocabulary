@@ -18,13 +18,13 @@ type Event struct {
 	Creator     string                `json:"creator" bson:"creator"`
 	Operator    string                `json:"operator" bson:"operator"`
 
-	Entity      string               `json:"entity" bson:"entity"`
-	Name        string               `json:"name" bson:"name"`
-	Description string               `json:"desc" bson:"desc"`
-	Date        proxy.DateInfo       `json:"date" bson:"date"`
-	Place       proxy.PlaceInfo      `json:"place" bson:"place"`
-	Assets      []string             `json:"assets" bson:"assets"`
-	Relations   []proxy.RelationInfo `json:"relations" bson:"relations"`
+	Entity      string                   `json:"entity" bson:"entity"`
+	Name        string                   `json:"name" bson:"name"`
+	Description string                   `json:"desc" bson:"desc"`
+	Date        proxy.DateInfo           `json:"date" bson:"date"`
+	Place       proxy.PlaceInfo          `json:"place" bson:"place"`
+	Assets      []string                 `json:"assets" bson:"assets"`
+	Relations   []proxy.RelationCaseInfo `json:"relations" bson:"relations"`
 }
 
 func CreateEvent(info *Event) error {
@@ -37,6 +37,11 @@ func CreateEvent(info *Event) error {
 
 func GetEventNextID() uint64 {
 	num, _ := getSequenceNext(TableEvent)
+	return num
+}
+
+func GetRelationCaseNextID() uint64 {
+	num, _ := getSequenceNext(TableRelationCase)
 	return num
 }
 
@@ -89,7 +94,7 @@ func AppendEventAsset(uid string, asset string) error {
 		return errors.New("the uid is empty")
 	}
 	msg := bson.M{"assets": asset}
-	_, err := appendElement(TableConcept, uid, msg)
+	_, err := appendElement(TableEvent, uid, msg)
 	return err
 }
 
@@ -98,16 +103,16 @@ func SubtractEventAsset(uid string, asset string) error {
 		return errors.New("the uid is empty")
 	}
 	msg := bson.M{"assets": asset}
-	_, err := removeElement(TableConcept, uid, msg)
+	_, err := removeElement(TableEvent, uid, msg)
 	return err
 }
 
-func AppendEventRelation(uid string, relation proxy.RelationInfo) error {
+func AppendEventRelation(uid string, relation *proxy.RelationCaseInfo) error {
 	if len(uid) < 1 {
 		return errors.New("the uid is empty")
 	}
 	msg := bson.M{"relations": relation}
-	_, err := appendElement(TableConcept, uid, msg)
+	_, err := appendElement(TableEvent, uid, msg)
 	return err
 }
 
@@ -116,6 +121,6 @@ func SubtractEventRelation(uid string, relation string) error {
 		return errors.New("the uid is empty")
 	}
 	msg := bson.M{"relations": bson.M{ "uid": relation }}
-	_, err := removeElement(TableConcept, uid, msg)
+	_, err := removeElement(TableEvent, uid, msg)
 	return err
 }

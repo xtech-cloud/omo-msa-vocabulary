@@ -2,7 +2,6 @@ package cache
 
 import (
 	"github.com/micro/go-micro/v2/logger"
-	"go.uber.org/zap"
 	"mime/multipart"
 	"omo.msa.vocabulary/config"
 	"omo.msa.vocabulary/proxy/graph"
@@ -80,7 +79,7 @@ func InitData() error {
 		info.initInfo(attributes[i])
 		cacheCtx.attributes = append(cacheCtx.attributes, info)
 	}
-	logger.Info("init attribute!!! ", zap.Int("number", len(cacheCtx.attributes)))
+	logger.Infof("init attribute!!! number = %d", len(cacheCtx.attributes))
 
 	relations,_ := nosql.GetAllRelations()
 	for i := 0; i < len(relations); i += 1 {
@@ -88,7 +87,7 @@ func InitData() error {
 		info.initInfo(relations[i])
 		cacheCtx.relations = append(cacheCtx.relations, info)
 	}
-	logger.Info("init relation!!! ", zap.Int("number", len(cacheCtx.attributes)))
+	logger.Infof("init relation!!! number = %d", len(cacheCtx.attributes))
 
 	concerts,_ := nosql.GetTopConcepts()
 	for i := 0; i < len(concerts); i += 1 {
@@ -96,17 +95,23 @@ func InitData() error {
 		info.initInfo(concerts[i])
 		cacheCtx.concerts = append(cacheCtx.concerts, info)
 	}
-	logger.Info("init concerts!!! ", zap.Int("number", len(cacheCtx.concerts)))
+	logger.Infof("init concerts!!! number = %d", len(cacheCtx.concerts))
 
-	for _, kind := range cacheCtx.concerts {
-		entities,_ := nosql.GetEntities(kind.Table)
-		for i := 0; i < len(entities); i += 1 {
-			info := new(EntityInfo)
-			info.initInfo(entities[i])
-			cacheCtx.entities = append(cacheCtx.entities, info)
-		}
+	//for _, kind := range cacheCtx.concerts {
+	//	entities,_ := nosql.GetEntities(kind.Table)
+	//	for i := 0; i < len(entities); i += 1 {
+	//		info := new(EntityInfo)
+	//		info.initInfo(entities[i])
+	//		cacheCtx.entities = append(cacheCtx.entities, info)
+	//	}
+	//}
+	entities,_ := nosql.GetEntities(DefaultEntityTable)
+	for i := 0; i < len(entities); i += 1 {
+		info := new(EntityInfo)
+		info.initInfo(entities[i])
+		cacheCtx.entities = append(cacheCtx.entities, info)
 	}
-	logger.Info("init entities!!! ", zap.Int("number", len(cacheCtx.entities)))
+	logger.Infof("init entities!!! number = %d", len(cacheCtx.entities))
 	//initDefConcepts()
 	//readLocalExcels()
 	//exportLocalJsons()

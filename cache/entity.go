@@ -2,9 +2,7 @@ package cache
 
 import (
 	"errors"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"omo.msa.vocabulary/config"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"time"
@@ -16,6 +14,8 @@ const (
 	EntityStatusUsable  EntityStatus = 2
 	EntityStatusFailed  EntityStatus = 3
 )
+
+const DefaultEntityTable = "entities"
 
 type EntityStatus uint8
 
@@ -63,13 +63,17 @@ func CreateEntity(info *EntityInfo) error {
 	db.Add = info.Add
 	db.Cover = info.Cover
 	db.Concept = info.Concept
-	db.Status = uint8(EntityStatusIdle)
+	db.Status = uint8(info.Status)
 	db.Tags = info.Tags
+	db.Synonyms = info.Synonyms
 	info.events = make([]*EventInfo, 0, 1)
 	info.properties = make([]*proxy.PropertyInfo, 0, 1)
 	db.Properties = info.properties
 	if db.Tags == nil {
 		db.Tags = make([]string, 0, 1)
+	}
+	if db.Synonyms == nil {
+		db.Synonyms = make([]string, 0, 1)
 	}
 	var err error
 	err = nosql.CreateEntity(db, info.table())
@@ -132,10 +136,17 @@ func GetEntity(uid string) *EntityInfo {
 
 func getEntityFromDB(uid string) *nosql.Entity {
 	for i := 0; i < len(cacheCtx.concerts); i += 1 {
-		db, err := nosql.GetEntity(cacheCtx.concerts[i].Table, uid)
-		if err == nil && db != nil {
-			return db
+		tb := cacheCtx.concerts[i].Table
+		if len(tb) > 0 {
+			db, err := nosql.GetEntity(tb, uid)
+			if err == nil && db != nil {
+				return db
+			}
 		}
+	}
+	db, err := nosql.GetEntity(DefaultEntityTable, uid)
+	if err == nil && db != nil {
+		return db
 	}
 	return nil
 }
@@ -271,10 +282,10 @@ func (mine *EntityInfo) table() string {
 			if len(top.Table) > 0 {
 				return top.Table
 			}else{
-				return "entities"
+				return DefaultEntityTable
 			}
 		} else {
-			return "entities"
+			return DefaultEntityTable
 		}
 	}
 }
@@ -302,9 +313,6 @@ func (mine *EntityInfo) UpdateCover(cover, operator string) error {
 }
 
 func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
-	if len(tags) > config.Schema.Basic.TagMax {
-		return errors.New(fmt.Sprintf("the tag max number is %d", config.Schema.Basic.TagMax))
-	}
 	err := nosql.UpdateEntityTags(mine.table(), mine.UID, operator, tags)
 	if err == nil {
 		mine.Tags = tags
@@ -314,9 +322,6 @@ func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
 }
 
 func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
-	if len(list) > config.Schema.Basic.SynonymMax {
-		return errors.New(fmt.Sprintf("the tag max number is %d", config.Schema.Basic.SynonymMax))
-	}
 	err := nosql.UpdateEntitySynonyms(mine.table(), mine.UID, operator, list)
 	if err == nil {
 		mine.Synonyms = list
@@ -326,9 +331,6 @@ func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
 }
 
 func (mine *EntityInfo) UpdateStatus(status EntityStatus ,operator string) error {
-	if mine.Status != EntityStatusPending {
-		return errors.New("the micro course had deal")
-	}
 	err := nosql.UpdateEntityStatus(mine.table(), mine.UID, uint8(status), operator)
 	if err == nil {
 		mine.Status = status
@@ -342,7 +344,7 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 	return mine.events
 }
 
-func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo,name, desc, operator string, links []proxy.RelationInfo, assets []string) (*EventInfo, error) {
+func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo,name, desc, operator string, links []proxy.RelationCaseInfo, assets []string) (*EventInfo, error) {
 	if mine.events == nil {
 		return nil, errors.New("must call construct fist")
 	}
@@ -364,13 +366,13 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo,name
 		info := new(EventInfo)
 		info.initInfo(db)
 		mine.events = append(mine.events, info)
-		from := GetGraphNode(mine.UID)
-		for i := 0; i < len(links); i += 1 {
-			node := GetGraphNode(links[i].Entity)
-			_, _ = CreateLink(from, node, LinkType(links[i].Category), links[i].Name, "", DirectionType(links[i].Direction))
-		}
-		concept := GetConceptByName("地理")
-		_, _, _ = createSampleEntity(place.Name, concept.Name)
+		//from := GetGraphNode(mine.UID)
+		//for i := 0; i < len(links); i += 1 {
+		//	node := GetGraphNode(links[i].Entity)
+		//	_, _ = CreateLink(from, node, LinkType(links[i].Category), links[i].Name, "", DirectionType(links[i].Direction))
+		//}
+		//concept := GetConceptByName("地理")
+		//_, _, _ = createSampleEntity(place.Name, concept.Name)
 		return info, nil
 	}
 	return nil, err

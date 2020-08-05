@@ -22,6 +22,7 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp.Operator = info.Operator
 	tmp.Creator = info.Creator
 	tmp.Owner = info.Owner
+	tmp.Status = pb.EntityStatus(info.Status)
 	tmp.Tags = info.Tags
 	tmp.Synonyms = info.Synonyms
 	tmp.Add = info.Add
@@ -63,6 +64,7 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 	info.Concept = in.Concept
 	info.Synonyms = in.Synonyms
 	info.Tags = in.Tags
+	info.Status = cache.EntityStatusIdle
 	err := cache.CreateEntity(info)
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
@@ -102,17 +104,27 @@ func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 }
 
 func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy, out *pb.ReplyEntityAll) error {
+	inLog("entity.getByOwner", in)
 	out.Flag = in.Owner
 	out.List = make([]*pb.EntityInfo, 0, 10)
-	for _, value := range cache.AllEntities() {
-		if value.Owner == in.Owner && value.Status == cache.EntityStatus(in.Status) {
-			out.List = append(out.List, switchEntity(value))
+	if len(in.Owner) > 0 {
+		for _, value := range cache.AllEntities() {
+			if value.Owner == in.Owner && value.Status == cache.EntityStatus(in.Status) {
+				out.List = append(out.List, switchEntity(value))
+			}
+		}
+	}else{
+		for _, value := range cache.AllEntities() {
+			if value.Status == cache.EntityStatus(in.Status) {
+				out.List = append(out.List, switchEntity(value))
+			}
 		}
 	}
 	return nil
 }
 
 func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.ReqEntityUpdate, out *pb.ReplyEntityUpdate) error {
+	inLog("entity.tags", in)
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")
@@ -130,6 +142,7 @@ func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.ReqEntityUpdate
 }
 
 func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, out *pb.ReplyInfo) error {
+	inLog("entity.base", in)
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")
@@ -153,6 +166,7 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 }
 
 func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStatus, out *pb.ReplyEntityStatus) error {
+	inLog("entity.status", in)
 	if len(in.Uid) < 1 {
 		//out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")
@@ -169,6 +183,7 @@ func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStat
 }
 
 func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.ReqEntityUpdate, out *pb.ReplyEntityUpdate) error {
+	inLog("entity.synonyms", in)
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")
@@ -186,6 +201,7 @@ func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.ReqEntityUp
 }
 
 func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityProperty, out *pb.ReplyEntityProperties) error {
+	inLog("entity.append.property", in)
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")
@@ -218,6 +234,7 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 }
 
 func (mine *EntityService)SubtractProperty(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityProperties) error {
+	inLog("entity.subtract.property", in)
 	if len(in.Uid) < 1 {
 		out.ErrorCode = pb.ResultStatus_Empty
 		return errors.New("the entity uid is empty")

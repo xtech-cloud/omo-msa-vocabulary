@@ -65,6 +65,15 @@ func HadAttribute(key string) bool {
 	return false
 }
 
+func HadAttributeByName(name string) bool {
+	for i := 0;i < len(cacheCtx.attributes);i += 1 {
+		if cacheCtx.attributes[i].Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func GetAttribute(uid string) *AttributeInfo {
 	for _, value := range cacheCtx.attributes {
 		if value.UID == uid {

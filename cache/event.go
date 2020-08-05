@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 )
@@ -12,7 +13,7 @@ type EventInfo struct {
 	Date        proxy.DateInfo
 	Place       proxy.PlaceInfo
 	Assets      []string
-	Relations   []proxy.RelationInfo
+	Relations   []proxy.RelationCaseInfo
 }
 
 func GetEvent(uid string) *EventInfo {
@@ -83,10 +84,11 @@ func (mine *EventInfo)SubtractAsset(asset string) error {
 	return err
 }
 
-func (mine *EventInfo)AppendRelation(relation proxy.RelationInfo) error {
+func (mine *EventInfo)AppendRelation(relation *proxy.RelationCaseInfo) error {
+	relation.UID = fmt.Sprintf("%s-%d", mine.UID, nosql.GetRelationCaseNextID())
 	err := nosql.AppendEventRelation(mine.UID, relation)
 	if err == nil {
-		mine.Relations = append(mine.Relations, relation)
+		mine.Relations = append(mine.Relations, *relation)
 	}
 	return err
 }
@@ -94,7 +96,7 @@ func (mine *EventInfo)AppendRelation(relation proxy.RelationInfo) error {
 func (mine *EventInfo)SubtractRelation(relation string) error {
 	err := nosql.SubtractEventRelation(mine.UID, relation)
 	if err == nil {
-		for i := 0;i < len(mine.Assets);i += 1 {
+		for i := 0;i < len(mine.Relations);i += 1 {
 			if mine.Relations[i].UID == relation {
 				mine.Relations = append(mine.Relations[:i], mine.Relations[i+1:]...)
 				break

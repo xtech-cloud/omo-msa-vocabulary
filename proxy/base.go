@@ -26,12 +26,12 @@ type PairInfo struct {
 	Value string `json:"value" bson:"value"`
 }
 
-type RelationInfo struct {
-	UID 	   string `json:"uid" bson:"uid"` //关系UID
+type RelationCaseInfo struct {
+	UID 	   string `json:"uid" bson:"uid"`
 	Direction  uint8  `json:"direction" bson:"direction"`
 	Name       string `json:"relation" bson:"relation"` // 如果是定制则是显示定制名称，否则显示类型名称
-	Category   string `json:"category" bson:"category"`
-	Entity  	string `json:"entity" bson:"entity"`
+	Category   string `json:"category" bson:"category"` //关系类型UID
+	Entity  	string `json:"entity" bson:"entity"` //对应实体UID
 }
 
 type Date struct {

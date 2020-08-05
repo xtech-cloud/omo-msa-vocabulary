@@ -28,17 +28,9 @@ type GraphConfig struct {
 	User     string	`yaml:"user"`
 }
 
-type CacheConfig struct {
-	Kind      int `ini:"kind"`
-	Domain    string `ini:"domain"`
-	Bucket    string `ini:"bucket"`
-	AccessKey string `ini:"accessKey"`
-	SecretKey string `ini:"secretKey"`
-}
-
 type BasicConfig struct {
-	SynonymMax     int `ini:"synonym"`
-	TagMax    int `ini:"tag"`
+	SynonymMax    int32 `yaml:"synonyms"`
+	TagMax    	  int32 `yaml:"tags"`
 }
 
 type SchemaConfig struct {
@@ -46,6 +38,5 @@ type SchemaConfig struct {
 	Logger   LoggerConfig  `yaml:"logger"`
 	Database DBConfig      `yaml:"database"`
 	Graph    GraphConfig   `yaml:"graph"`
-	Cache	 CacheConfig  `yaml:"cache"`
-	Basic   BasicConfig `yaml:"basic"`
+	//Basic   BasicConfig 	`yaml:"basic"`
 }

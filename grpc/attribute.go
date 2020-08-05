@@ -16,6 +16,7 @@ func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 	tmp.Key = info.Key
 	tmp.Uid = info.UID
 	tmp.Id = info.ID
+	tmp.Remark = info.Remark
 	tmp.Begin = info.Begin
 	tmp.End = info.End
 	tmp.Name = info.Name
@@ -27,20 +28,29 @@ func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd,
 	inLog("attribute.add", in)
 	if cache.HadAttribute(in.Key) {
 		out.ErrorCode = pb.ResultStatus_Repeated
-		return errors.New("the key of attribute is repeated")
+		// return errors.New("the key of attribute is repeated")
+		return nil
+	}
+	if cache.HadAttributeByName(in.Name) {
+		out.ErrorCode = pb.ResultStatus_Repeated
+		// return errors.New("the attribute name is repeated")
+		return nil
 	}
 	info := new(cache.AttributeInfo)
 	info.Name = in.Name
 	info.Key = in.Key
 	info.Kind = cache.AttributeType(in.Type)
-	info.Remark = ""
+	info.Remark = in.Remark
 	info.Begin = in.Begin
 	info.End = in.End
 	err := cache.CreateAttribute(info)
 	if err == nil {
 		out.Info = switchAttribute(info)
+	}else{
+		out.ErrorCode = pb.ResultStatus_DBException
 	}
-	return err
+	outLog("attribute.add", out)
+	return nil
 }
 
 func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeOne) error {

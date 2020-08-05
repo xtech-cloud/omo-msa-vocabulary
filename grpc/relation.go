@@ -13,9 +13,10 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 	tmp := new(pb.RelationInfo)
 	tmp.Uid = info.UID
 	tmp.Name = info.Name
-	tmp.Type = info.Key
+	tmp.Type = uint32(info.Kind)
 	tmp.Remark = info.Remark
 	tmp.Custom = info.Custom
+	tmp.Parent = info.Parent
 	tmp.Time = info.CreateTime.Unix()
 	children := info.Children()
 	num := len(children)
@@ -32,9 +33,14 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 
 func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, out *pb.ReplyRelationOne) error {
 	inLog("relation.add", in)
+	if cache.HadRelationByName(in.Name) {
+		out.ErrorCode = pb.ResultStatus_Repeated
+		return errors.New("the relation name is repeated")
+	}
 	info := new(cache.RelationshipInfo)
 	info.Name = in.Name
 	info.Remark = in.Remark
+	info.Kind = uint8(in.Type)
 	err := cache.CreateRelation(in.Parent, in.Operator, info)
 	if err == nil{
 		out.Info = switchRelation(info)
@@ -105,7 +111,7 @@ func (mine *RelationService)UpdateInfo(ctx context.Context, in *pb.ReqRelationUp
 		out.ErrorCode = pb.ResultStatus_NotExisted
 		return errors.New("not found the relation by uid")
 	}
-	err = info.UpdateBase(in.Name, in.Remark, in.Operator, in.Custom)
+	err = info.UpdateBase(in.Name, in.Remark, in.Operator, in.Custom, uint8(in.Type))
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
 	}

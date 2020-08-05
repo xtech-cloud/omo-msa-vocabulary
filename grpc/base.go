@@ -8,13 +8,13 @@ import (
 func inLog(name, data interface{})  {
 	bytes, _ := json.Marshal(data)
 	msg := ByteString(bytes)
-	logger.Infof("[request.%s]:data = %s", name, msg)
+	logger.Infof("[in.%s]:data = %s", name, msg)
 }
 
 func outLog(name, data interface{})  {
 	bytes, _ := json.Marshal(data)
 	msg := ByteString(bytes)
-	logger.Infof("[response.%s]:data = %s", name, msg)
+	logger.Infof("[out.%s]:data = %s", name, msg)
 }
 
 func ByteString(p []byte) string {

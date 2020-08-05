@@ -9,9 +9,10 @@ import (
 
 type RelationshipInfo struct {
 	BaseInfo
-	Key string
+	Kind uint8
 	Remark string
 	Custom bool
+	Parent string
 	children []*RelationshipInfo
 }
 
@@ -30,7 +31,7 @@ func CreateRelation(parent, creator string, info *RelationshipInfo) error {
 	db.Creator = creator
 	db.Name = info.Name
 	db.Remark = info.Remark
-	db.Key = info.Key
+	db.Type = info.Kind
 	db.Parent = parent
 	db.Custom = info.Custom
 	err := nosql.CreateRelation(db)
@@ -50,6 +51,15 @@ func CreateRelation(parent, creator string, info *RelationshipInfo) error {
 func HadRelation(uid string) bool {
 	for i := 0;i < len(cacheCtx.attributes);i += 1 {
 		if cacheCtx.relations[i].UID == uid {
+			return true
+		}
+	}
+	return false
+}
+
+func HadRelationByName(name string) bool {
+	for i := 0;i < len(cacheCtx.attributes);i += 1 {
+		if cacheCtx.relations[i].Name == name {
 			return true
 		}
 	}
@@ -87,7 +97,8 @@ func (mine *RelationshipInfo)initInfo(db *nosql.Relation)  {
 	mine.UpdateTime = db.UpdatedTime
 	mine.Creator = db.Creator
 	mine.Operator = db.Operator
-	mine.Key = db.Key
+	mine.Kind = db.Type
+	mine.Parent = db.Parent
 	array, err := nosql.GetRelationsByParent(mine.UID)
 	num := len(array)
 	mine.children = make([]*RelationshipInfo, 0, 5)
@@ -100,14 +111,14 @@ func (mine *RelationshipInfo)initInfo(db *nosql.Relation)  {
 	}
 }
 
-func (mine *RelationshipInfo)UpdateBase(name, remark, operator string, custom bool) error {
+func (mine *RelationshipInfo)UpdateBase(name, remark, operator string, custom bool, kind uint8) error {
 	if len(name) < 1{
 		name = mine.Name
 	}
 	if len(remark) < 1 {
 		remark = mine.Remark
 	}
-	err := nosql.UpdateRelationBase(mine.UID, name, remark, operator, custom)
+	err := nosql.UpdateRelationBase(mine.UID, name, remark, operator, custom, kind)
 	if err == nil {
 		mine.Name = name
 		mine.Remark = remark

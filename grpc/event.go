@@ -31,7 +31,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	return tmp
 }
 
-func switchRelationIns(info *proxy.RelationInfo) *pb.RelationshipInfo {
+func switchRelationIns(info *proxy.RelationCaseInfo) *pb.RelationshipInfo {
 	r := new(pb.RelationshipInfo)
 	r.Name = info.Name
 	r.Uid = info.UID
@@ -57,9 +57,9 @@ func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb
 
 	date := proxy.DateInfo{UID:in.Date.Uid, Name:in.Date.Name, Begin:begin, End:end}
 	place := proxy.PlaceInfo{UID:in.Place.Uid, Name:in.Place.Name, Location:in.Place.Location}
-	relations := make([]proxy.RelationInfo, 0, len(in.Relations))
+	relations := make([]proxy.RelationCaseInfo, 0, len(in.Relations))
 	for _, value := range in.Relations {
-		relations = append(relations, proxy.RelationInfo{UID:value.Uid, Direction:uint8(value.Direction),
+		relations = append(relations, proxy.RelationCaseInfo{UID: value.Uid, Direction:uint8(value.Direction),
 			Name:value.Name, Category:value.Category, Entity:value.Entity})
 	}
 	event,err := info.AddEvent(date, place,in.Name, in.Description, in.Operator, relations, in.Assets)
@@ -163,11 +163,11 @@ func (mine *EventService)SubtractAsset(ctx context.Context, in *pb.ReqEventAsset
 func (mine *EventService)AppendRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
 	info := cache.GetEvent(in.Uid)
 	if info == nil {
-		return errors.New("not found the attribute by uid")
+		return errors.New("not found the event by uid")
 	}
-	tmp := proxy.RelationInfo{UID:in.Relation.Uid, Direction:uint8(in.Relation.Direction),
+	tmp := proxy.RelationCaseInfo{Direction:uint8(in.Relation.Direction),
 		Name:in.Relation.Name, Category:in.Relation.Category, Entity:in.Relation.Entity}
-	err := info.AppendRelation(tmp)
+	err := info.AppendRelation(&tmp)
 	if err != nil {
 		return err
 	}

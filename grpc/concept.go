@@ -19,7 +19,8 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	tmp.Remark = info.Remark
 	tmp.Table = info.Table
 	tmp.Cover = info.Cover
-
+	tmp.Parent = info.Parent
+	tmp.Attributes = info.Attributes()
 	length := len(info.Children())
 	if length > 0 {
 		tmp.Children = make([]*pb.ConceptInfo, 0, length)
@@ -29,11 +30,6 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	}else {
 		tmp.Children = make([]*pb.ConceptInfo, 0, 1)
 	}
-	tmp.Attributes = make([]*pb.AttributeInfo, 0, 5)
-	for _, att := range info.Attributes() {
-		tmp.Attributes = append(tmp.Attributes, switchAttribute(att))
-	}
-
 	return tmp
 }
 
@@ -59,9 +55,14 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 			out.Info = switchConcept(info)
 		}
 	}else{
-		if len(in.Table) > 0 && cache.HadTopConceptByTable(in.Table) {
+		if len(in.Table) > 0 && cache.HadConceptByTable(in.Table) {
 			out.ErrorCode = pb.ResultStatus_Repeated
 			return errors.New("the table name is repeated")
+		}
+
+		if cache.HadConceptByName(in.Name) {
+			out.ErrorCode = pb.ResultStatus_Repeated
+			return errors.New("the concept name is repeated")
 		}
 
 		info := new(cache.ConceptInfo)

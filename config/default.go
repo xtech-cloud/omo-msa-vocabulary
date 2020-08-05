@@ -21,14 +21,7 @@ graph:
     password: "12345678"
     ip: localhost
     port: "11003"
-cache:
-    kind: 1
-    domain: "http://testdown.suii.cn"
-    bucket: tec-test
-    accessKey: 4TDqfvaNHKxzx4nFz0YglS_jHlKXECCSSWb1vUr5
-    secretKey: pZ8AnJE5IYgNRUFEB132ohIToJdRe5uxm4ZLLljp
 basic:
-    synonym: 6
-    tag: 6
-    
+  tags: 6
+  synonyms: 5
 `

@@ -16,10 +16,10 @@ type Relation struct {
 	Creator     string                `json:"creator" bson:"creator"`
 	Operator    string                `json:"operator" bson:"operator"`
 
-	Key      string `json:"key" bson:"key"`
 	Name      string `json:"name" bson:"name"`
 	Remark    string `json:"remark" bson:"remark"`
 	Custom    bool `json:"custom" bson:"custom"`
+	Type      uint8 `json:"type" bson:"type"`
 	Parent    string `json:"parent" bson:"parent"`
 }
 
@@ -92,8 +92,8 @@ func RemoveRelation(uid, operator string) error {
 	return err
 }
 
-func UpdateRelationBase(uid, name, desc, operator string, custom bool) error {
-	msg := bson.M{"name": name, "remark": desc, "custom":custom,"operator":operator, "updatedAt": time.Now()}
+func UpdateRelationBase(uid, name, desc, operator string, custom bool, kind uint8) error {
+	msg := bson.M{"name": name, "remark": desc, "custom":custom, "type":kind,"operator":operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableRelation, uid, msg)
 	return err
 }

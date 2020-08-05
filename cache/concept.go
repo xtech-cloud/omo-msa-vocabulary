@@ -32,8 +32,9 @@ type ConceptInfo struct {
 	Cover    string
 	Remark   string
 	Table    string
+	Parent   string
+	attributes    []string
 	children []*ConceptInfo
-	attributes    []*AttributeInfo
 }
 
 //region Global Fun
@@ -49,7 +50,7 @@ func initDefConcepts()  {
 		info.Name = value.Get("name").String()
 		info.Table = value.Get("table").String()
 		array := value.Get("attributes").Array()
-		if !HadTopConceptByTable(info.Table) {
+		if !HadConceptByTable(info.Table) {
 			err := CreateTopConcept(info)
 			if err == nil {
 				for _, result := range array {
@@ -136,7 +137,7 @@ func RemoveConcept(uid, operator string) error {
 	return err
 }
 
-func HadTopConceptByTable(table string) bool {
+func HadConceptByTable(table string) bool {
 	for i := 0; i < len(cacheCtx.concerts); i += 1 {
 		if cacheCtx.concerts[i].Table == table {
 			return true
@@ -145,7 +146,7 @@ func HadTopConceptByTable(table string) bool {
 	return false
 }
 
-func HadTopConceptByName(name string) bool {
+func HadConceptByName(name string) bool {
 	for i := 0; i < len(cacheCtx.concerts); i += 1 {
 		if cacheCtx.concerts[i].Name == name {
 			return true
@@ -181,13 +182,9 @@ func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
 	mine.CreateTime = db.CreatedTime
 	mine.Operator = db.Operator
 	mine.Creator = db.Creator
-	mine.attributes = make([]*AttributeInfo, 0, len(db.Attributes))
-	for i := 0;i < len(db.Attributes);i += 1{
-		attr := GetAttribute(db.Attributes[i])
-		if attr != nil {
-			mine.attributes = append(mine.attributes, attr)
-		}
-	}
+	mine.Parent = db.Parent
+	mine.attributes = db.Attributes
+
 	array, err := nosql.GetConceptsByParent(mine.UID)
 	num := len(array)
 	mine.children = make([]*ConceptInfo, 0, 5)
@@ -275,7 +272,7 @@ func (mine *ConceptInfo) GetChildByName(name string) *ConceptInfo {
 	return nil
 }
 
-func (mine *ConceptInfo) Attributes() []*AttributeInfo {
+func (mine *ConceptInfo) Attributes() []string {
 	return mine.attributes
 }
 
@@ -286,6 +283,7 @@ func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string,kind Attrib
 	if HadAttribute(key) {
 		return errors.New("the attribute key is repeated")
 	}
+
 	info := new(AttributeInfo)
 	info.Key = key
 	info.Name = val
@@ -297,7 +295,7 @@ func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string,kind Attrib
 	if err == nil {
 		err = nosql.AppendConceptAttribute(mine.UID, info.UID)
 		if err == nil {
-			mine.attributes = append(mine.attributes, info)
+			mine.attributes = append(mine.attributes, info.UID)
 		}
 	}
 	return err
@@ -312,15 +310,16 @@ func (mine *ConceptInfo)AppendAttribute(info *AttributeInfo) error {
 	}
 	err := nosql.AppendConceptAttribute(mine.UID, info.UID)
 	if err == nil {
-		mine.attributes = append(mine.attributes, info)
+		mine.attributes = append(mine.attributes, info.UID)
 	}
 	return err
 }
 
 func (mine *ConceptInfo) GetAttributeName(key string) string {
 	for i := 0;i < len(mine.attributes);i += 1 {
-		if mine.attributes[i].Key == key {
-			return mine.attributes[i].Name
+		t := GetAttribute(mine.attributes[i])
+		if t != nil && t.Key == key {
+			return t.Name
 		}
 	}
 	return ""
@@ -328,8 +327,9 @@ func (mine *ConceptInfo) GetAttributeName(key string) string {
 
 func (mine *ConceptInfo) GetAttribute(key string) *AttributeInfo {
 	for i := 0;i < len(mine.attributes);i += 1 {
-		if mine.attributes[i].Key == key {
-			return mine.attributes[i]
+		t := GetAttribute(mine.attributes[i])
+		if t != nil && t.Key == key {
+			return t
 		}
 	}
 	return nil
@@ -340,7 +340,8 @@ func (mine *ConceptInfo) HadAttribute(key string) bool {
 		return false
 	}
 	for i := 0; i < len(mine.attributes); i += 1 {
-		if mine.attributes[i].Key == key {
+		t := GetAttribute(mine.attributes[i])
+		if t != nil && t.Key == key {
 			return true
 		}
 	}
@@ -357,7 +358,7 @@ func (mine *ConceptInfo) HadAttributeByUID(uid string) bool {
 		return false
 	}
 	for i := 0; i < len(mine.attributes); i += 1 {
-		if mine.attributes[i].UID == uid {
+		if mine.attributes[i] == uid {
 			return true
 		}
 	}
@@ -374,7 +375,7 @@ func (mine *ConceptInfo) RemoveAttribute(uid string) error {
 	err := nosql.SubtractConceptAttribute(mine.UID, uid)
 	if err == nil {
 		for i := 0; i < len(mine.attributes); i += 1 {
-			if mine.attributes[i].UID == uid {
+			if mine.attributes[i] == uid {
 				mine.attributes = append(mine.attributes[:i], mine.attributes[i+1:]...)
 				break
 			}
