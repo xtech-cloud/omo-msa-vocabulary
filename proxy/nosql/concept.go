@@ -97,8 +97,8 @@ func HadConceptByName(name string) (bool, error) {
 	return hadOne(TableConcept, msg)
 }
 
-func UpdateConceptBase(uid, name, desc, operator string) error {
-	msg := bson.M{"name": name, "remark": desc,"operator":operator,  "updatedAt": time.Now()}
+func UpdateConceptBase(uid, name, desc, operator string, kind uint8) error {
+	msg := bson.M{"name": name, "remark": desc,"operator":operator,"type":kind,  "updatedAt": time.Now()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }

@@ -41,6 +41,7 @@ func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, o
 	info.Name = in.Name
 	info.Remark = in.Remark
 	info.Kind = uint8(in.Type)
+	info.Custom = in.Custom
 	err := cache.CreateRelation(in.Parent, in.Operator, info)
 	if err == nil{
 		out.Info = switchRelation(info)
@@ -115,5 +116,6 @@ func (mine *RelationService)UpdateInfo(ctx context.Context, in *pb.ReqRelationUp
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
 	}
+	out.Info = switchRelation(info)
 	return err
 }

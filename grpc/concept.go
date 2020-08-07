@@ -45,7 +45,7 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 		info := new(cache.ConceptInfo)
 		info.Remark = in.Remark
 		info.Name = in.Name
-		info.Type = cache.ConceptType(in.Type)
+		info.Type = uint8(in.Type)
 		info.Cover = in.Cover
 		err := parent.CreateChild(info)
 		if err != nil {
@@ -69,7 +69,7 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 		info.Table = in.Table
 		info.Remark = in.Remark
 		info.Name = in.Name
-		info.Type = cache.ConceptType(in.Type)
+		info.Type = uint8(in.Type)
 		info.Cover = in.Cover
 		err := cache.CreateTopConcept(info)
 		if err == nil {
@@ -124,12 +124,13 @@ func (mine *ConceptService)Update(ctx context.Context, in *pb.ReqConceptUpdate, 
 		out.ErrorCode = pb.ResultStatus_NotExisted
 		return errors.New("not found the concept")
 	}
-	err := info.UpdateBase(in.Name, in.Remark, in.Operator)
+	err := info.UpdateBase(in.Name, in.Remark, in.Operator, uint8(in.Type))
 	if err != nil {
 		out.ErrorCode = pb.ResultStatus_DBException
 		return err
 	}
 	out.Info = switchConcept(info)
+	outLog("concept.update", out)
 	return nil
 }
 

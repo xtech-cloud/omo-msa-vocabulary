@@ -123,6 +123,7 @@ func (mine *RelationshipInfo)UpdateBase(name, remark, operator string, custom bo
 		mine.Name = name
 		mine.Remark = remark
 		mine.Operator = operator
+		mine.Kind = kind
 		mine.Custom = custom
 	}
 	return err

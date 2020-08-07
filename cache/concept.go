@@ -10,25 +10,9 @@ import (
 	"time"
 )
 
-const (
-	ConceptTypeUnknown ConceptType = 0
-	ConceptTypePersonal ConceptType = 1
-	ConceptTypeUtensil    ConceptType = 2 // 器物
-	ConceptTypeEvent ConceptType = 3 //事件
-	ConceptTypeOrganize ConceptType = 4 // 组织
-	ConceptTypeIdea ConceptType = 5 //思想理论
-	ConceptTypeBook ConceptType = 6 //经籍著作
-	ConceptTypeCulture ConceptType = 7 //文化
-	ConceptTypeFaction ConceptType = 8 //派别
-	ConceptTypeNature ConceptType = 9 //自然
-	ConceptTypeHonor ConceptType = 10 //荣誉奖项
-)
-
-type ConceptType uint16
-
 type ConceptInfo struct {
 	BaseInfo
-	Type ConceptType
+	Type uint8
 	Cover    string
 	Remark   string
 	Table    string
@@ -384,12 +368,13 @@ func (mine *ConceptInfo) RemoveAttribute(uid string) error {
 	return err
 }
 
-func (mine *ConceptInfo) UpdateBase(name, remark,operator string) error {
-	err := nosql.UpdateConceptBase(mine.UID, name, remark, operator)
+func (mine *ConceptInfo) UpdateBase(name, remark,operator string, kind uint8) error {
+	err := nosql.UpdateConceptBase(mine.UID, name, remark, operator, kind)
 	if err == nil {
 		mine.Name = name
 		mine.Remark = remark
 		mine.Operator = operator
+		mine.Type = kind
 	}
 	return err
 }
