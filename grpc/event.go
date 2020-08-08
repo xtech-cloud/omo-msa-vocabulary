@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
@@ -41,12 +40,13 @@ func switchRelationIns(info *proxy.RelationCaseInfo) *pb.RelationshipInfo {
 	return r
 }
 
-func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb.ReplyEventOne) error {
-	inLog("event.add", in)
+func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb.ReplyEventInfo) error {
+	path := "event.addOne"
+	inLog(path, in)
 	info := cache.GetEntity(in.Parent)
 	if info == nil {
-		out.ErrorCode  = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	begin := proxy.Date{}
 	end := proxy.Date{}
@@ -65,54 +65,66 @@ func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb
 	event,err := info.AddEvent(date, place,in.Name, in.Description, in.Operator, relations, in.Assets)
 	if err == nil {
 		out.Info = switchEntityEvent(event)
+		out.Status = outLog(path, out)
 	}else{
-		out.ErrorCode = pb.ResultStatus_DBException
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 	}
-	return err
+	return nil
 }
 
-func (mine *EventService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventOne) error {
-	inLog("event.one", in)
+func (mine *EventService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventInfo) error {
+	path := "event.getOne"
+	inLog(path, in)
 	if len(in.Uid) > 0 {
 		info := cache.GetEvent(in.Uid)
 		if info == nil {
-			out.ErrorCode  = pb.ResultStatus_NotExisted
-			return errors.New("not found the attribute by uid")
+			out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+			return nil
 		}
 		out.Info = switchEntityEvent(info)
+		out.Status = outLog(path, out)
 	}else{
-		out.ErrorCode  = pb.ResultStatus_Empty
-		return errors.New("the uid or key all is empty")
+		out.Status  = outError(path,"the uid or key all is empty", pb.ResultStatus_Empty)
 	}
 	return nil
 }
 
 func (mine *EventService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
-	inLog("event.remove", in)
+	path := "event.removeOne"
+	inLog(path, in)
 	err := cache.RemoveEvent(in.Uid, in.Operator)
+	if err != nil {
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
 	out.Uid = in.Uid
-	return err
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *EventService)GetList(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventList) error {
-	inLog("event.list", in)
+	path := "event.getList"
+	inLog(path, in)
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	out.List = make([]*pb.EventInfo, 0, 10)
 	for _, value := range info.AllEvents() {
 		out.List = append(out.List, switchEntityEvent(value))
 	}
+	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
 	return nil
 }
 
-func (mine *EventService)Update(ctx context.Context, in *pb.ReqEventUpdate, out *pb.ReplyEventOne) error {
-	inLog("event.update", in)
+func (mine *EventService)Update(ctx context.Context, in *pb.ReqEventUpdate, out *pb.ReplyEventInfo) error {
+	path := "event.update"
+	inLog(path, in)
 	info := cache.GetEvent(in.Uid)
 	if info == nil {
-		out.ErrorCode  = pb.ResultStatus_NotExisted
-		return errors.New("not found the attribute by uid")
+		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	begin := proxy.Date{}
 	end := proxy.Date{}
@@ -124,72 +136,94 @@ func (mine *EventService)Update(ctx context.Context, in *pb.ReqEventUpdate, out 
 	place := proxy.PlaceInfo{UID:in.Place.Uid, Name:in.Place.Name, Location:in.Place.Location}
 	err := info.UpdateBase(in.Name, in.Description, in.Operator, date, place)
 	if err != nil {
-		return err
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Info = switchEntityEvent(info)
+	out.Status = outLog(path, out)
 	return nil
 }
 
 func (mine *EventService)AppendAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAsset) error {
+	path := "event.appendAsset"
+	inLog(path, in)
 	info := cache.GetEvent(in.Uid)
 	if info == nil {
-		return errors.New("not found the attribute by uid")
+		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 
 	err := info.AppendAsset(in.Asset)
 	if err != nil {
-		return err
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Uid = in.Uid
 	out.Assets = info.Assets
+	out.Status = outLog(path, out)
 	return nil
 }
 
 func (mine *EventService)SubtractAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAsset) error {
+	path := "event.subtractAsset"
+	inLog(path, in)
 	info := cache.GetEvent(in.Uid)
 	if info == nil {
-		return errors.New("not found the attribute by uid")
+		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 
 	err := info.SubtractAsset(in.Asset)
 	if err != nil {
-		return err
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Uid = in.Uid
 	out.Assets = info.Assets
+	out.Status = outLog(path, out)
 	return nil
 }
 
 func (mine *EventService)AppendRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
+	path := "event.appendRelation"
+	inLog(path, in)
 	info := cache.GetEvent(in.Uid)
 	if info == nil {
-		return errors.New("not found the event by uid")
+		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	tmp := proxy.RelationCaseInfo{Direction:uint8(in.Relation.Direction),
 		Name:in.Relation.Name, Category:in.Relation.Category, Entity:in.Relation.Entity}
 	err := info.AppendRelation(&tmp)
 	if err != nil {
-		return err
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
 	for i := 0;i < len(info.Relations);i +=1 {
 		out.Relations = append(out.Relations, switchRelationIns(&info.Relations[i]))
 	}
+	out.Status = outLog(path, out)
 	return nil
 }
 
 func (mine *EventService)SubtractRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
+	path := "event.subtractRelation"
+	inLog(path, in)
 	info := cache.GetEvent(in.Uid)
 	if info == nil {
-		return errors.New("not found the attribute by uid")
+		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	err := info.SubtractRelation(in.Relation.Uid)
 	if err != nil {
-		return err
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
 	for i := 0;i < len(info.Relations);i +=1 {
 		out.Relations = append(out.Relations, switchRelationIns(&info.Relations[i]))
 	}
+	out.Status = outLog(path, out)
 	return nil
 }

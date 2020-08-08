@@ -285,6 +285,18 @@ func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string,kind Attrib
 	return err
 }
 
+func (mine *ConceptInfo)UpdateAttributes(attributes []string) error {
+	if attributes == nil {
+		return errors.New("the attributes is nil when update")
+	}
+
+	err := nosql.UpdateConceptAttributes(mine.UID, attributes)
+	if err == nil {
+		mine.attributes = attributes
+	}
+	return err
+}
+
 func (mine *ConceptInfo)AppendAttribute(info *AttributeInfo) error {
 	if info == nil {
 		return errors.New("the attribute is nil when append")

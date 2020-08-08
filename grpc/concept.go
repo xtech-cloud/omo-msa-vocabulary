@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 )
@@ -34,12 +33,13 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 }
 
 func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out *pb.ReplyConceptInfo) error {
-	inLog("concept.add", in)
+	path := "concept.addOne"
+	inLog(path, in)
 	if len(in.Parent) > 0 {
 		parent := cache.GetConcept(in.Parent)
 		if parent == nil {
-			out.ErrorCode = pb.ResultStatus_Repeated
-			return errors.New("not found the table by parent")
+			out.Status = outError(path,"not found the parent concept", pb.ResultStatus_NotExisted)
+			return nil
 		}
 
 		info := new(cache.ConceptInfo)
@@ -49,20 +49,21 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 		info.Cover = in.Cover
 		err := parent.CreateChild(info)
 		if err != nil {
-			out.ErrorCode = pb.ResultStatus_DBException
-			return err
+			out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+			return nil
 		}else{
 			out.Info = switchConcept(info)
+			out.Status = outLog(path, out)
 		}
 	}else{
 		if len(in.Table) > 0 && cache.HadConceptByTable(in.Table) {
-			out.ErrorCode = pb.ResultStatus_Repeated
-			return errors.New("the table name is repeated")
+			out.Status = outError(path,"the table name is repeated", pb.ResultStatus_Repeated)
+			return nil
 		}
 
 		if cache.HadConceptByName(in.Name) {
-			out.ErrorCode = pb.ResultStatus_Repeated
-			return errors.New("the concept name is repeated")
+			out.Status = outError(path,"the concept name is repeated", pb.ResultStatus_Repeated)
+			return nil
 		}
 
 		info := new(cache.ConceptInfo)
@@ -74,37 +75,43 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 		err := cache.CreateTopConcept(info)
 		if err == nil {
 			out.Info = switchConcept(info)
+			out.Status = outLog(path, out)
 		}else{
-			out.ErrorCode = pb.ResultStatus_DBException
+			out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
 		}
 	}
 	return nil
 }
 
 func (mine *ConceptService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyConceptInfo) error {
+	path := "concept.getOne"
+	inLog(path, in)
 	info := cache.GetConcept(in.Uid)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the concept")
+		out.Status = outError(path,"not found the concept by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	out.Info = switchConcept(info)
+	out.Status = outLog(path, out)
 	return nil
 }
 
 func (mine *ConceptService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
-	inLog("concept.remove", in)
+	path := "concept.removeOne"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the concept uid is empty")
+		out.Status = outError(path,"the concept uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 
 	err := cache.RemoveConcept(in.Uid, in.Operator)
-	if err == nil {
-		out.Uid = in.Uid
-	}else {
-		out.ErrorCode = pb.ResultStatus_DBException
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
-	return err
+	out.Uid = in.Uid
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *ConceptService)GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyConceptList) error {
@@ -113,61 +120,44 @@ func (mine *ConceptService)GetAll(ctx context.Context, in *pb.RequestInfo, out *
 	for _, value := range all {
 		out.List = append(out.List, switchConcept(value))
 	}
-
+	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
 	return nil
 }
 
 func (mine *ConceptService)Update(ctx context.Context, in *pb.ReqConceptUpdate, out *pb.ReplyConceptInfo) error {
-	inLog("concept.update", in)
+	path := "concept.update"
+	inLog(path, in)
 	info := cache.GetConcept(in.Uid)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the concept")
+		out.Status = outError(path,"not found the concept by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	err := info.UpdateBase(in.Name, in.Remark, in.Operator, uint8(in.Type))
 	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
-		return err
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Info = switchConcept(info)
-	outLog("concept.update", out)
+	out.Status = outLog(path, out)
 	return nil
 }
 
-func (mine *ConceptService)AppendAttribute(ctx context.Context, in *pb.ReqConceptAttribute, out *pb.ReplyConceptAttribute) error {
+func (mine *ConceptService)UpdateAttributes(ctx context.Context, in *pb.ReqConceptAttrs, out *pb.ReplyConceptAttrs) error {
+	path := "concept.updateAttributes"
+	inLog(path, in)
 	info := cache.GetConcept(in.Concept)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the concept by uid when append attribute")
+		out.Status = outError(path,"not found the concept by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
-	attr := cache.GetAttribute(in.Uid)
-	if attr == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the attribute by uid")
-	}
-	err := info.AppendAttribute(attr)
+
+	err := info.UpdateAttributes(in.Attributes)
 	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
-	return err
+	out.Attributes = info.Attributes()
+	out.Status = outLog(path, out)
+	return nil
 }
 
-func (mine *ConceptService)RemoveAttribute(ctx context.Context, in *pb.ReqConceptAttribute, out *pb.ReplyConceptAttribute) error {
-	info := cache.GetConcept(in.Concept)
-	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the concept by uid when append attribute")
-	}
-	attr := cache.GetAttribute(in.Uid)
-	if attr == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the attribute by uid")
-	}
-	err := info.RemoveAttribute(attr.UID)
-	out.Uid = in.Uid
-	out.Concept = in.Concept
-	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
-	}
-	return err
-}

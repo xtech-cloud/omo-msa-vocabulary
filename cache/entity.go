@@ -94,9 +94,9 @@ func AllEntities() []*EntityInfo {
 	return cacheCtx.entities
 }
 
-func HadEntityByName(name string) bool {
+func HadEntityByName(name, add string) bool {
 	for i := 0; i < len(cacheCtx.entities); i++ {
-		if cacheCtx.entities[i].Name == name {
+		if cacheCtx.entities[i].Name == name || cacheCtx.entities[i].Add == add {
 			return true
 		}
 	}

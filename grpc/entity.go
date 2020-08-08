@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
@@ -45,14 +44,12 @@ func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
 	return tmp
 }
 
-func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityOne) error {
-	inLog("entity.add", in)
-	tmp := cache.GetEntityByName(in.Name)
-	if tmp != nil {
-		if tmp.Concept == in.Name {
-			out.ErrorCode = pb.ResultStatus_Repeated
-			return errors.New("the entity is existed")
-		}
+func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityInfo) error {
+	path := "entity.addOne"
+	inLog(path, in)
+	if cache.HadEntityByName(in.Name, in.Add){
+		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
+		return nil
 	}
 	info := new(cache.EntityInfo)
 	info.Name = in.Name
@@ -67,44 +64,51 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 	info.Status = cache.EntityStatusIdle
 	err := cache.CreateEntity(info)
 	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
-		return err
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Info = switchEntity(info)
+	out.Status = outLog(path, out)
 	return nil
 }
 
-func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityOne) error {
-	inLog("entity.one", in)
+func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
+	path := "entity.getOne"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	out.Info = switchEntity(info)
+	out.Status = outLog(path, out)
 	return nil
 }
 
 func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
-	inLog("entity.remove", in)
+	path := "entity.removeOne"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 	err := cache.RemoveEntity(in.Uid, in.Operator)
 	out.Uid = in.Uid
 	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
-	return err
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy, out *pb.ReplyEntityAll) error {
-	inLog("entity.getByOwner", in)
+	path := "entity.getByOwner"
+	inLog(path, in)
 	out.Flag = in.Owner
 	out.List = make([]*pb.EntityInfo, 0, 10)
 	if len(in.Owner) > 0 {
@@ -120,37 +124,44 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 			}
 		}
 	}
+	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
 	return nil
 }
 
 func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.ReqEntityUpdate, out *pb.ReplyEntityUpdate) error {
-	inLog("entity.tags", in)
+	path := "entity.updateTags"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	err := info.UpdateTags(in.List, in.Operator)
 	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
-	return err
+	out.Uid = info.UID
+	out.List = info.Tags
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, out *pb.ReplyInfo) error {
-	inLog("entity.base", in)
+	path := "entity.updateBase"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	var err error
 	if len(in.Cover) > 0 {
@@ -160,99 +171,115 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 	}
 
 	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
-	return err
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStatus, out *pb.ReplyEntityStatus) error {
-	inLog("entity.status", in)
+	path := "entity.updateStatus"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		//out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
-		//out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	err := info.UpdateStatus(cache.EntityStatus(in.Status), in.Operator)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
 	out.Uid = in.Uid
-	out.Status = in.Status
-	return err
+	out.State = in.Status
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.ReqEntityUpdate, out *pb.ReplyEntityUpdate) error {
-	inLog("entity.synonyms", in)
+	path := "entity.updateSynonyms"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	err := info.UpdateSynonyms(in.List, in.Operator)
 	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
-	return err
+	out.Uid = info.UID
+	out.List = info.Synonyms
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityProperty, out *pb.ReplyEntityProperties) error {
-	inLog("entity.append.property", in)
+	path := "entity.appendProp"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	if info.HadProperty(in.Property.Key) {
-		out.ErrorCode = pb.ResultStatus_Repeated
-		return errors.New("the key of entity is existed")
+		out.Status = outError(path, "the property had existed", pb.ResultStatus_Repeated)
+		return nil
 	}
 	words := make([]proxy.WordInfo, 0, len(in.Property.Words))
 	for _, value := range in.Property.Words {
 		words = append(words, proxy.WordInfo{UID:value.Uid, Name:value.Name})
 	}
 	err := info.AddProperty(in.Property.Key, words)
-	if err == nil {
-		out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties()))
-		for _, value := range info.Properties() {
-			tmp := switchEntityProperty(value)
-			out.Properties = append(out.Properties, tmp)
-		}
-	}else{
-		out.ErrorCode = pb.ResultStatus_DBException
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
-
-	return err
+	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties()))
+	for _, value := range info.Properties() {
+		tmp := switchEntityProperty(value)
+		out.Properties = append(out.Properties, tmp)
+	}
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *EntityService)SubtractProperty(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityProperties) error {
-	inLog("entity.subtract.property", in)
+	path := "entity.subtractProp"
+	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.ErrorCode = pb.ResultStatus_Empty
-		return errors.New("the entity uid is empty")
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
 	}
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
-		out.ErrorCode = pb.ResultStatus_NotExisted
-		return errors.New("not found the entity by uid")
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	err := info.RemoveProperty(in.Key)
 	if err != nil {
-		out.ErrorCode = pb.ResultStatus_DBException
-	}else{
-		out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties()))
-		for _, value := range info.Properties() {
-			tmp := switchEntityProperty(value)
-			out.Properties = append(out.Properties, tmp)
-		}
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
-	return err
+	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties()))
+	for _, value := range info.Properties() {
+		tmp := switchEntityProperty(value)
+		out.Properties = append(out.Properties, tmp)
+	}
+	out.Status = outLog(path, out)
+	return nil
 }

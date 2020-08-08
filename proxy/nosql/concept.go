@@ -114,6 +114,15 @@ func RemoveConcept(uid, operator string) error {
 	return err
 }
 
+func UpdateConceptAttributes(uid string, attrs []string) error {
+	if len(uid) < 1 {
+		return errors.New("the uid is empty")
+	}
+	msg := bson.M{"attributes": attrs, "updatedAt": time.Now()}
+	_, err := updateOne(TableConcept, uid, msg)
+	return err
+}
+
 func AppendConceptAttribute(uid string, attr string) error {
 	if len(uid) < 1 {
 		return errors.New("the uid is empty")

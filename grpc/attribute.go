@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 )
@@ -24,16 +23,15 @@ func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 	return tmp
 }
 
-func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd, out *pb.ReplyAttributeOne) error {
-	inLog("attribute.add", in)
+func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd, out *pb.ReplyAttributeInfo) error {
+	path := "attribute.addOne"
+	inLog(path, in)
 	if cache.HadAttribute(in.Key) {
-		out.ErrorCode = pb.ResultStatus_Repeated
-		// return errors.New("the key of attribute is repeated")
+		out.Status = outError(path, "the key of attribute is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
 	if cache.HadAttributeByName(in.Name) {
-		out.ErrorCode = pb.ResultStatus_Repeated
-		// return errors.New("the attribute name is repeated")
+		out.Status = outError(path, "the name of attribute is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
 	info := new(cache.AttributeInfo)
@@ -46,40 +44,49 @@ func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd,
 	err := cache.CreateAttribute(info)
 	if err == nil {
 		out.Info = switchAttribute(info)
+		out.Status = outLog(path, out)
 	}else{
-		out.ErrorCode = pb.ResultStatus_DBException
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 	}
-	outLog("attribute.add", out)
 	return nil
 }
 
-func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeOne) error {
+func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeInfo) error {
+	path := "attribute.getOne"
+	inLog(path, in)
 	if len(in.Uid) > 0 {
 		info := cache.GetAttribute(in.Uid)
 		if info == nil {
-			out.ErrorCode  = pb.ResultStatus_NotExisted
-			return errors.New("not found the attribute by uid")
+			out.Status = outError(path,"not found the attribute by uid", pb.ResultStatus_NotExisted)
+			return nil
 		}
 		out.Info = switchAttribute(info)
+		out.Status = outLog(path, out)
 	}else if len(in.Key) > 0 {
 		info := cache.GetAttributeByKey(in.Key)
 		if info == nil {
-			out.ErrorCode  = pb.ResultStatus_NotExisted
-			return errors.New("nou found the attribute by key")
+			out.Status = outError(path,"not found the attribute by key", pb.ResultStatus_NotExisted)
+			return nil
 		}
 		out.Info = switchAttribute(info)
+		out.Status = outLog(path, out)
 	}else{
-		out.ErrorCode  = pb.ResultStatus_Empty
-		return errors.New("the uid or key all is empty")
+		out.Status = outError(path,"param is empty", pb.ResultStatus_Empty)
 	}
 	return nil
 }
 
 func (mine *AttributeService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
-	inLog("attribute.remove", in)
+	path := "attribute.removeOne"
+	inLog(path, in)
 	err := cache.RemoveAttribute(in.Uid, in.Operator)
+	if err != nil {
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
 	out.Uid = in.Uid
-	return err
+	out.Status = outLog(path, out)
+	return nil
 }
 
 func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeList) error {
@@ -87,21 +94,25 @@ func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *p
 	for _, value := range cache.AllAttributes() {
 		out.List = append(out.List, switchAttribute(value))
 	}
+	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
 	return nil
 }
 
-func (mine *AttributeService)Update(ctx context.Context, in *pb.ReqAttributeUpdate, out *pb.ReplyAttributeOne) error {
-	inLog("attribute.update", in)
+func (mine *AttributeService)Update(ctx context.Context, in *pb.ReqAttributeUpdate, out *pb.ReplyAttributeInfo) error {
+	path := "attribute.update"
+	inLog(path, in)
 	info := cache.GetAttribute(in.Uid)
 	if info == nil {
-		out.ErrorCode  = pb.ResultStatus_NotExisted
-		return errors.New("not found the attribute by uid")
+		out.Status = outError(path,"not found the attribute by uid", pb.ResultStatus_NotExisted)
+		return nil
 	}
 	err := info.UpdateBase(in.Name, in.Remark, in.Begin, in.End, in.Operator)
 	if err != nil {
-		return err
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Info = switchAttribute(info)
+	out.Status = outLog(path, out)
 	return nil
 }
 

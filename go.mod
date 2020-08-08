@@ -15,7 +15,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/tidwall/gjson v1.6.0
-	github.com/xtech-cloud/omo-msp-vocabulary v1.1.6
+	github.com/xtech-cloud/omo-msp-vocabulary v1.2.0
 	go.mongodb.org/mongo-driver v1.3.4
 	google.golang.org/protobuf v1.24.0 // indirect
 	gopkg.in/yaml.v2 v2.2.4
