@@ -89,8 +89,21 @@ func (mine *EventInfo)AppendRelation(relation *proxy.RelationCaseInfo) error {
 	err := nosql.AppendEventRelation(mine.UID, relation)
 	if err == nil {
 		mine.Relations = append(mine.Relations, *relation)
+		tmp := GetRelation(relation.Category)
+		if tmp != nil {
+			go createLink(mine.Parent, relation.Entity, switchRelationToLink(tmp.Kind),tmp.Name, relation.Name, relation.Direction )
+		}
 	}
 	return err
+}
+
+func  createLink(from, to string, kind LinkType, name, relation string, dire uint8)  {
+	fromNode := GetGraphNode(from)
+	toNode := GetGraphNode(to)
+	_, err := CreateLink(fromNode, toNode, kind, name, relation, DirectionType(dire))
+	if err != nil {
+
+	}
 }
 
 func (mine *EventInfo)SubtractRelation(relation string) error {

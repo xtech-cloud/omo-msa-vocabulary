@@ -81,7 +81,7 @@ func InitData() error {
 	}
 	logger.Infof("init attribute!!! number = %d", len(cacheCtx.attributes))
 
-	relations,_ := nosql.GetAllRelations()
+	relations,_ := nosql.GetTopRelations()
 	for i := 0; i < len(relations); i += 1 {
 		info := new(RelationshipInfo)
 		info.initInfo(relations[i])

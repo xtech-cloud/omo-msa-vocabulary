@@ -11,14 +11,14 @@ import (
 实体填写的属性值
 */
 type PropertyInfo struct {
-	Key   string     `json:"key" bson:"key"`
+	Key   string     `json:"key" bson:"key"`  // 属性UID
 	Words []WordInfo `json:"values" bson:"values"`
 }
 
 type WordInfo struct {
 	// 实体UID,如果存在说明该属性对应一个实体
-	UID  string `json:"key" bson:"key"`
-	Name string `json:"value" bson:"value"`
+	UID  string `json:"uid" bson:"uid"`
+	Name string `json:"name" bson:"name"`
 }
 
 type PairInfo struct {

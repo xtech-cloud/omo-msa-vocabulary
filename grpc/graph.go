@@ -81,6 +81,46 @@ func (mine *GraphService)AddLink(ctx context.Context, in *pb.ReqLinkAdd, out *pb
 	return nil
 }
 
+func (mine *GraphService)GetNode(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyNodeInfo) error {
+	path := "graph.getNode"
+	inLog(path, in)
+	var node *cache.NodeInfo
+	if in.Id > 0 {
+		node = cache.Graph().GetNodeByID(int64(in.Id))
+	} else if len(in.Uid) > 0 {
+		node = cache.Graph().GetNode(in.Uid)
+	} else if len(in.Key) > 0 {
+		node = cache.Graph().GetNodeByName(in.Key)
+	}
+
+	if node == nil {
+		out.Status = outError(path, "not found the node", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	out.Info = switchNode(node)
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *GraphService)GetLink(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyLinkInfo) error {
+	path := "graph.getLink"
+	inLog(path, in)
+	var link *cache.LinkInfo
+	if in.Id > 0 {
+		link = cache.Graph().GetRelation(int64(in.Id))
+	} else if len(in.Uid) > 0 {
+		link = cache.Graph().GetRelationByEntity(in.Uid)
+	}
+
+	if link == nil {
+		out.Status = outError(path, "not found the link", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	out.Info = switchLink(link)
+	out.Status = outLog(path, out)
+	return nil
+}
+
 func (mine *GraphService)RemoveNode(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "graph.removeNode"
 	inLog(path, in)
@@ -140,5 +180,18 @@ func (mine *GraphService)FindGraph(ctx context.Context, in *pb.RequestInfo, out 
 		out.Graph = switchGraph(graph)
 		out.Status = outLog(path, out)
 	}
+	return nil
+}
+
+func (mine *GraphService)FindNodes(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyGraphInfo) error {
+	path := "graph.findNodes"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path,"the owner uid is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	graph:= cache.Graph().GetOwnerGraph(in.Uid)
+	out.Graph = switchGraph(graph)
+	out.Status = outLog(path, out)
 	return nil
 }

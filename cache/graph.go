@@ -71,7 +71,7 @@ func (mine *GraphInfo)GetSubGraph(entity string) (*GraphInfo,error) {
 	var g = new(GraphInfo)
 	g.construct()
 	g.SetCenter(center.EntityUID)
-	db,err := proxy.FindGraph(entity, switchEntityName(en.Concept))
+	db,err := proxy.FindGraph(entity, switchEntityLabel(en.Concept))
 	if err == nil {
 		for _, node := range db.Nodes {
 			n := new(NodeInfo)
@@ -87,6 +87,30 @@ func (mine *GraphInfo)GetSubGraph(entity string) (*GraphInfo,error) {
 		}
 	}
 	return g,err
+}
+
+func (mine *GraphInfo)GetOwnerGraph(owner string) *GraphInfo {
+	list := GetEntitiesByOwner(owner)
+	var g = new(GraphInfo)
+	g.construct()
+	for _, info := range list {
+		db,err := proxy.FindGraph(info.UID, switchEntityLabel(info.Concept))
+		if err == nil {
+			for _, node := range db.Nodes {
+				n := new(NodeInfo)
+				n.initInfo(node)
+				mine.AddNode(n)
+				g.AddNode(n)
+			}
+			for _, link := range db.Links {
+				l := new(LinkInfo)
+				l.initInfo(link,g.GetNodeByID(link.From).EntityUID, g.GetNodeByID(link.To).EntityUID)
+				mine.AddEdge(l)
+				g.AddEdge(l)
+			}
+		}
+	}
+	return g
 }
 
 func (mine *GraphInfo)GetPath(from ,to string) (*GraphInfo,error) {
@@ -138,7 +162,7 @@ func (mine *GraphInfo)GetNode(uid string) *NodeInfo {
 	if tmp != nil {
 		node := new(NodeInfo)
 		node.initInfo(tmp)
-		mine.nodes = append(mine.nodes, node)
+		mine.AddNode(node)
 		return node
 	}
 	return nil
@@ -154,7 +178,7 @@ func (mine *GraphInfo)GetNodeByID(id int64) *NodeInfo {
 	if tmp != nil {
 		node := new(NodeInfo)
 		node.initInfo(tmp)
-		mine.nodes = append(mine.nodes, node)
+		mine.AddNode(node)
 		return node
 	}
 	return nil
@@ -169,7 +193,7 @@ func (mine *GraphInfo)GetNodeByName(name string) *NodeInfo {
 	return nil
 }
 
-func (mine *GraphInfo)GetRelation(node string) *LinkInfo {
+func (mine *GraphInfo) GetRelationByEntity(node string) *LinkInfo {
 	for i := 0;i < len(mine.links);i += 1 {
 		if mine.links[i].HadNode(node) {
 			return mine.links[i]
@@ -178,7 +202,7 @@ func (mine *GraphInfo)GetRelation(node string) *LinkInfo {
 	return nil
 }
 
-func (mine *GraphInfo)Relation(id int64) *LinkInfo {
+func (mine *GraphInfo) GetRelation(id int64) *LinkInfo {
 	for i := 0;i < len(mine.links);i += 1 {
 		if mine.links[i].ID == id {
 			return mine.links[i]
@@ -279,11 +303,29 @@ func (mine *GraphInfo) CreateLink(from,to *NodeInfo,kind LinkType, name, relatio
 }
 
 func (mine *GraphInfo)RemoveLink(id int64) error {
-	return proxy.RemoveLink(id)
+	err := proxy.RemoveLink(id)
+	if err == nil {
+		for i := 0;i < len(mine.links);i += 1 {
+			if mine.links[i].ID == id {
+				mine.links = append(mine.links[:i], mine.links[i:]...)
+				break
+			}
+		}
+	}
+	return err
 }
 
 func (mine *GraphInfo)RemoveNode(id int64, label string) error {
-	return proxy.RemoveNode(id, label)
+	err := proxy.RemoveNode(id, label)
+	if err == nil {
+		for i := 0;i < len(mine.nodes);i += 1 {
+			if mine.nodes[i].ID == id {
+				mine.nodes = append(mine.nodes[:i], mine.nodes[i:]...)
+				break
+			}
+		}
+	}
+	return err
 }
 
 func (mine *GraphInfo)AddNode(node *NodeInfo)  {

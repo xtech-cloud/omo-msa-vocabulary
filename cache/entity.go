@@ -34,15 +34,15 @@ type EntityInfo struct {
 	events      []*EventInfo
 }
 
-func switchEntityName(concept string) string {
+func switchEntityLabel(concept string) string {
 	if len(concept) < 1 {
-		return "entities"
+		return DefaultEntityTable
 	} else {
-		top := GetTopConcept(concept)
+		top := GetConcept(concept)
 		if top != nil {
-			return top.Table
+			return top.Label()
 		} else {
-			return "entities"
+			return DefaultEntityTable
 		}
 	}
 }
@@ -103,7 +103,7 @@ func HadEntityByName(name, add string) bool {
 	return false
 }
 
-func GetEntityByName(name string) *EntityInfo {
+func GetEntityByName(name, add string) *EntityInfo {
 	if len(name) < 1 {
 		return nil
 	}
@@ -113,6 +113,16 @@ func GetEntityByName(name string) *EntityInfo {
 		}
 	}
 	return nil
+}
+
+func GetEntitiesByOwner(owner string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 10)
+	for _, value := range cacheCtx.entities {
+		if value.Owner == owner {
+			list = append(list, value)
+		}
+	}
+	return list
 }
 
 func GetEntity(uid string) *EntityInfo {
@@ -194,7 +204,7 @@ func createSampleEntity(name string, concept string) (*EntityInfo, *NodeInfo, er
 		return nil, nil, errors.New("the entity name is nil")
 	}
 	var info *EntityInfo
-	info = GetEntityByName(name)
+	info = GetEntityByName(name, "")
 	var node *NodeInfo
 	var err error
 	if info == nil {
@@ -443,7 +453,7 @@ func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
 	return err
 }
 
-func (mine *EntityInfo) AddProperties(array []*proxy.PropertyInfo, operator string) error {
+func (mine *EntityInfo) UpdateProperties(array []*proxy.PropertyInfo, operator string) error {
 	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, operator, array)
 	if err == nil {
 		mine.properties = array
@@ -455,12 +465,12 @@ func (mine *EntityInfo) Properties() []*proxy.PropertyInfo {
 	return mine.properties
 }
 
-func (mine *EntityInfo) HadProperty(key string) bool {
+func (mine *EntityInfo) HadProperty(attribute string) bool {
 	if mine.properties == nil {
 		return false
 	}
 	for i := 0; i < len(mine.properties); i += 1 {
-		if mine.properties[i].Key == key {
+		if mine.properties[i].Key == attribute {
 			return true
 		}
 	}
@@ -479,17 +489,17 @@ func (mine *EntityInfo) HadPropertyByEntity(uid string) bool {
 	return false
 }
 
-func (mine *EntityInfo) RemoveProperty(key string) error {
+func (mine *EntityInfo) RemoveProperty(attribute string) error {
 	if mine.properties == nil {
 		return errors.New("must call construct fist")
 	}
-	if !mine.HadProperty(key) {
+	if !mine.HadProperty(attribute) {
 		return errors.New("not found the property when remove")
 	}
-	err := nosql.SubtractEntityProperty(mine.table(), mine.UID, key)
+	err := nosql.SubtractEntityProperty(mine.table(), mine.UID, attribute)
 	if err == nil {
 		for i := 0; i < len(mine.properties); i += 1 {
-			if mine.properties[i].Key == key {
+			if mine.properties[i].Key == attribute {
 				mine.properties = append(mine.properties[:i], mine.properties[i+1:]...)
 				break
 			}
@@ -498,12 +508,12 @@ func (mine *EntityInfo) RemoveProperty(key string) error {
 	return err
 }
 
-func (mine *EntityInfo) GetProperty(key string) *proxy.PropertyInfo {
+func (mine *EntityInfo) GetProperty(attribute string) *proxy.PropertyInfo {
 	if mine.properties == nil {
 		return nil
 	}
 	for i := 0; i < len(mine.properties); i += 1 {
-		if mine.properties[i].Key == key {
+		if mine.properties[i].Key == attribute {
 			return mine.properties[i]
 		}
 	}

@@ -36,7 +36,7 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 
 func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
 	tmp := new(pb.PropertyInfo)
-	tmp.Key = info.Key
+	tmp.Uid = info.Key
 	tmp.Words = make([]*pb.WordInfo, 0, len(info.Words))
 	for _, value := range info.Words {
 		tmp.Words = append(tmp.Words, &pb.WordInfo{Uid:value.UID, Name:value.Name})
@@ -82,6 +82,23 @@ func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 	info := cache.GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	out.Info = switchEntity(info)
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EntityService)GetByName(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
+	path := "entity.getByName"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	info := cache.GetEntityByName(in.Uid, in.Key)
+	if info == nil {
+		out.Status = outError(path,"not found the entity by name", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	out.Info = switchEntity(info)
@@ -147,6 +164,43 @@ func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.ReqEntityUpdate
 	}
 	out.Uid = info.UID
 	out.List = info.Tags
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntityProperties, out *pb.ReplyEntityProperties) error {
+	path := "entity.updateTags"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	info := cache.GetEntity(in.Uid)
+	if info == nil {
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	list := make([]*proxy.PropertyInfo, 0, len(in.Properties))
+	for _, value := range in.Properties {
+		prop := new(proxy.PropertyInfo)
+		prop.Key = value.Uid
+		prop.Words = make([]proxy.WordInfo, 0, len(value.Words))
+		for _, word := range value.Words {
+			prop.Words = append(prop.Words, proxy.WordInfo{UID:word.Uid, Name:word.Name})
+		}
+		list = append(list, prop)
+	}
+	err := info.UpdateProperties(list, "")
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Uid = info.UID
+	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties()))
+	for _, value := range info.Properties() {
+		tmp := switchEntityProperty(value)
+		out.Properties = append(out.Properties, tmp)
+	}
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -236,7 +290,7 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	if info.HadProperty(in.Property.Key) {
+	if info.HadProperty(in.Property.Uid) {
 		out.Status = outError(path, "the property had existed", pb.ResultStatus_Repeated)
 		return nil
 	}
@@ -244,7 +298,7 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 	for _, value := range in.Property.Words {
 		words = append(words, proxy.WordInfo{UID:value.Uid, Name:value.Name})
 	}
-	err := info.AddProperty(in.Property.Key, words)
+	err := info.AddProperty(in.Property.Uid, words)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil

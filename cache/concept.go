@@ -10,6 +10,22 @@ import (
 	"time"
 )
 
+const (
+	ConceptTypeUnknown = 0
+	ConceptTypePersonal = 1
+	ConceptTypeUtensil  = 2  // 器物
+	ConceptTypeEvent    = 3  //事件
+	ConceptTypeOrganize = 4  // 组织
+	ConceptTypeIdea     = 5  //思想理论
+	ConceptTypeBook     = 6  //经籍著作
+	ConceptTypeCulture  = 7  //文化
+	ConceptTypeFaction  = 8  //派别
+	ConceptTypeNature   = 9  //自然
+	ConceptTypeHonor    = 10 //荣誉奖项
+	ConceptTypePlace    = 11 //地理位置
+	ConceptTypeEra      = 12 // 时代
+)
+
 type ConceptInfo struct {
 	BaseInfo
 	Type uint8
@@ -17,6 +33,7 @@ type ConceptInfo struct {
 	Remark   string
 	Table    string
 	Parent   string
+	Scene    uint8  // 针对的场景类型
 	attributes    []string
 	children []*ConceptInfo
 }
@@ -96,7 +113,8 @@ func CreateTopConcept(info *ConceptInfo) error {
 	db.Cover = info.Cover
 	db.Remark = info.Remark
 	db.Parent = ""
-	db.Type = uint8(info.Type)
+	db.Scene = info.Scene
+	db.Type = info.Type
 	db.Attributes = make([]string, 0, 5)
 	err := nosql.CreateConcept(db)
 	if err == nil {
@@ -168,6 +186,7 @@ func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
 	mine.Creator = db.Creator
 	mine.Parent = db.Parent
 	mine.attributes = db.Attributes
+	mine.Scene = db.Scene
 
 	array, err := nosql.GetConceptsByParent(mine.UID)
 	num := len(array)
@@ -203,6 +222,36 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 		mine.children = append(mine.children, info)
 	}
 	return err
+}
+
+func (mine *ConceptInfo)Label() string {
+	if mine.Type == ConceptTypePersonal {
+		return "personals"
+	} else if mine.Type == ConceptTypeUtensil {
+		return "utensils"
+	} else if mine.Type == ConceptTypeEvent {
+		return "events"
+	} else if mine.Type == ConceptTypeOrganize {
+		return "organizations"
+	} else if mine.Type == ConceptTypeIdea {
+		return "ideas"
+	} else if mine.Type == ConceptTypeBook {
+		return "books"
+	} else if mine.Type == ConceptTypeCulture {
+		return "culture"
+	} else if mine.Type == ConceptTypeFaction {
+		return "factions"
+	} else if mine.Type == ConceptTypeNature {
+		return "nature"
+	} else if mine.Type == ConceptTypeHonor {
+		return "honors"
+	} else if mine.Type == ConceptTypePlace {
+		return "places"
+	} else if mine.Type == ConceptTypeEra {
+		return "eras"
+	} else {
+		return "others"
+	}
 }
 
 func (mine *ConceptInfo) RemoveChild(uid string) bool {
@@ -264,8 +313,8 @@ func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string,kind Attrib
 	if mine.attributes == nil {
 		return errors.New("must call construct fist")
 	}
-	if HadAttribute(key) {
-		return errors.New("the attribute key is repeated")
+	if HadAttributeByName(key) {
+		return errors.New("the attribute name is repeated")
 	}
 
 	info := new(AttributeInfo)
@@ -380,13 +429,14 @@ func (mine *ConceptInfo) RemoveAttribute(uid string) error {
 	return err
 }
 
-func (mine *ConceptInfo) UpdateBase(name, remark,operator string, kind uint8) error {
-	err := nosql.UpdateConceptBase(mine.UID, name, remark, operator, kind)
+func (mine *ConceptInfo) UpdateBase(name, remark,operator string, kind, scene uint8) error {
+	err := nosql.UpdateConceptBase(mine.UID, name, remark, operator, kind, scene)
 	if err == nil {
 		mine.Name = name
 		mine.Remark = remark
 		mine.Operator = operator
 		mine.Type = kind
+		mine.Scene = scene
 	}
 	return err
 }

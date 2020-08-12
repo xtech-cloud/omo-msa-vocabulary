@@ -76,8 +76,8 @@ func RemoveAttribute(uid, operator string) error {
 	return err
 }
 
-func UpdateAttributeBase(uid, name, desc, begin, end, operator string) error {
-	msg := bson.M{"name": name, "remark": desc,"begin": begin,"end": end,"operator": operator, "updatedAt": time.Now()}
+func UpdateAttributeBase(uid, name, desc, begin, end, operator string, kind uint8) error {
+	msg := bson.M{"name": name, "remark": desc, "type":kind, "begin": begin,"end": end,"operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableAttribute, uid, msg)
 	return err
 }

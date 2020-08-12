@@ -23,6 +23,7 @@ type Concept struct {
 	Remark string                `json:"remark" bson:"remark"`
 	Table  string                `json:"table" bson:"table"`
 	Parent string                `json:"parent" bson:"parent"`
+	Scene  uint8 				 `json:"scene" bson:"scene"`
 	Attributes  []string `json:"attributes" bson:"attributes"`
 }
 
@@ -97,8 +98,8 @@ func HadConceptByName(name string) (bool, error) {
 	return hadOne(TableConcept, msg)
 }
 
-func UpdateConceptBase(uid, name, desc, operator string, kind uint8) error {
-	msg := bson.M{"name": name, "remark": desc,"operator":operator,"type":kind,  "updatedAt": time.Now()}
+func UpdateConceptBase(uid, name, desc, operator string, kind, scene uint8) error {
+	msg := bson.M{"name": name, "remark": desc,"operator":operator,"type":kind, "scene":scene, "updatedAt": time.Now()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }

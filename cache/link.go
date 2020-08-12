@@ -12,12 +12,9 @@ const (
 
 const (
 	LinkTypeEmpty LinkType = "Empty"
-	LinkTypeFamily  LinkType = "Family"
-	LinkTypeWork  LinkType = "Work"
-	LinkTypeLaw	  LinkType = "Law"      //
-	LinkTypeFaith  LinkType = "Faith"   //信仰
-	LinkTypeSociety LinkType = "Society"
-	LinkTypeAlone  LinkType = "Alone" //
+	LinkTypePersons  LinkType = "Persons"
+	LinkTypeEvents  LinkType = "Events"
+	LinkTypeInhuman	  LinkType = "Inhuman"      //
 )
 
 type LinkType string

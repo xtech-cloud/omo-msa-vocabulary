@@ -56,15 +56,6 @@ func AllAttributes() []*AttributeInfo {
 	return cacheCtx.attributes
 }
 
-func HadAttribute(key string) bool {
-	for i := 0;i < len(cacheCtx.attributes);i += 1 {
-		if cacheCtx.attributes[i].Key == key {
-			return true
-		}
-	}
-	return false
-}
-
 func HadAttributeByName(name string) bool {
 	for i := 0;i < len(cacheCtx.attributes);i += 1 {
 		if cacheCtx.attributes[i].Name == name {
@@ -121,13 +112,14 @@ func (mine *AttributeInfo)initInfo(db *nosql.Attribute)  {
 	mine.UpdateTime = db.UpdatedTime
 }
 
-func (mine *AttributeInfo)UpdateBase(name, remark, begin, end, operator string) error {
-	err := nosql.UpdateAttributeBase(mine.UID, name, remark, begin, end, operator)
+func (mine *AttributeInfo)UpdateBase(name, remark, begin, end, operator string, kind uint8) error {
+	err := nosql.UpdateAttributeBase(mine.UID, name, remark, begin, end, operator, kind)
 	if err == nil {
 		mine.Name = name
 		mine.Remark = remark
 		mine.Begin = begin
 		mine.End = end
+		mine.Kind = AttributeType(kind)
 		mine.Operator = operator
 	}
 	return err

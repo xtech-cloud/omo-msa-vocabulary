@@ -132,7 +132,7 @@ func (mine *ConceptService)Update(ctx context.Context, in *pb.ReqConceptUpdate, 
 		out.Status = outError(path,"not found the concept by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	err := info.UpdateBase(in.Name, in.Remark, in.Operator, uint8(in.Type))
+	err := info.UpdateBase(in.Name, in.Remark, in.Operator, uint8(in.Type), 0)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil

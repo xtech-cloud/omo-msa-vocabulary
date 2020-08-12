@@ -40,7 +40,7 @@ func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, o
 	info := new(cache.RelationshipInfo)
 	info.Name = in.Name
 	info.Remark = in.Remark
-	info.Kind = uint8(in.Type)
+	info.Kind = cache.RelationType(in.Type)
 	info.Custom = in.Custom
 	err := cache.CreateRelation(in.Parent, in.Operator, info)
 	if err == nil{

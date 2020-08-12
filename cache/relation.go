@@ -7,12 +7,21 @@ import (
 	"time"
 )
 
+const (
+	RelationUnknown RelationType = 0
+	RelationPersons RelationType = 1 // 人对人
+	RelationEvents  RelationType = 2 // 人与非人
+	RelationInhuman RelationType = 3 // 非人与非人
+)
+
+type RelationType uint8
+
 type RelationshipInfo struct {
 	BaseInfo
-	Kind uint8
-	Remark string
-	Custom bool
-	Parent string
+	Kind     RelationType
+	Remark   string
+	Custom   bool
+	Parent   string
 	children []*RelationshipInfo
 }
 
@@ -31,7 +40,7 @@ func CreateRelation(parent, creator string, info *RelationshipInfo) error {
 	db.Creator = creator
 	db.Name = info.Name
 	db.Remark = info.Remark
-	db.Type = info.Kind
+	db.Type = uint8(info.Kind)
 	db.Parent = parent
 	db.Custom = info.Custom
 	err := nosql.CreateRelation(db)
@@ -39,9 +48,9 @@ func CreateRelation(parent, creator string, info *RelationshipInfo) error {
 		info.initInfo(db)
 	}
 	if len(parent) > 0 {
-		 top := GetRelation(parent)
-		 top.children = append(top.children, info)
-	}else{
+		top := GetRelation(parent)
+		top.children = append(top.children, info)
+	} else {
 		cacheCtx.relations = append(cacheCtx.relations, info)
 	}
 
@@ -49,7 +58,7 @@ func CreateRelation(parent, creator string, info *RelationshipInfo) error {
 }
 
 func HadRelation(uid string) bool {
-	for i := 0;i < len(cacheCtx.attributes);i += 1 {
+	for i := 0; i < len(cacheCtx.relations); i += 1 {
 		if cacheCtx.relations[i].UID == uid {
 			return true
 		}
@@ -58,7 +67,7 @@ func HadRelation(uid string) bool {
 }
 
 func HadRelationByName(name string) bool {
-	for i := 0;i < len(cacheCtx.attributes);i += 1 {
+	for i := 0; i < len(cacheCtx.relations); i += 1 {
 		if cacheCtx.relations[i].Name == name {
 			return true
 		}
@@ -66,13 +75,27 @@ func HadRelationByName(name string) bool {
 	return false
 }
 
+func switchRelationToLink(kind RelationType) LinkType {
+	if kind == RelationEvents {
+		return LinkTypeEvents
+	} else if kind == RelationPersons {
+		return LinkTypePersons
+	}else if kind == RelationInhuman {
+		return LinkTypeInhuman
+	}else{
+		return LinkTypeEmpty
+	}
+}
+
 func RemoveRelation(uid, operator string) error {
 	err := nosql.RemoveRelation(uid, operator)
 	if err == nil {
-		for i := 0;i < len(cacheCtx.relations);i += 1 {
+		for i := 0; i < len(cacheCtx.relations); i += 1 {
 			if cacheCtx.relations[i].UID == uid {
 				cacheCtx.relations = append(cacheCtx.relations[:i], cacheCtx.relations[i+1:]...)
 				break
+			} else if cacheCtx.relations[i].HadChild(uid) {
+				_ = cacheCtx.relations[i].RemoveChild(uid, operator)
 			}
 		}
 	}
@@ -80,15 +103,16 @@ func RemoveRelation(uid, operator string) error {
 }
 
 func GetRelation(uid string) *RelationshipInfo {
-	for _, value := range cacheCtx.relations {
-		if value.UID == uid {
-			return value
+	for i := 0; i < len(cacheCtx.relations); i += 1 {
+		child := cacheCtx.relations[i].GetChild(uid)
+		if child != nil {
+			return child
 		}
 	}
 	return nil
 }
 
-func (mine *RelationshipInfo)initInfo(db *nosql.Relation)  {
+func (mine *RelationshipInfo) initInfo(db *nosql.Relation) {
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID
 	mine.Name = db.Name
@@ -97,7 +121,7 @@ func (mine *RelationshipInfo)initInfo(db *nosql.Relation)  {
 	mine.UpdateTime = db.UpdatedTime
 	mine.Creator = db.Creator
 	mine.Operator = db.Operator
-	mine.Kind = db.Type
+	mine.Kind = RelationType(db.Type)
 	mine.Parent = db.Parent
 	array, err := nosql.GetRelationsByParent(mine.UID)
 	num := len(array)
@@ -111,8 +135,8 @@ func (mine *RelationshipInfo)initInfo(db *nosql.Relation)  {
 	}
 }
 
-func (mine *RelationshipInfo)UpdateBase(name, remark, operator string, custom bool, kind uint8) error {
-	if len(name) < 1{
+func (mine *RelationshipInfo) UpdateBase(name, remark, operator string, custom bool, kind uint8) error {
+	if len(name) < 1 {
 		name = mine.Name
 	}
 	if len(remark) < 1 {
@@ -123,25 +147,58 @@ func (mine *RelationshipInfo)UpdateBase(name, remark, operator string, custom bo
 		mine.Name = name
 		mine.Remark = remark
 		mine.Operator = operator
-		mine.Kind = kind
+		mine.Kind = RelationType(kind)
 		mine.Custom = custom
 	}
 	return err
 }
 
-func (mine *RelationshipInfo)Children() []*RelationshipInfo {
+func (mine *RelationshipInfo) deleteChild(uid string) bool {
+	for i := 0; i < len(mine.children); i += 1 {
+		if mine.children[i].UID == uid {
+			mine.children = append(mine.children[:i], mine.children[i+1:]...)
+			return true
+		}
+		if mine.children[i].HadChild(uid) {
+			return mine.children[i].deleteChild(uid)
+		}
+	}
+	return false
+}
+
+func (mine *RelationshipInfo) HadChild(uid string) bool {
+	if mine.UID == uid {
+		return true
+	}
+	for i := 0; i < len(mine.children); i += 1 {
+		if mine.children[i].HadChild(uid) {
+			return true
+		}
+	}
+	return false
+}
+
+func (mine *RelationshipInfo) GetChild(uid string) *RelationshipInfo {
+	if mine.UID == uid {
+		return mine
+	}
+	for i := 0; i < len(mine.children); i += 1 {
+		t := mine.children[i].GetChild(uid)
+		if t != nil {
+			return t
+		}
+	}
+	return nil
+}
+
+func (mine *RelationshipInfo) Children() []*RelationshipInfo {
 	return mine.children
 }
 
-func (mine *RelationshipInfo)RemoveChild(uid, operator string) error {
+func (mine *RelationshipInfo) RemoveChild(uid, operator string) error {
 	err := nosql.RemoveRelation(uid, operator)
 	if err == nil {
-		for i := 0;i < len(mine.children);i += 1 {
-			if mine.children[i].UID == uid {
-				mine.children = append(mine.children[:i], mine.children[i+1:]...)
-				break
-			}
-		}
+		mine.deleteChild(uid)
 	}
 	return err
 }

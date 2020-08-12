@@ -63,7 +63,7 @@ func switchNode(info *NodeInfo) *nodeSample {
 	sample.UID = info.EntityUID
 	tmp := GetEntity(info.EntityUID)
 	if tmp != nil {
-		sample.Type = switchEntityName(tmp.Concept)
+		sample.Type = switchEntityLabel(tmp.Concept)
 		sample.Avatar = tmp.Cover
 	}
 

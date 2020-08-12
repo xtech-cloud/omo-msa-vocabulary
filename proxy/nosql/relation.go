@@ -69,9 +69,11 @@ func GetRelation(uid string) (*Relation, error) {
 	return model, nil
 }
 
-func GetAllRelations() ([]*Relation, error) {
+func GetTopRelations() ([]*Relation, error) {
 	var items = make([]*Relation, 0, 100)
-	cursor, err1 := findAll(TableRelation, 0)
+	def := new(time.Time)
+	filter := bson.M{"parent": "", "deleteAt": def}
+	cursor, err1 := findMany(TableRelation, filter, 0)
 	if err1 != nil {
 		return nil, err1
 	}
