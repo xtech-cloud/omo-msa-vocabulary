@@ -537,8 +537,8 @@ github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f/go.mod h1:5yf
 github.com/xeipuuv/gojsonschema v1.1.0/go.mod h1:5yf86TLmAcydyeJq5YvxkGPE2fm/u4myDekKRoLuqhs=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5Qo6v2eYzo7kUS51QINcR5jNpbZS8=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/xtech-cloud/omo-msp-vocabulary v1.2.2 h1:8flz8q0BVDGBOSiJOCLChJWv9R0VrSlaPBiHmB+DHo0=
-github.com/xtech-cloud/omo-msp-vocabulary v1.2.2/go.mod h1:yAFAnRrxczZbHFm/WDtKuOa18LC3hGvCaddt57s7bsA=
+github.com/xtech-cloud/omo-msp-vocabulary v1.2.3 h1:2mB7kqWdSdhEnXo/rfg06cN1Jj6mRXzNXXnvwiQW+18=
+github.com/xtech-cloud/omo-msp-vocabulary v1.2.3/go.mod h1:yAFAnRrxczZbHFm/WDtKuOa18LC3hGvCaddt57s7bsA=
 go.etcd.io/bbolt v1.3.3 h1:MUGmc65QhB3pIlaQ5bB4LwqSj6GIonVJXpZiaKNyaKk=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.mongodb.org/mongo-driver v1.3.4 h1:zs/dKNwX0gYUtzwrN9lLiR15hCO0nDwQj5xXx+vjCdE=

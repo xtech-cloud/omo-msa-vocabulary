@@ -121,10 +121,12 @@ func CreateLink(from, to int64,kind, name string, direction uint8, relation stri
 	if neo4jCtx.session == nil {
 		return nil,errors.New("the graph session is nil that init first")
 	}
-
+	if len(kind) < 1 {
+		return nil, errors.New("the kind is empty")
+	}
 	cypher := fmt.Sprintf("MATCH (a),(b) WHERE id(a)=%d AND id(b)=%d CREATE (a)-[r:%s{name:$name, " +
 		"direction:$direction, relation:$relation}]->(b) RETURN r", from, to, kind)
-	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{"name":name, "direction":direction, "relation":relation })
+	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{ "name":name, "direction":direction, "relation":relation })
 	if err != nil {
 		return nil,err
 	}

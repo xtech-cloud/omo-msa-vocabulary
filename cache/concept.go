@@ -342,6 +342,7 @@ func (mine *ConceptInfo)UpdateAttributes(attributes []string) error {
 	err := nosql.UpdateConceptAttributes(mine.UID, attributes)
 	if err == nil {
 		mine.attributes = attributes
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -356,6 +357,7 @@ func (mine *ConceptInfo)AppendAttribute(info *AttributeInfo) error {
 	err := nosql.AppendConceptAttribute(mine.UID, info.UID)
 	if err == nil {
 		mine.attributes = append(mine.attributes, info.UID)
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -437,6 +439,7 @@ func (mine *ConceptInfo) UpdateBase(name, remark,operator string, kind, scene ui
 		mine.Operator = operator
 		mine.Type = kind
 		mine.Scene = scene
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -445,6 +448,7 @@ func (mine *ConceptInfo) UpdateCover(cover string) error {
 	err := nosql.UpdateConceptCover(mine.UID, cover)
 	if err == nil {
 		mine.Cover = cover
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }

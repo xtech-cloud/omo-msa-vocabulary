@@ -112,6 +112,7 @@ func InitData() error {
 		cacheCtx.entities = append(cacheCtx.entities, info)
 	}
 	logger.Infof("init entities!!! number = %d", len(cacheCtx.entities))
+	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
 	//initDefConcepts()
 	//readLocalExcels()
 	//exportLocalJsons()

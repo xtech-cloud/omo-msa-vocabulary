@@ -24,10 +24,7 @@ func Graph() *GraphInfo {
 	return cacheCtx.graph
 }
 
-func CreateLink(from, to *NodeInfo,kind LinkType, name string, relation string, direction DirectionType) (*LinkInfo, error) {
-	if from == nil || to == nil {
-		return nil, errors.New("the source node or target node is nil")
-	}
+func CreateLink(from, to *NodeInfo, name, relationUID string, direction DirectionType) (*LinkInfo, error) {
 	if len(name) > 0 {
 		pattern := `^[0-9]*$`
 		reg := regexp.MustCompile(pattern)
@@ -35,7 +32,12 @@ func CreateLink(from, to *NodeInfo,kind LinkType, name string, relation string, 
 			return nil, errors.New("the relation that all digit letter is baned")
 		}
 	}
-	return cacheCtx.graph.CreateLink(from, to, kind, name,relation, direction)
+	tmp := GetRelation(relationUID)
+	if tmp != nil {
+		return cacheCtx.graph.CreateLink(from, to, switchRelationToLink(tmp.Kind), name,relationUID, direction)
+	}else{
+		return nil, errors.New("not found the relation type by uid")
+	}
 }
 
 func (mine *GraphInfo) construct()  {
@@ -263,14 +265,19 @@ func (mine *GraphInfo) CreateNodeByEntity(entity *EntityInfo) (*NodeInfo,error) 
 	if entity == nil {
 		return nil, errors.New("the entity is nil")
 	}
-	return mine.CreateNode(entity.Name, entity.UID, entity.Cover, entity.table())
+	var name = entity.Name
+	if entity.Add != "" {
+		name = entity.Name + "-" + entity.Add
+	}
+	return mine.CreateNode(name, entity.UID, entity.Cover, entity.Concept)
 }
 
-func (mine *GraphInfo) CreateNode(name ,entity, cover, label string) (*NodeInfo,error) {
-	if mine.GetNodeByName(name) != nil {
+func (mine *GraphInfo) CreateNode(name ,entity, cover, concept string) (*NodeInfo,error) {
+	t := mine.GetNodeByName(name)
+	if t != nil {
 		return nil, errors.New("the node had existed")
 	}
-	node,err := proxy.CreateNode(name, label, entity)
+	node,err := proxy.CreateNode(name, switchEntityLabel(concept), entity)
 	if err != nil {
 		return nil, err
 	}
@@ -291,6 +298,9 @@ func (mine *GraphInfo) CreateLink(from,to *NodeInfo,kind LinkType, name, relatio
 
 	if mine.HadRelation(from.EntityUID, to.EntityUID, name) {
 		return nil, errors.New("the link existed")
+	}
+	if kind == ""{
+		kind = LinkTypeEmpty
 	}
 	link,err := proxy.CreateLink(from.ID, to.ID, string(kind), name,relation, uint8(direction))
 	if err != nil {

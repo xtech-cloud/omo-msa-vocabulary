@@ -11,7 +11,7 @@ const (
 )
 
 const (
-	LinkTypeEmpty LinkType = "Empty"
+	LinkTypeEmpty LinkType = "Other"
 	LinkTypePersons  LinkType = "Persons"
 	LinkTypeEvents  LinkType = "Events"
 	LinkTypeInhuman	  LinkType = "Inhuman"      //

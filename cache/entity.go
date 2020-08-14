@@ -85,9 +85,8 @@ func CreateEntity(info *EntityInfo) error {
 	return err
 }
 
-func createGraphNode(info *EntityInfo) (*NodeInfo,error) {
-	node, err := cacheCtx.graph.CreateNodeByEntity(info)
-	return node,err
+func createGraphNode(info *EntityInfo)  {
+	_, _ = cacheCtx.graph.CreateNodeByEntity(info)
 }
 
 func AllEntities() []*EntityInfo {
@@ -96,7 +95,7 @@ func AllEntities() []*EntityInfo {
 
 func HadEntityByName(name, add string) bool {
 	for i := 0; i < len(cacheCtx.entities); i++ {
-		if cacheCtx.entities[i].Name == name || cacheCtx.entities[i].Add == add {
+		if cacheCtx.entities[i].Name == name && cacheCtx.entities[i].Add == add {
 			return true
 		}
 	}
@@ -108,7 +107,7 @@ func GetEntityByName(name, add string) *EntityInfo {
 		return nil
 	}
 	for i := 0; i < len(cacheCtx.entities); i++ {
-		if cacheCtx.entities[i].Name == name {
+		if cacheCtx.entities[i].Name == name && cacheCtx.entities[i].Add == add {
 			return cacheCtx.entities[i]
 		}
 	}
@@ -199,42 +198,6 @@ func HadOwnerOfAsset(owner string) bool {
 	return false
 }
 
-func createSampleEntity(name string, concept string) (*EntityInfo, *NodeInfo, error) {
-	if len(name) < 1 {
-		return nil, nil, errors.New("the entity name is nil")
-	}
-	var info *EntityInfo
-	info = GetEntityByName(name, "")
-	var node *NodeInfo
-	var err error
-	if info == nil {
-		info = new(EntityInfo)
-		info.Construct()
-		info.Name = name
-		info.Concept = concept
-		info.Cover = ""
-		err = CreateEntity(info)
-		if err == nil {
-			node,err = createGraphNode(info)
-		}
-	}
-
-	if node == nil {
-		node = createNode(name, info.UID)
-	}
-	return info, node, err
-}
-
-func createNode(name string, entity string) *NodeInfo {
-	node := cacheCtx.graph.GetNode(entity)
-	if node != nil {
-		//fmt.Println("the node(" + name + ") is exist !")
-		return node
-	}
-	node, _ = cacheCtx.graph.CreateNode(name, entity, name+".jpg", "")
-	return node
-}
-
 func (mine *EntityInfo) Construct() {
 	mine.Tags = make([]string, 0, 5)
 	mine.events = make([]*EventInfo, 0, 10)
@@ -276,6 +239,8 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	} else {
 		mine.events = make([]*EventInfo, 0, 2)
 	}
+
+	cacheCtx.graph.GetNode(mine.UID)
 	return true
 }
 
@@ -285,13 +250,13 @@ func (mine *EntityInfo) clear() {
 
 func (mine *EntityInfo) table() string {
 	if len(mine.Concept) < 1 {
-		return "entities"
+		return DefaultEntityTable
 	} else {
 		top := GetTopConcept(mine.Concept)
 		if top != nil {
 			if len(top.Table) > 0 {
 				return top.Table
-			}else{
+			} else {
 				return DefaultEntityTable
 			}
 		} else {
@@ -308,6 +273,7 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, operator string) 
 		mine.Add = add
 		mine.Concept = concept
 		mine.Operator = operator
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -317,6 +283,7 @@ func (mine *EntityInfo) UpdateCover(cover, operator string) error {
 	if err == nil {
 		mine.Cover = cover
 		mine.Operator = operator
+		mine.UpdateTime = time.Now()
 		cacheCtx.graph.UpdateNodeCover(mine.UID, cover)
 	}
 	return err
@@ -327,6 +294,7 @@ func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
 	if err == nil {
 		mine.Tags = tags
 		mine.Operator = operator
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -336,15 +304,17 @@ func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
 	if err == nil {
 		mine.Synonyms = list
 		mine.Operator = operator
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
 
-func (mine *EntityInfo) UpdateStatus(status EntityStatus ,operator string) error {
+func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator string) error {
 	err := nosql.UpdateEntityStatus(mine.table(), mine.UID, uint8(status), operator)
 	if err == nil {
 		mine.Status = status
 		mine.Operator = operator
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -354,7 +324,7 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 	return mine.events
 }
 
-func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo,name, desc, operator string, links []proxy.RelationCaseInfo, assets []string) (*EventInfo, error) {
+func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, operator string, links []proxy.RelationCaseInfo, assets []string) (*EventInfo, error) {
 	if mine.events == nil {
 		return nil, errors.New("must call construct fist")
 	}
@@ -371,18 +341,22 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo,name
 	db.Description = desc
 	db.Relations = links
 	db.Assets = assets
+	if db.Assets == nil {
+		db.Assets = make([]string, 0, 1)
+	}
 	err := nosql.CreateEvent(db)
 	if err == nil {
 		info := new(EventInfo)
 		info.initInfo(db)
 		mine.events = append(mine.events, info)
-		//from := GetGraphNode(mine.UID)
-		//for i := 0; i < len(links); i += 1 {
-		//	node := GetGraphNode(links[i].Entity)
-		//	_, _ = CreateLink(from, node, LinkType(links[i].Category), links[i].Name, "", DirectionType(links[i].Direction))
-		//}
-		//concept := GetConceptByName("地理")
-		//_, _, _ = createSampleEntity(place.Name, concept.Name)
+
+		for i := 0; i < len(links); i += 1 {
+			relationKind := GetRelation(links[i].Category)
+			if relationKind != nil {
+				go createLink(mine.UID, links[i].Entity, switchRelationToLink(relationKind.Kind), relationKind.UID, links[i].Name, links[i].Direction)
+			}
+		}
+
 		return info, nil
 	}
 	return nil, err
@@ -391,6 +365,15 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo,name
 func (mine *EntityInfo) HadEvent(uid string) bool {
 	for i := 0; i < len(mine.events); i += 1 {
 		if mine.events[i].UID == uid {
+			return true
+		}
+	}
+	return false
+}
+
+func (mine *EntityInfo)HadEventBy(time, place string) bool {
+	for _, event := range mine.events {
+		if event.Date.Begin.String() == time && event.Place.Name == place {
 			return true
 		}
 	}
@@ -412,6 +395,7 @@ func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
 				break
 			}
 		}
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -449,6 +433,7 @@ func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
 	err := nosql.AppendEntityProperty(mine.table(), mine.UID, pair)
 	if err == nil {
 		mine.properties = append(mine.properties, &pair)
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -457,6 +442,7 @@ func (mine *EntityInfo) UpdateProperties(array []*proxy.PropertyInfo, operator s
 	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, operator, array)
 	if err == nil {
 		mine.properties = array
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -504,6 +490,7 @@ func (mine *EntityInfo) RemoveProperty(attribute string) error {
 				break
 			}
 		}
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }

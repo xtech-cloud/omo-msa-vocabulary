@@ -13,7 +13,7 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	tmp.Uid = info.UID
 	tmp.Updated = info.UpdateTime.Unix()
 	tmp.Created = info.CreateTime.Unix()
-	tmp.Type = pb.ConceptType(info.Type)
+	tmp.Type = uint32(info.Type)
 	tmp.Name = info.Name
 	tmp.Remark = info.Remark
 	tmp.Table = info.Table

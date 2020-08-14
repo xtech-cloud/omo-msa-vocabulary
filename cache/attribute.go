@@ -121,6 +121,7 @@ func (mine *AttributeInfo)UpdateBase(name, remark, begin, end, operator string, 
 		mine.End = end
 		mine.Kind = AttributeType(kind)
 		mine.Operator = operator
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }

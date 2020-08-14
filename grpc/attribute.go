@@ -19,7 +19,7 @@ func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 	tmp.Begin = info.Begin
 	tmp.End = info.End
 	tmp.Name = info.Name
-	tmp.Type = pb.AttributeType(info.Kind)
+	tmp.Type = uint32(info.Kind)
 	return tmp
 }
 

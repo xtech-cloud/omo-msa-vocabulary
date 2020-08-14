@@ -48,6 +48,10 @@ func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
+	if info.HadEventBy(in.Date.Begin, in.Place.Name) {
+		out.Status = outError(path,"the event of entity had existed", pb.ResultStatus_NotExisted)
+		return nil
+	}
 	begin := proxy.Date{}
 	end := proxy.Date{}
 	if in.Date != nil {

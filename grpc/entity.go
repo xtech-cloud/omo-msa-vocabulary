@@ -21,7 +21,7 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp.Operator = info.Operator
 	tmp.Creator = info.Creator
 	tmp.Owner = info.Owner
-	tmp.Status = pb.EntityStatus(info.Status)
+	tmp.Status = uint32(info.Status)
 	tmp.Tags = info.Tags
 	tmp.Synonyms = info.Synonyms
 	tmp.Add = info.Add

@@ -149,6 +149,7 @@ func (mine *RelationshipInfo) UpdateBase(name, remark, operator string, custom b
 		mine.Operator = operator
 		mine.Kind = RelationType(kind)
 		mine.Custom = custom
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -199,6 +200,7 @@ func (mine *RelationshipInfo) RemoveChild(uid, operator string) error {
 	err := nosql.RemoveRelation(uid, operator)
 	if err == nil {
 		mine.deleteChild(uid)
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }

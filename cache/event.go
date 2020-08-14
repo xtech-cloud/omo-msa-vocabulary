@@ -2,8 +2,10 @@ package cache
 
 import (
 	"fmt"
+	"github.com/micro/go-micro/v2/logger"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
+	"time"
 )
 
 type EventInfo struct {
@@ -59,6 +61,7 @@ func (mine *EventInfo)UpdateBase(name, remark, operator string, date proxy.DateI
 		mine.Date = date
 		mine.Place = place
 		mine.Operator = operator
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -67,6 +70,7 @@ func (mine *EventInfo)AppendAsset(asset string) error {
 	err := nosql.AppendEventAsset(mine.UID, asset)
 	if err == nil {
 		mine.Assets = append(mine.Assets, asset)
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -80,6 +84,7 @@ func (mine *EventInfo)SubtractAsset(asset string) error {
 				break
 			}
 		}
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -89,20 +94,21 @@ func (mine *EventInfo)AppendRelation(relation *proxy.RelationCaseInfo) error {
 	err := nosql.AppendEventRelation(mine.UID, relation)
 	if err == nil {
 		mine.Relations = append(mine.Relations, *relation)
+		mine.UpdateTime = time.Now()
 		tmp := GetRelation(relation.Category)
 		if tmp != nil {
-			go createLink(mine.Parent, relation.Entity, switchRelationToLink(tmp.Kind),tmp.Name, relation.Name, relation.Direction )
+			go createLink(mine.Parent, relation.Entity, switchRelationToLink(tmp.Kind),tmp.UID, relation.Name, relation.Direction )
 		}
 	}
 	return err
 }
 
-func  createLink(from, to string, kind LinkType, name, relation string, dire uint8)  {
+func createLink(from, to string, kind LinkType, relationUID, name string, dire uint8)  {
 	fromNode := GetGraphNode(from)
 	toNode := GetGraphNode(to)
-	_, err := CreateLink(fromNode, toNode, kind, name, relation, DirectionType(dire))
+	_, err := cacheCtx.graph.CreateLink(fromNode, toNode, kind, name, relationUID, DirectionType(dire))
 	if err != nil {
-
+		logger.Warn(err.Error())
 	}
 }
 
@@ -115,6 +121,7 @@ func (mine *EventInfo)SubtractRelation(relation string) error {
 				break
 			}
 		}
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }

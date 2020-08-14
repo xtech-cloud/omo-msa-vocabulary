@@ -16,11 +16,11 @@ database:
     password: pass2019
     type: mongodb
 graph:
-    name: RdGraph
+    name: RedGraph
     user: neo4j
     password: "yumei2020"
-    ip: 39.96.113.123
-    port: "11003"
+    ip: 127.0.0.1
+    port: "11005"
 basic:
   tags: 6
   synonyms: 5

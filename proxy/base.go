@@ -87,6 +87,7 @@ func (mine *Date)Parse(msg string) error {
 	}else{
 		mine.Type = 1
 	}
+	mine.Name = msg
 	array := strings.Split(msg, "/")
 	if array != nil && len(array) > 2 {
 		year,_ := strconv.ParseUint(array[0], 10, 32)

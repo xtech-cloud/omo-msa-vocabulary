@@ -88,6 +88,20 @@ func GetEntity(table string, uid string) (*Entity, error) {
 	return model, nil
 }
 
+func GetEntityByName(table string, name string) (*Entity, error) {
+	msg := bson.M{"name": name }
+	result, err := findOneBy(table, msg)
+	if err != nil {
+		return nil, err
+	}
+	model := new(Entity)
+	err1 := result.Decode(model)
+	if err1 != nil {
+		return nil, err1
+	}
+	return model, nil
+}
+
 func UpdateEntityBase(table, uid, name, remark, add, concept, operator string) error {
 	msg := bson.M{"name": name, "remark": remark, "add": add, "concept": concept, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
