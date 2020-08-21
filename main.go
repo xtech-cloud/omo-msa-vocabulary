@@ -7,6 +7,7 @@ import (
 	"github.com/micro/go-micro/v2/logger"
 	_ "github.com/micro/go-plugins/registry/consul/v2"
 	_ "github.com/micro/go-plugins/registry/etcdv3/v2"
+	"github.com/robfig/cron"
 	proto "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"io"
 	"omo.msa.vocabulary/cache"
@@ -15,6 +16,12 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+)
+
+var (
+	BuildVersion string
+	BuildTime    string
+	CommitID     string
 )
 
 func main() {
@@ -41,6 +48,8 @@ func main() {
 	_ = proto.RegisterRelationServiceHandler(service.Server(), new(grpc.RelationService))
 	_ = proto.RegisterEventServiceHandler(service.Server(), new(grpc.EventService))
 
+	checkTimer()
+
 	app, _ := filepath.Abs(os.Args[0])
 
 	BuildVersion := "1.0.1"
@@ -59,6 +68,15 @@ func main() {
 	if err := service.Run(); err != nil {
 		logger.Fatal(err)
 	}
+}
+
+func checkTimer() {
+	c := cron.New()
+	_ = c.AddFunc("*/3 * * * * ?", func() {
+		cache.Context().CheckSyncNodes()
+		cache.Context().CheckSyncLinks()
+	})
+	c.Start()
 }
 
 func md5hex(_file string) string {

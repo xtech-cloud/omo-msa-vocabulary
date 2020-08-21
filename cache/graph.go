@@ -12,19 +12,19 @@ type GraphInfo struct {
 	links  []*LinkInfo
 }
 
-func GetGraphByNode(node string) (*GraphInfo,error) {
-	return cacheCtx.graph.GetSubGraph(node)
+func (mine *cacheContext)GetGraphByNode(node string) (*GraphInfo,error) {
+	return mine.graph.GetSubGraph(node)
 }
 
-func GetGraphNode(uid string) *NodeInfo {
-	return cacheCtx.graph.GetNode(uid)
+func (mine *cacheContext)GetGraphNode(uid string) *NodeInfo {
+	return mine.graph.GetNode(uid)
 }
 
-func Graph() *GraphInfo {
-	return cacheCtx.graph
+func (mine *cacheContext)Graph() *GraphInfo {
+	return mine.graph
 }
 
-func CreateLink(from, to *NodeInfo, name, relationUID string, direction DirectionType) (*LinkInfo, error) {
+func (mine *cacheContext)CreateLink(from, to *NodeInfo, name, relationUID string, direction DirectionType) (*LinkInfo, error) {
 	if len(name) > 0 {
 		pattern := `^[0-9]*$`
 		reg := regexp.MustCompile(pattern)
@@ -32,9 +32,9 @@ func CreateLink(from, to *NodeInfo, name, relationUID string, direction Directio
 			return nil, errors.New("the relation that all digit letter is baned")
 		}
 	}
-	tmp := GetRelation(relationUID)
+	tmp := mine.GetRelation(relationUID)
 	if tmp != nil {
-		return cacheCtx.graph.CreateLink(from, to, switchRelationToLink(tmp.Kind), name,relationUID, direction)
+		return mine.graph.CreateLink(from, to, switchRelationToLink(tmp.Kind), name,relationUID, direction)
 	}else{
 		return nil, errors.New("not found the relation type by uid")
 	}
@@ -66,7 +66,7 @@ func (mine *GraphInfo)GetSubGraph(entity string) (*GraphInfo,error) {
 	if center == nil {
 		return nil,errors.New("the node is nil")
 	}
-	en := GetEntity(entity)
+	en := Context().GetEntity(entity)
 	if en == nil {
 		return nil, errors.New("the entity is nil")
 	}
@@ -92,7 +92,7 @@ func (mine *GraphInfo)GetSubGraph(entity string) (*GraphInfo,error) {
 }
 
 func (mine *GraphInfo)GetOwnerGraph(owner string) *GraphInfo {
-	list := GetEntitiesByOwner(owner)
+	list := Context().GetEntitiesByOwner(owner)
 	var g = new(GraphInfo)
 	g.construct()
 	for _, info := range list {

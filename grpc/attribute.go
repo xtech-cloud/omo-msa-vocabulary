@@ -26,7 +26,7 @@ func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd, out *pb.ReplyAttributeInfo) error {
 	path := "attribute.addOne"
 	inLog(path, in)
-	if cache.HadAttributeByName(in.Name) {
+	if cache.Context().HadAttributeByName(in.Name) {
 		out.Status = outError(path, "the name of attribute is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
@@ -37,7 +37,8 @@ func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd,
 	info.Remark = in.Remark
 	info.Begin = in.Begin
 	info.End = in.End
-	err := cache.CreateAttribute(info)
+	info.Creator = in.Operator
+	err := cache.Context().CreateAttribute(info)
 	if err == nil {
 		out.Info = switchAttribute(info)
 		out.Status = outLog(path, out)
@@ -51,7 +52,7 @@ func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out
 	path := "attribute.getOne"
 	inLog(path, in)
 	if len(in.Uid) > 0 {
-		info := cache.GetAttribute(in.Uid)
+		info := cache.Context().GetAttribute(in.Uid)
 		if info == nil {
 			out.Status = outError(path,"not found the attribute by uid", pb.ResultStatus_NotExisted)
 			return nil
@@ -59,7 +60,7 @@ func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out
 		out.Info = switchAttribute(info)
 		out.Status = outLog(path, out)
 	}else if len(in.Key) > 0 {
-		info := cache.GetAttributeByKey(in.Key)
+		info := cache.Context().GetAttributeByKey(in.Key)
 		if info == nil {
 			out.Status = outError(path,"not found the attribute by key", pb.ResultStatus_NotExisted)
 			return nil
@@ -75,7 +76,7 @@ func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out
 func (mine *AttributeService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "attribute.removeOne"
 	inLog(path, in)
-	err := cache.RemoveAttribute(in.Uid, in.Operator)
+	err := cache.Context().RemoveAttribute(in.Uid, in.Operator)
 	if err != nil {
 		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -87,7 +88,7 @@ func (mine *AttributeService)RemoveOne(ctx context.Context, in *pb.RequestInfo, 
 
 func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeList) error {
 	out.List = make([]*pb.AttributeInfo, 0, 10)
-	for _, value := range cache.AllAttributes() {
+	for _, value := range cache.Context().AllAttributes() {
 		out.List = append(out.List, switchAttribute(value))
 	}
 	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
@@ -97,7 +98,7 @@ func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *p
 func (mine *AttributeService)Update(ctx context.Context, in *pb.ReqAttributeUpdate, out *pb.ReplyAttributeInfo) error {
 	path := "attribute.update"
 	inLog(path, in)
-	info := cache.GetAttribute(in.Uid)
+	info := cache.Context().GetAttribute(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the attribute by uid", pb.ResultStatus_NotExisted)
 		return nil

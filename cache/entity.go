@@ -38,7 +38,7 @@ func switchEntityLabel(concept string) string {
 	if len(concept) < 1 {
 		return DefaultEntityTable
 	} else {
-		top := GetConcept(concept)
+		top := Context().GetConcept(concept)
 		if top != nil {
 			return top.Label()
 		} else {
@@ -47,7 +47,7 @@ func switchEntityLabel(concept string) string {
 	}
 }
 
-func CreateEntity(info *EntityInfo) error {
+func (mine *cacheContext)CreateEntity(info *EntityInfo) error {
 	if info == nil {
 		return errors.New("the entity info is nil")
 	}
@@ -79,44 +79,48 @@ func CreateEntity(info *EntityInfo) error {
 	err = nosql.CreateEntity(db, info.table())
 	if err == nil {
 		info.initInfo(db)
-		cacheCtx.entities = append(cacheCtx.entities, info)
-		go createGraphNode(info)
+		mine.entities = append(mine.entities, info)
+		mine.syncGraphNode(info)
 	}
 	return err
 }
 
-func createGraphNode(info *EntityInfo)  {
-	_, _ = cacheCtx.graph.CreateNodeByEntity(info)
+func (mine *cacheContext)syncGraphNode(info *EntityInfo)  {
+	var name = info.Name
+	if info.Add != "" {
+		name = info.Name + "-" + info.Add
+	}
+	mine.addSyncNode(info.UID, name, info.Concept, info.Cover)
 }
 
-func AllEntities() []*EntityInfo {
-	return cacheCtx.entities
+func (mine *cacheContext)AllEntities() []*EntityInfo {
+	return mine.entities
 }
 
-func HadEntityByName(name, add string) bool {
-	for i := 0; i < len(cacheCtx.entities); i++ {
-		if cacheCtx.entities[i].Name == name && cacheCtx.entities[i].Add == add {
+func (mine *cacheContext)HadEntityByName(name, add string) bool {
+	for i := 0; i < len(mine.entities); i++ {
+		if mine.entities[i].Name == name && mine.entities[i].Add == add {
 			return true
 		}
 	}
 	return false
 }
 
-func GetEntityByName(name, add string) *EntityInfo {
+func (mine *cacheContext)GetEntityByName(name, add string) *EntityInfo {
 	if len(name) < 1 {
 		return nil
 	}
-	for i := 0; i < len(cacheCtx.entities); i++ {
-		if cacheCtx.entities[i].Name == name && cacheCtx.entities[i].Add == add {
-			return cacheCtx.entities[i]
+	for i := 0; i < len(mine.entities); i++ {
+		if mine.entities[i].Name == name && mine.entities[i].Add == add {
+			return mine.entities[i]
 		}
 	}
 	return nil
 }
 
-func GetEntitiesByOwner(owner string) []*EntityInfo {
+func (mine *cacheContext)GetEntitiesByOwner(owner string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
-	for _, value := range cacheCtx.entities {
+	for _, value := range mine.entities {
 		if value.Owner == owner {
 			list = append(list, value)
 		}
@@ -124,28 +128,28 @@ func GetEntitiesByOwner(owner string) []*EntityInfo {
 	return list
 }
 
-func GetEntity(uid string) *EntityInfo {
+func (mine *cacheContext)GetEntity(uid string) *EntityInfo {
 	if len(uid) < 1 {
 		return nil
 	}
-	for i := 0; i < len(cacheCtx.entities); i++ {
-		if cacheCtx.entities[i].UID == uid {
-			return cacheCtx.entities[i]
+	for i := 0; i < len(mine.entities); i++ {
+		if mine.entities[i].UID == uid {
+			return mine.entities[i]
 		}
 	}
-	db := getEntityFromDB(uid)
+	db := mine.getEntityFromDB(uid)
 	if db != nil {
 		info := new(EntityInfo)
 		info.initInfo(db)
-		cacheCtx.entities = append(cacheCtx.entities, info)
+		mine.entities = append(mine.entities, info)
 		return info
 	}
 	return nil
 }
 
-func getEntityFromDB(uid string) *nosql.Entity {
-	for i := 0; i < len(cacheCtx.concerts); i += 1 {
-		tb := cacheCtx.concerts[i].Table
+func (mine *cacheContext)getEntityFromDB(uid string) *nosql.Entity {
+	for i := 0; i < len(mine.concerts); i += 1 {
+		tb := mine.concerts[i].Table
 		if len(tb) > 0 {
 			db, err := nosql.GetEntity(tb, uid)
 			if err == nil && db != nil {
@@ -160,27 +164,27 @@ func getEntityFromDB(uid string) *nosql.Entity {
 	return nil
 }
 
-func HadEntity(uid string) bool {
-	for i := 0; i < len(cacheCtx.entities); i += 1 {
-		if cacheCtx.entities[i].UID == uid {
+func (mine *cacheContext)HadEntity(uid string) bool {
+	for i := 0; i < len(mine.entities); i += 1 {
+		if mine.entities[i].UID == uid {
 			return true
 		}
 	}
 	return false
 }
 
-func RemoveEntity(uid, operator string) error {
+func (mine *cacheContext)RemoveEntity(uid, operator string) error {
 	if len(uid) < 1 {
 		return errors.New("the micro course uid is empty")
 	}
-	tmp := GetEntity(uid)
+	tmp := mine.GetEntity(uid)
 	err := nosql.RemoveEntity(tmp.table(), uid, operator)
 	if err == nil {
-		length := len(cacheCtx.entities)
+		length := len(mine.entities)
 		for i := 0; i < length; i++ {
-			if cacheCtx.entities[i].UID == uid {
-				cacheCtx.entities[i].clear()
-				cacheCtx.entities = append(cacheCtx.entities[:i], cacheCtx.entities[i+1:]...)
+			if mine.entities[i].UID == uid {
+				mine.entities[i].clear()
+				mine.entities = append(mine.entities[:i], mine.entities[i+1:]...)
 				break
 			}
 		}
@@ -190,8 +194,8 @@ func RemoveEntity(uid, operator string) error {
 	return err
 }
 
-func HadOwnerOfAsset(owner string) bool {
-	info := GetEntity(owner)
+func (mine *cacheContext)HadOwnerOfAsset(owner string) bool {
+	info := mine.GetEntity(owner)
 	if info != nil {
 		return true
 	}
@@ -240,7 +244,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 		mine.events = make([]*EventInfo, 0, 2)
 	}
 
-	cacheCtx.graph.GetNode(mine.UID)
+	Context().graph.GetNode(mine.UID)
 	return true
 }
 
@@ -252,7 +256,7 @@ func (mine *EntityInfo) table() string {
 	if len(mine.Concept) < 1 {
 		return DefaultEntityTable
 	} else {
-		top := GetTopConcept(mine.Concept)
+		top := Context().GetTopConcept(mine.Concept)
 		if top != nil {
 			if len(top.Table) > 0 {
 				return top.Table
@@ -284,7 +288,7 @@ func (mine *EntityInfo) UpdateCover(cover, operator string) error {
 		mine.Cover = cover
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
-		cacheCtx.graph.UpdateNodeCover(mine.UID, cover)
+		Context().graph.UpdateNodeCover(mine.UID, cover)
 	}
 	return err
 }
@@ -351,9 +355,9 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 		mine.events = append(mine.events, info)
 
 		for i := 0; i < len(links); i += 1 {
-			relationKind := GetRelation(links[i].Category)
+			relationKind := Context().GetRelation(links[i].Category)
 			if relationKind != nil {
-				go createLink(mine.UID, links[i].Entity, switchRelationToLink(relationKind.Kind), relationKind.UID, links[i].Name, links[i].Direction)
+				Context().addSyncLink(mine.UID, links[i].Entity, relationKind.UID, links[i].Name, switchRelationToLink(relationKind.Kind), links[i].Direction)
 			}
 		}
 

@@ -17,12 +17,11 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 	tmp.Custom = info.Custom
 	tmp.Parent = info.Parent
 	tmp.Time = info.CreateTime.Unix()
-	children := info.Children()
-	num := len(children)
+	num := len(info.Children)
 	if num > 0 {
 		tmp.Children = make([]*pb.RelationInfo, 0, num)
 		for i := 0;i < num;i += 1{
-			tmp.Children = append(tmp.Children, switchRelation(children[i]))
+			tmp.Children = append(tmp.Children, switchRelation(info.Children[i]))
 		}
 	}else{
 		tmp.Children = make([]*pb.RelationInfo, 0, 1)
@@ -33,7 +32,7 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, out *pb.ReplyRelationInfo) error {
 	path := "relation.addOne"
 	inLog(path, in)
-	if cache.HadRelationByName(in.Name) {
+	if cache.Context().HadRelationByName(in.Name) {
 		out.Status = outError(path,"the relation name had existed", pb.ResultStatus_Repeated)
 		return nil
 	}
@@ -42,7 +41,7 @@ func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, o
 	info.Remark = in.Remark
 	info.Kind = cache.RelationType(in.Type)
 	info.Custom = in.Custom
-	err := cache.CreateRelation(in.Parent, in.Operator, info)
+	err := cache.Context().CreateRelation(in.Parent, in.Operator, info)
 	if err == nil{
 		out.Info = switchRelation(info)
 		out.Status = outLog(path, out)
@@ -59,7 +58,7 @@ func (mine *RelationService)GetOne(ctx context.Context, in *pb.RequestInfo, out 
 		out.Status = outError(path,"the uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetRelation(in.Uid)
+	info := cache.Context().GetRelation(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the relation by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -78,14 +77,14 @@ func (mine *RelationService)RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 		return nil
 	}
 	if len(in.Key) > 0 {
-		parent := cache.GetRelation(in.Key)
+		parent := cache.Context().GetRelation(in.Key)
 		if parent == nil {
 			out.Status = outError(path,"not found the relation by parent", pb.ResultStatus_NotExisted)
 			return nil
 		}
 		err = parent.RemoveChild(in.Uid,in.Operator)
 	}else{
-		err = cache.RemoveRelation(in.Uid,in.Operator)
+		err = cache.Context().RemoveRelation(in.Uid,in.Operator)
 	}
 	out.Uid = in.Uid
 	out.Key = in.Key
@@ -98,7 +97,7 @@ func (mine *RelationService)RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 }
 
 func (mine *RelationService)GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyRelationList) error {
-	array := cache.AllRelations()
+	array := cache.Context().AllRelations()
 	out.List = make([]*pb.RelationInfo, 0, len(array))
 	for _, value := range array {
 		out.List = append(out.List, switchRelation(value))
@@ -115,7 +114,7 @@ func (mine *RelationService)UpdateInfo(ctx context.Context, in *pb.ReqRelationUp
 		out.Status = outError(path,"the uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetRelation(in.Uid)
+	info := cache.Context().GetRelation(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the relation by uid", pb.ResultStatus_NotExisted)
 		return nil

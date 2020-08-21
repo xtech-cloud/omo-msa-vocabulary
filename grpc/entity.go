@@ -47,7 +47,7 @@ func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
 func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityInfo) error {
 	path := "entity.addOne"
 	inLog(path, in)
-	if cache.HadEntityByName(in.Name, in.Add){
+	if cache.Context().HadEntityByName(in.Name, in.Add){
 		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
@@ -62,7 +62,7 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 	info.Synonyms = in.Synonyms
 	info.Tags = in.Tags
 	info.Status = cache.EntityStatusIdle
-	err := cache.CreateEntity(info)
+	err := cache.Context().CreateEntity(info)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -79,7 +79,7 @@ func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -96,7 +96,7 @@ func (mine *EntityService)GetByName(ctx context.Context, in *pb.RequestInfo, out
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntityByName(in.Uid, in.Key)
+	info := cache.Context().GetEntityByName(in.Uid, in.Key)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by name", pb.ResultStatus_NotExisted)
 		return nil
@@ -113,7 +113,7 @@ func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	err := cache.RemoveEntity(in.Uid, in.Operator)
+	err := cache.Context().RemoveEntity(in.Uid, in.Operator)
 	out.Uid = in.Uid
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
@@ -129,13 +129,13 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 	out.Flag = in.Owner
 	out.List = make([]*pb.EntityInfo, 0, 10)
 	if len(in.Owner) > 0 {
-		for _, value := range cache.AllEntities() {
+		for _, value := range cache.Context().AllEntities() {
 			if value.Owner == in.Owner && value.Status == cache.EntityStatus(in.Status) {
 				out.List = append(out.List, switchEntity(value))
 			}
 		}
 	}else{
-		for _, value := range cache.AllEntities() {
+		for _, value := range cache.Context().AllEntities() {
 			if value.Status == cache.EntityStatus(in.Status) {
 				out.List = append(out.List, switchEntity(value))
 			}
@@ -152,7 +152,7 @@ func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.ReqEntityUpdate
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -175,7 +175,7 @@ func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntity
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -212,7 +212,7 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -239,7 +239,7 @@ func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStat
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -262,7 +262,7 @@ func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.ReqEntityUp
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -285,7 +285,7 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -319,7 +319,7 @@ func (mine *EntityService)SubtractProperty(ctx context.Context, in *pb.RequestIn
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil

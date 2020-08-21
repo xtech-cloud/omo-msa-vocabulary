@@ -15,14 +15,15 @@ type Event struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
-	Creator     string                `json:"creator" bson:"creator"`
-	Operator    string                `json:"operator" bson:"operator"`
+	Creator     string             `json:"creator" bson:"creator"`
+	Operator    string             `json:"operator" bson:"operator"`
 
 	Entity      string                   `json:"entity" bson:"entity"`
 	Name        string                   `json:"name" bson:"name"`
 	Description string                   `json:"desc" bson:"desc"`
 	Date        proxy.DateInfo           `json:"date" bson:"date"`
 	Place       proxy.PlaceInfo          `json:"place" bson:"place"`
+	Tags        []string                 `json:"tags" bson:"tags"`
 	Assets      []string                 `json:"assets" bson:"assets"`
 	Relations   []proxy.RelationCaseInfo `json:"relations" bson:"relations"`
 }
@@ -84,7 +85,13 @@ func RemoveEvent(uid string, operator string) error {
 }
 
 func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, place proxy.PlaceInfo) error {
-	msg := bson.M{"name": name, "desc": desc, "date":date, "place":place, "operator":operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "desc": desc, "date": date, "place": place, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
+func UpdateEventTags(uid, operator string, tags []string) error {
+	msg := bson.M{"tags": tags, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }
@@ -120,7 +127,7 @@ func SubtractEventRelation(uid string, relation string) error {
 	if len(uid) < 1 {
 		return errors.New("the uid is empty")
 	}
-	msg := bson.M{"relations": bson.M{ "uid": relation }}
+	msg := bson.M{"relations": bson.M{"uid": relation}}
 	_, err := removeElement(TableEvent, uid, msg)
 	return err
 }

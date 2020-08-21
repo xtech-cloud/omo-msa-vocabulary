@@ -29,7 +29,7 @@ type AttributeInfo struct {
 	End   string
 }
 
-func CreateAttribute(info *AttributeInfo) error {
+func (mine *cacheContext)CreateAttribute(info *AttributeInfo) error {
 	if info == nil {
 		return errors.New("the attribute info is nil")
 	}
@@ -47,26 +47,26 @@ func CreateAttribute(info *AttributeInfo) error {
 	err := nosql.CreateAttribute(db)
 	if err == nil {
 		info.initInfo(db)
-		cacheCtx.attributes = append(cacheCtx.attributes, info)
+		mine.attributes = append(mine.attributes, info)
 	}
 	return err
 }
 
-func AllAttributes() []*AttributeInfo {
-	return cacheCtx.attributes
+func (mine *cacheContext)AllAttributes() []*AttributeInfo {
+	return mine.attributes
 }
 
-func HadAttributeByName(name string) bool {
-	for i := 0;i < len(cacheCtx.attributes);i += 1 {
-		if cacheCtx.attributes[i].Name == name {
+func (mine *cacheContext)HadAttributeByName(name string) bool {
+	for i := 0;i < len(mine.attributes);i += 1 {
+		if mine.attributes[i].Name == name {
 			return true
 		}
 	}
 	return false
 }
 
-func GetAttribute(uid string) *AttributeInfo {
-	for _, value := range cacheCtx.attributes {
+func (mine *cacheContext)GetAttribute(uid string) *AttributeInfo {
+	for _, value := range mine.attributes {
 		if value.UID == uid {
 			return value
 		}
@@ -74,8 +74,8 @@ func GetAttribute(uid string) *AttributeInfo {
 	return nil
 }
 
-func GetAttributeByKey(key string) *AttributeInfo {
-	for _, value := range cacheCtx.attributes {
+func (mine *cacheContext)GetAttributeByKey(key string) *AttributeInfo {
+	for _, value := range mine.attributes {
 		if value.Key == key {
 			return value
 		}
@@ -83,15 +83,15 @@ func GetAttributeByKey(key string) *AttributeInfo {
 	return nil
 }
 
-func RemoveAttribute(uid, operator string) error {
+func (mine *cacheContext)RemoveAttribute(uid, operator string) error {
 	if len(uid) <  1 {
 		return errors.New("the attribute uid is empty")
 	}
 	err := nosql.RemoveAttribute(uid, operator)
 	if err == nil {
-		for i := 0;i < len(cacheCtx.attributes);i +=1 {
-			if cacheCtx.attributes[i].UID == uid {
-				cacheCtx.attributes = append(cacheCtx.attributes[:i], cacheCtx.attributes[i+1:]...)
+		for i := 0;i < len(mine.attributes);i +=1 {
+			if mine.attributes[i].UID == uid {
+				mine.attributes = append(mine.attributes[:i], mine.attributes[i+1:]...)
 				break
 			}
 		}

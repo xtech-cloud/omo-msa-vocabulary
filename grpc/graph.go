@@ -46,7 +46,7 @@ func switchGraph(info *cache.GraphInfo) *pb.GraphInfo {
 func (mine *GraphService)AddNode(ctx context.Context, in *pb.ReqNodeAdd, out *pb.ReplyNodeInfo) error {
 	path := "graph.addNode"
 	inLog(path, in)
-	node ,err := cache.Graph().CreateNode(in.Name, in.Entity, in.Cover, in.Label)
+	node ,err := cache.Context().Graph().CreateNode(in.Name, in.Entity, in.Cover, in.Label)
 	if err != nil {
 		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -60,18 +60,18 @@ func (mine *GraphService)AddLink(ctx context.Context, in *pb.ReqLinkAdd, out *pb
 	path := "graph.addLink"
 	inLog(path, in)
 	var err error
-	from := cache.GetGraphNode(in.From)
+	from := cache.Context().GetGraphNode(in.From)
 	if from == nil {
 		out.Status = outError(path, "not found the from node", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	to := cache.GetGraphNode(in.To)
+	to := cache.Context().GetGraphNode(in.To)
 	if to == nil {
 		out.Status = outError(path, "not found the to node", pb.ResultStatus_NotExisted)
 		return nil
 	}
 
-	link,err := cache.CreateLink(from, to, in.Name, in.Relation, cache.DirectionType(in.Direction))
+	link,err := cache.Context().CreateLink(from, to, in.Name, in.Relation, cache.DirectionType(in.Direction))
 	if err == nil {
 		out.Info = switchLink(link)
 		out.Status = outLog(path, out)
@@ -86,11 +86,11 @@ func (mine *GraphService)GetNode(ctx context.Context, in *pb.RequestInfo, out *p
 	inLog(path, in)
 	var node *cache.NodeInfo
 	if in.Id > 0 {
-		node = cache.Graph().GetNodeByID(int64(in.Id))
+		node = cache.Context().Graph().GetNodeByID(int64(in.Id))
 	} else if len(in.Uid) > 0 {
-		node = cache.Graph().GetNode(in.Uid)
+		node = cache.Context().Graph().GetNode(in.Uid)
 	} else if len(in.Key) > 0 {
-		node = cache.Graph().GetNodeByName(in.Key)
+		node = cache.Context().Graph().GetNodeByName(in.Key)
 	}
 
 	if node == nil {
@@ -107,9 +107,9 @@ func (mine *GraphService)GetLink(ctx context.Context, in *pb.RequestInfo, out *p
 	inLog(path, in)
 	var link *cache.LinkInfo
 	if in.Id > 0 {
-		link = cache.Graph().GetRelation(int64(in.Id))
+		link = cache.Context().Graph().GetRelation(int64(in.Id))
 	} else if len(in.Uid) > 0 {
-		link = cache.Graph().GetRelationByEntity(in.Uid)
+		link = cache.Context().Graph().GetRelationByEntity(in.Uid)
 	}
 
 	if link == nil {
@@ -124,7 +124,7 @@ func (mine *GraphService)GetLink(ctx context.Context, in *pb.RequestInfo, out *p
 func (mine *GraphService)RemoveNode(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "graph.removeNode"
 	inLog(path, in)
-	err := cache.Graph().RemoveNode(int64(in.Id), in.Key)
+	err := cache.Context().Graph().RemoveNode(int64(in.Id), in.Key)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 	}else{
@@ -136,7 +136,7 @@ func (mine *GraphService)RemoveNode(ctx context.Context, in *pb.RequestInfo, out
 func (mine *GraphService)RemoveLink(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "graph.removeLink"
 	inLog(path, in)
-	err := cache.Graph().RemoveLink(int64(in.Id))
+	err := cache.Context().Graph().RemoveLink(int64(in.Id))
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 	}else{
@@ -156,7 +156,7 @@ func (mine *GraphService)FindPath(ctx context.Context, in *pb.ReqGraphPath, out 
 		out.Status = outError(path,"the to node is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	graph,err:= cache.Graph().GetPath(in.From, in.To)
+	graph,err:= cache.Context().Graph().GetPath(in.From, in.To)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 	}else{
@@ -173,7 +173,7 @@ func (mine *GraphService)FindGraph(ctx context.Context, in *pb.RequestInfo, out 
 		out.Status = outError(path,"the node uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	graph,err:= cache.Graph().GetSubGraph(in.Uid)
+	graph,err:= cache.Context().Graph().GetSubGraph(in.Uid)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 	}else{
@@ -190,7 +190,7 @@ func (mine *GraphService)FindNodes(ctx context.Context, in *pb.RequestInfo, out 
 		out.Status = outError(path,"the owner uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	graph:= cache.Graph().GetOwnerGraph(in.Uid)
+	graph:= cache.Context().Graph().GetOwnerGraph(in.Uid)
 	out.Graph = switchGraph(graph)
 	out.Status = outLog(path, out)
 	return nil

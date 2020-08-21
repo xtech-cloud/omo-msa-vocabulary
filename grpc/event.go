@@ -43,7 +43,7 @@ func switchRelationIns(info *proxy.RelationCaseInfo) *pb.RelationshipInfo {
 func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb.ReplyEventInfo) error {
 	path := "event.addOne"
 	inLog(path, in)
-	info := cache.GetEntity(in.Parent)
+	info := cache.Context().GetEntity(in.Parent)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -80,7 +80,7 @@ func (mine *EventService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb
 	path := "event.getOne"
 	inLog(path, in)
 	if len(in.Uid) > 0 {
-		info := cache.GetEvent(in.Uid)
+		info := cache.Context().GetEvent(in.Uid)
 		if info == nil {
 			out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
 			return nil
@@ -96,7 +96,7 @@ func (mine *EventService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb
 func (mine *EventService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "event.removeOne"
 	inLog(path, in)
-	err := cache.RemoveEvent(in.Uid, in.Operator)
+	err := cache.Context().RemoveEvent(in.Uid, in.Operator)
 	if err != nil {
 		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -109,7 +109,7 @@ func (mine *EventService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out 
 func (mine *EventService)GetList(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventList) error {
 	path := "event.getList"
 	inLog(path, in)
-	info := cache.GetEntity(in.Uid)
+	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -122,10 +122,10 @@ func (mine *EventService)GetList(ctx context.Context, in *pb.RequestInfo, out *p
 	return nil
 }
 
-func (mine *EventService)Update(ctx context.Context, in *pb.ReqEventUpdate, out *pb.ReplyEventInfo) error {
+func (mine *EventService)UpdateBase(ctx context.Context, in *pb.ReqEventUpdate, out *pb.ReplyEventInfo) error {
 	path := "event.update"
 	inLog(path, in)
-	info := cache.GetEvent(in.Uid)
+	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -148,10 +148,28 @@ func (mine *EventService)Update(ctx context.Context, in *pb.ReqEventUpdate, out 
 	return nil
 }
 
+func (mine *EventService)UpdateTags(ctx context.Context, in *pb.ReqEventTags, out *pb.ReplyEventInfo) error {
+	path := "event.update"
+	inLog(path, in)
+	info := cache.Context().GetEvent(in.Uid)
+	if info == nil {
+		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	err := info.UpdateTags("", in.Tags)
+	if err != nil {
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Info = switchEntityEvent(info)
+	out.Status = outLog(path, out)
+	return nil
+}
+
 func (mine *EventService)AppendAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAsset) error {
 	path := "event.appendAsset"
 	inLog(path, in)
-	info := cache.GetEvent(in.Uid)
+	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -171,7 +189,7 @@ func (mine *EventService)AppendAsset(ctx context.Context, in *pb.ReqEventAsset, 
 func (mine *EventService)SubtractAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAsset) error {
 	path := "event.subtractAsset"
 	inLog(path, in)
-	info := cache.GetEvent(in.Uid)
+	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -191,7 +209,7 @@ func (mine *EventService)SubtractAsset(ctx context.Context, in *pb.ReqEventAsset
 func (mine *EventService)AppendRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
 	path := "event.appendRelation"
 	inLog(path, in)
-	info := cache.GetEvent(in.Uid)
+	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
 		return nil
@@ -214,7 +232,7 @@ func (mine *EventService)AppendRelation(ctx context.Context, in *pb.ReqEventRela
 func (mine *EventService)SubtractRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
 	path := "event.subtractRelation"
 	inLog(path, in)
-	info := cache.GetEvent(in.Uid)
+	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
 		return nil

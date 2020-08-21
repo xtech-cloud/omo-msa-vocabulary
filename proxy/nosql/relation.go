@@ -40,7 +40,7 @@ func GetRelationsByParent(parent string) ([]*Relation, error) {
 	var items = make([]*Relation, 0, 20)
 	def := new(time.Time)
 	filter := bson.M{"parent": parent, "deleteAt": def}
-	cursor, err1 := findMany(TableConcept, filter, 0)
+	cursor, err1 := findMany(TableRelation, filter, 0)
 	if err1 != nil {
 		return nil, err1
 	}
