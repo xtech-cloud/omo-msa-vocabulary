@@ -31,6 +31,10 @@ func (mine *NodeInfo)initInfo(db *proxy.Node)  {
 	mine.Name = db.Name
 	mine.EntityUID = db.UID
 	mine.ID = db.ID
+	entity := Context().GetEntity(db.UID)
+	if entity != nil {
+		mine.Cover = entity.Cover
+	}
 	mine.Labels = db.Labels
 }
 

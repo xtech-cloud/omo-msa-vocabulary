@@ -244,7 +244,6 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 		mine.events = make([]*EventInfo, 0, 2)
 	}
 
-	Context().graph.GetNode(mine.UID)
 	return true
 }
 
@@ -270,6 +269,15 @@ func (mine *EntityInfo) table() string {
 }
 
 func (mine *EntityInfo) UpdateBase(name, remark, add, concept, operator string) error {
+	if concept == "" {
+		concept = mine.Concept
+	}
+	if remark == "" {
+		remark = mine.Description
+	}
+	if add == "" {
+		add = mine.Add
+	}
 	err := nosql.UpdateEntityBase(mine.table(), mine.UID, name, remark, add, concept, operator)
 	if err == nil {
 		mine.Name = name
@@ -283,6 +291,9 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, operator string) 
 }
 
 func (mine *EntityInfo) UpdateCover(cover, operator string) error {
+	if cover == "" {
+		cover = mine.Cover
+	}
 	err := nosql.UpdateEntityCover(mine.table(), mine.UID, cover, operator)
 	if err == nil {
 		mine.Cover = cover
@@ -328,7 +339,7 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 	return mine.events
 }
 
-func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, operator string, links []proxy.RelationCaseInfo, assets []string) (*EventInfo, error) {
+func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, operator string, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
 	if mine.events == nil {
 		return nil, errors.New("must call construct fist")
 	}
@@ -344,6 +355,10 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	db.Entity = mine.UID
 	db.Description = desc
 	db.Relations = links
+	db.Tags = tags
+	if db.Tags == nil {
+		db.Tags = make([]string, 0, 1)
+	}
 	db.Assets = assets
 	if db.Assets == nil {
 		db.Assets = make([]string, 0, 1)

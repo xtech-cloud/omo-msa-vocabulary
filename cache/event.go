@@ -50,6 +50,7 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Date = db.Date
 	mine.Place = db.Place
 	mine.Assets = db.Assets
+	mine.Tags = db.Tags
 	mine.Relations = db.Relations
 }
 

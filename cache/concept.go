@@ -119,12 +119,20 @@ func (mine *cacheContext)HadConceptByTable(table string) bool {
 	return false
 }
 
-func (mine *cacheContext)HadConceptByName(name string) bool {
-	for i := 0; i < len(mine.concerts); i += 1 {
-		if mine.concerts[i].Name == name {
+func (mine *cacheContext)HadConceptByName(name, parent string) bool {
+	if parent == ""{
+		for i := 0; i < len(mine.concerts); i += 1 {
+			if mine.concerts[i].Name == name {
+				return true
+			}
+		}
+	}else{
+		p := mine.GetConcept(parent)
+		if p != nil && p.HadChildByName(name){
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -218,7 +226,7 @@ func (mine *ConceptInfo)Label() string {
 	} else if mine.Type == ConceptTypeEra {
 		return "eras"
 	} else {
-		return "others"
+		return DefaultEntityTable
 	}
 }
 
@@ -241,6 +249,18 @@ func (mine *ConceptInfo) HadChild(uid string) bool {
 	}
 	for i := 0; i < len(mine.Children); i += 1 {
 		if mine.Children[i].HadChild(uid) {
+			return true
+		}
+	}
+	return false
+}
+
+func (mine *ConceptInfo) HadChildByName(name string) bool {
+	if mine.Name == name {
+		return true
+	}
+	for i := 0; i < len(mine.Children); i += 1 {
+		if mine.Children[i].HadChildByName(name) {
 			return true
 		}
 	}

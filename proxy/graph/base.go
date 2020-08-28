@@ -272,7 +272,7 @@ func FindGraph(uid, label string) ([]neo4j.Node, []neo4j.Relationship, error) {
 	if err != nil {
 		return nil, nil,err
 	}
-	//fmt.Println("FindGraph..."+cypher)
+	fmt.Println("FindGraph..."+cypher)
 	nodes := make([]neo4j.Node, 0, 5)
 	links := make([]neo4j.Relationship, 0, 5)
 	for result.Next() {

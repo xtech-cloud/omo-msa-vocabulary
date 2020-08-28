@@ -66,12 +66,30 @@ func (mine *cacheContext)HadRelation(uid string) bool {
 	return false
 }
 
-func (mine *cacheContext)HadRelationByName(name string) bool {
+func (mine *cacheContext)GetRelationByName(name string) *RelationshipInfo {
 	for i := 0; i < len(mine.relations); i += 1 {
-		if mine.relations[i].Name == name {
+		child := mine.relations[i].GetChildByName(name)
+		if child != nil {
+			return child
+		}
+	}
+	return nil
+}
+
+func (mine *cacheContext)HadRelationByName(name, parent string) bool {
+	if parent == ""{
+		for i := 0; i < len(mine.relations); i += 1 {
+			if mine.relations[i].Name == name {
+				return true
+			}
+		}
+	}else{
+		p := mine.GetRelation(parent)
+		if p != nil && p.HadChildByName(name){
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -167,6 +185,18 @@ func (mine *RelationshipInfo) deleteChild(uid string) bool {
 	return false
 }
 
+func (mine *RelationshipInfo) HadChildByName(name string) bool {
+	if mine.Name == name {
+		return true
+	}
+	for i := 0; i < len(mine.Children); i += 1 {
+		if mine.Children[i].HadChildByName(name) {
+			return true
+		}
+	}
+	return false
+}
+
 func (mine *RelationshipInfo) HadChild(uid string) bool {
 	if mine.UID == uid {
 		return true
@@ -185,6 +215,19 @@ func (mine *RelationshipInfo) GetChild(uid string) *RelationshipInfo {
 	}
 	for i := 0; i < len(mine.Children); i += 1 {
 		t := mine.Children[i].GetChild(uid)
+		if t != nil {
+			return t
+		}
+	}
+	return nil
+}
+
+func (mine *RelationshipInfo) GetChildByName(name string) *RelationshipInfo {
+	if mine.Name == name {
+		return mine
+	}
+	for i := 0; i < len(mine.Children); i += 1 {
+		t := mine.Children[i].GetChildByName(name)
 		if t != nil {
 			return t
 		}

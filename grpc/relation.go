@@ -32,7 +32,7 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, out *pb.ReplyRelationInfo) error {
 	path := "relation.addOne"
 	inLog(path, in)
-	if cache.Context().HadRelationByName(in.Name) {
+	if cache.Context().HadRelationByName(in.Name, in.Parent) {
 		out.Status = outError(path,"the relation name had existed", pb.ResultStatus_Repeated)
 		return nil
 	}
@@ -54,17 +54,25 @@ func (mine *RelationService)AddOne(ctx context.Context, in *pb.ReqRelationAdd, o
 func (mine *RelationService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyRelationInfo) error {
 	path := "relation.getOne"
 	inLog(path, in)
-	if len(in.Uid) < 1 {
-		out.Status = outError(path,"the uid is empty", pb.ResultStatus_Empty)
-		return nil
+	if len(in.Uid) > 0 {
+		info := cache.Context().GetRelation(in.Uid)
+		if info == nil {
+			out.Status = outError(path,"not found the relation by uid", pb.ResultStatus_NotExisted)
+			return nil
+		}
+		out.Info = switchRelation(info)
+		out.Status = outLog(path, out)
+	}else if len(in.Key) > 0 {
+		info := cache.Context().GetRelationByName(in.Key)
+		if info == nil {
+			out.Status = outError(path,"not found the relation by key", pb.ResultStatus_NotExisted)
+			return nil
+		}
+		out.Info = switchRelation(info)
+		out.Status = outLog(path, out)
+	}else{
+		out.Status = outError(path,"param is empty", pb.ResultStatus_Empty)
 	}
-	info := cache.Context().GetRelation(in.Uid)
-	if info == nil {
-		out.Status = outError(path,"not found the relation by uid", pb.ResultStatus_NotExisted)
-		return nil
-	}
-	out.Info = switchRelation(info)
-	out.Status = outLog(path, out)
 	return nil
 }
 

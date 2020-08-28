@@ -42,6 +42,10 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 			out.Status = outError(path,"not found the parent concept", pb.ResultStatus_NotExisted)
 			return nil
 		}
+		if parent.HadChildByName(in.Name) {
+			out.Status = outError(path,"the concept child name is repeated", pb.ResultStatus_Repeated)
+			return nil
+		}
 
 		info := new(cache.ConceptInfo)
 		info.Remark = in.Remark
@@ -64,7 +68,7 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 			return nil
 		}
 
-		if cache.Context().HadConceptByName(in.Name) {
+		if cache.Context().HadConceptByName(in.Name, in.Parent) {
 			out.Status = outError(path,"the concept name is repeated", pb.ResultStatus_Repeated)
 			return nil
 		}
@@ -89,13 +93,25 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 func (mine *ConceptService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyConceptInfo) error {
 	path := "concept.getOne"
 	inLog(path, in)
-	info := cache.Context().GetConcept(in.Uid)
-	if info == nil {
-		out.Status = outError(path,"not found the concept by uid", pb.ResultStatus_NotExisted)
-		return nil
+	if len(in.Uid) > 0 {
+		info := cache.Context().GetConcept(in.Uid)
+		if info == nil {
+			out.Status = outError(path,"not found the concept by uid", pb.ResultStatus_NotExisted)
+			return nil
+		}
+		out.Info = switchConcept(info)
+		out.Status = outLog(path, out)
+	}else if len(in.Key) > 0 {
+		info := cache.Context().GetConceptByName(in.Key)
+		if info == nil {
+			out.Status = outError(path,"not found the concept by key", pb.ResultStatus_NotExisted)
+			return nil
+		}
+		out.Info = switchConcept(info)
+		out.Status = outLog(path, out)
+	}else{
+		out.Status = outError(path,"param is empty", pb.ResultStatus_Empty)
 	}
-	out.Info = switchConcept(info)
-	out.Status = outLog(path, out)
 	return nil
 }
 

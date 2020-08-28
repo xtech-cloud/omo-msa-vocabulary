@@ -23,6 +23,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Date = &pb.DateInfo{Uid:info.Date.UID, Name:info.Date.Name, Begin:info.Date.Begin.String(), End:info.Date.End.String()}
 	tmp.Place = &pb.PlaceInfo{Uid:info.Place.UID, Name:info.Place.Name, Location:info.Place.Location}
 	tmp.Assets = info.Assets
+	tmp.Tags = info.Tags
 	tmp.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
 	for i := 0;i < len(info.Relations);i +=1 {
 		tmp.Relations = append(tmp.Relations, switchRelationIns(&info.Relations[i]))
@@ -66,7 +67,7 @@ func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb
 		relations = append(relations, proxy.RelationCaseInfo{UID: value.Uid, Direction:uint8(value.Direction),
 			Name:value.Name, Category:value.Category, Entity:value.Entity})
 	}
-	event,err := info.AddEvent(date, place,in.Name, in.Description, in.Operator, relations, in.Assets)
+	event,err := info.AddEvent(date, place,in.Name, in.Description, in.Operator, relations,in.Tags, in.Assets)
 	if err == nil {
 		out.Info = switchEntityEvent(event)
 		out.Status = outLog(path, out)
