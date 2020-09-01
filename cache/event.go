@@ -11,6 +11,7 @@ type EventInfo struct {
 	BaseInfo
 	Description string
 	Parent      string
+	Cover       string
 	Date        proxy.DateInfo
 	Place       proxy.PlaceInfo
 	Tags        []string
@@ -49,6 +50,7 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Description = db.Description
 	mine.Date = db.Date
 	mine.Place = db.Place
+	mine.Cover = db.Cover
 	mine.Assets = db.Assets
 	mine.Tags = db.Tags
 	mine.Relations = db.Relations
@@ -74,6 +76,22 @@ func (mine *EventInfo) UpdateTags(operator string, tags []string) error {
 	err := nosql.UpdateEventTags(mine.UID, operator, tags)
 	if err == nil {
 		mine.Tags = tags
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *EventInfo) UpdateCover(operator, cover string) error {
+	if operator == "" {
+		operator = mine.Operator
+	}
+	if mine.Cover == cover {
+		return nil
+	}
+	err := nosql.UpdateEventCover(mine.UID, operator, cover)
+	if err == nil {
+		mine.Cover = cover
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
 	}

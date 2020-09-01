@@ -21,6 +21,7 @@ type Event struct {
 	Entity      string                   `json:"entity" bson:"entity"`
 	Name        string                   `json:"name" bson:"name"`
 	Description string                   `json:"desc" bson:"desc"`
+	Cover       string                   `json:"cover" bson:"cover"`
 	Date        proxy.DateInfo           `json:"date" bson:"date"`
 	Place       proxy.PlaceInfo          `json:"place" bson:"place"`
 	Tags        []string                 `json:"tags" bson:"tags"`
@@ -92,6 +93,12 @@ func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, plac
 
 func UpdateEventTags(uid, operator string, tags []string) error {
 	msg := bson.M{"tags": tags, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
+func UpdateEventCover(uid, operator, cover string) error {
+	msg := bson.M{"cover": cover, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }

@@ -339,7 +339,7 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 	return mine.events
 }
 
-func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, operator string, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
+func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, cover, operator string, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
 	if mine.events == nil {
 		return nil, errors.New("must call construct fist")
 	}
@@ -355,6 +355,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	db.Entity = mine.UID
 	db.Description = desc
 	db.Relations = links
+	db.Cover = cover
 	db.Tags = tags
 	if db.Tags == nil {
 		db.Tags = make([]string, 0, 1)
