@@ -268,7 +268,7 @@ func (mine *EntityInfo) table() string {
 	}
 }
 
-func (mine *EntityInfo) UpdateBase(name, remark, add, concept, operator string) error {
+func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, operator string) error {
 	if concept == "" {
 		concept = mine.Concept
 	}
@@ -278,14 +278,23 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, operator string) 
 	if add == "" {
 		add = mine.Add
 	}
-	err := nosql.UpdateEntityBase(mine.table(), mine.UID, name, remark, add, concept, operator)
-	if err == nil {
-		mine.Name = name
-		mine.Description = remark
-		mine.Add = add
-		mine.Concept = concept
-		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+	if name == "" {
+		name = mine.Name
+	}
+	var err error
+	if len(cover) > 0 {
+		err = mine.UpdateCover(cover, operator)
+	}
+	if name != mine.Name || remark != mine.Description || add != mine.Add || concept != mine.Concept {
+		err = nosql.UpdateEntityBase(mine.table(), mine.UID, name, remark, add, concept, operator)
+		if err == nil {
+			mine.Name = name
+			mine.Description = remark
+			mine.Add = add
+			mine.Concept = concept
+			mine.Operator = operator
+			mine.UpdateTime = time.Now()
+		}
 	}
 	return err
 }

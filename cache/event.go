@@ -98,7 +98,19 @@ func (mine *EventInfo) UpdateCover(operator, cover string) error {
 	return err
 }
 
+func (mine *EventInfo)hadAsset(asset string) bool {
+	for _, s := range mine.Assets {
+		if s == asset {
+			return true
+		}
+	}
+	return false
+}
+
 func (mine *EventInfo) AppendAsset(asset string) error {
+	if mine.hadAsset(asset) {
+		return nil
+	}
 	err := nosql.AppendEventAsset(mine.UID, asset)
 	if err == nil {
 		mine.Assets = append(mine.Assets, asset)
@@ -108,6 +120,9 @@ func (mine *EventInfo) AppendAsset(asset string) error {
 }
 
 func (mine *EventInfo) SubtractAsset(asset string) error {
+	if !mine.hadAsset(asset) {
+		return nil
+	}
 	err := nosql.SubtractEventAsset(mine.UID, asset)
 	if err == nil {
 		for i := 0; i < len(mine.Assets); i += 1 {

@@ -212,18 +212,16 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
+	if cache.Context().HadEntityByName(in.Name, in.Add){
+		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
+		return nil
+	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	var err error
-	if len(in.Cover) > 0 {
-		err = info.UpdateCover(in.Cover, in.Operator)
-	}else{
-		err = info.UpdateBase(in.Name, in.Desc, in.Add, in.Concept, in.Operator)
-	}
-
+	err := info.UpdateBase(in.Name, in.Desc, in.Add, in.Concept, in.Cover, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
