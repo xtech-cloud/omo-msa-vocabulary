@@ -161,16 +161,16 @@ func (mine *ConceptService)Update(ctx context.Context, in *pb.ReqConceptUpdate, 
 	return nil
 }
 
-func (mine *ConceptService)UpdateAttributes(ctx context.Context, in *pb.ReqConceptAttrs, out *pb.ReplyConceptAttrs) error {
+func (mine *ConceptService)UpdateAttributes(ctx context.Context, in *pb.RequestList, out *pb.ReplyConceptAttrs) error {
 	path := "concept.updateAttributes"
 	inLog(path, in)
-	info := cache.Context().GetConcept(in.Concept)
+	info := cache.Context().GetConcept(in.Uid)
 	if info == nil {
 		out.Status = outError(path,"not found the concept by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 
-	err := info.UpdateAttributes(in.Attributes)
+	err := info.UpdateAttributes(in.List)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil

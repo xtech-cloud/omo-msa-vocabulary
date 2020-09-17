@@ -145,7 +145,7 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 	return nil
 }
 
-func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.ReqEntityUpdate, out *pb.ReplyEntityUpdate) error {
+func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityUpdate) error {
 	path := "entity.updateTags"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -253,7 +253,7 @@ func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStat
 	return nil
 }
 
-func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.ReqEntityUpdate, out *pb.ReplyEntityUpdate) error {
+func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityUpdate) error {
 	path := "entity.updateSynonyms"
 	inLog(path, in)
 	if len(in.Uid) < 1 {

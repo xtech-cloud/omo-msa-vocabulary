@@ -140,7 +140,7 @@ func (mine *EventService)UpdateBase(ctx context.Context, in *pb.ReqEventUpdate, 
 	}
 	date := proxy.DateInfo{UID:in.Date.Uid, Name:in.Date.Name, Begin:begin, End:end}
 	place := proxy.PlaceInfo{UID:in.Place.Uid, Name:in.Place.Name, Location:in.Place.Location}
-	err := info.UpdateBase(in.Name, in.Description, in.Operator, date, place)
+	err := info.UpdateBase(in.Name, in.Description, in.Operator, date, place, in.Assets)
 	if err != nil {
 		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -150,7 +150,7 @@ func (mine *EventService)UpdateBase(ctx context.Context, in *pb.ReqEventUpdate, 
 	return nil
 }
 
-func (mine *EventService)UpdateTags(ctx context.Context, in *pb.ReqEventTags, out *pb.ReplyEventInfo) error {
+func (mine *EventService)UpdateTags(ctx context.Context, in *pb.RequestList, out *pb.ReplyEventInfo) error {
 	path := "event.update"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
@@ -158,7 +158,7 @@ func (mine *EventService)UpdateTags(ctx context.Context, in *pb.ReqEventTags, ou
 		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	err := info.UpdateTags("", in.Tags)
+	err := info.UpdateTags("", in.List)
 	if err != nil {
 		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -186,7 +186,26 @@ func (mine *EventService)UpdateCover(ctx context.Context, in *pb.RequestInfo, ou
 	return nil
 }
 
-func (mine *EventService)AppendAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAsset) error {
+func (mine *EventService)UpdateAssets(ctx context.Context, in *pb.RequestList, out *pb.ReplyEventAssets) error {
+	path := "event.updateAssets"
+	inLog(path, in)
+	info := cache.Context().GetEvent(in.Uid)
+	if info == nil {
+		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	err := info.UpdateAssets(in.Operator, in.List)
+	if err != nil {
+		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Uid = in.Uid
+	out.Assets = info.Assets
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EventService)AppendAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAssets) error {
 	path := "event.appendAsset"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
@@ -206,7 +225,7 @@ func (mine *EventService)AppendAsset(ctx context.Context, in *pb.ReqEventAsset, 
 	return nil
 }
 
-func (mine *EventService)SubtractAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAsset) error {
+func (mine *EventService)SubtractAsset(ctx context.Context, in *pb.ReqEventAsset, out *pb.ReplyEventAssets) error {
 	path := "event.subtractAsset"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
@@ -226,7 +245,7 @@ func (mine *EventService)SubtractAsset(ctx context.Context, in *pb.ReqEventAsset
 	return nil
 }
 
-func (mine *EventService)AppendRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
+func (mine *EventService)AppendRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelations) error {
 	path := "event.appendRelation"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
@@ -249,7 +268,7 @@ func (mine *EventService)AppendRelation(ctx context.Context, in *pb.ReqEventRela
 	return nil
 }
 
-func (mine *EventService)SubtractRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelation) error {
+func (mine *EventService)SubtractRelation(ctx context.Context, in *pb.ReqEventRelation, out *pb.ReplyEventRelations) error {
 	path := "event.subtractRelation"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)

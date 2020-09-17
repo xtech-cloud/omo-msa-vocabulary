@@ -85,14 +85,20 @@ func RemoveEvent(uid string, operator string) error {
 	return err
 }
 
-func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, place proxy.PlaceInfo) error {
-	msg := bson.M{"name": name, "desc": desc, "date": date, "place": place, "operator": operator, "updatedAt": time.Now()}
+func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
+	msg := bson.M{"name": name, "desc": desc, "assets":assets, "date": date, "place": place, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }
 
-func UpdateEventTags(uid, operator string, tags []string) error {
-	msg := bson.M{"tags": tags, "operator": operator, "updatedAt": time.Now()}
+func UpdateEventTags(uid, operator string, list []string) error {
+	msg := bson.M{"tags": list, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
+func UpdateEventAssets(uid, operator string, list []string) error {
+	msg := bson.M{"assets": list, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }
