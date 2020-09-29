@@ -47,6 +47,10 @@ func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
 func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityInfo) error {
 	path := "entity.addOne"
 	inLog(path, in)
+	if in.Name == "" {
+		out.Status = outError(path,"the entity name is empty", pb.ResultStatus_Empty)
+		return nil
+	}
 	if cache.Context().HadEntityByName(in.Name, in.Add){
 		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
 		return nil
@@ -145,6 +149,20 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 	return nil
 }
 
+func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySearch, out *pb.ReplyEntityAll) error {
+	path := "entity.searchPublic"
+	inLog(path, in)
+	out.Flag = ""
+	out.List = make([]*pb.EntityInfo, 0, 200)
+	for _, value := range cache.Context().AllEntities() {
+		if value.Status == cache.EntityStatusUsable && value.IsSatisfy(in.Concept, in.Attribute, in.Tags){
+			out.List = append(out.List, switchEntity(value))
+		}
+	}
+	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
+	return nil
+}
+
 func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityUpdate) error {
 	path := "entity.updateTags"
 	inLog(path, in)
@@ -169,7 +187,7 @@ func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.RequestList, ou
 }
 
 func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntityProperties, out *pb.ReplyEntityProperties) error {
-	path := "entity.updateTags"
+	path := "entity.updateProps"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
@@ -212,7 +230,7 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	if cache.Context().HadEntityByName(in.Name, in.Add){
+	if in.Name != "" && cache.Context().HadEntityByName(in.Name, in.Add){
 		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
@@ -226,6 +244,28 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EntityService)UpdateCover(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+	path := "entity.updateCover"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	info := cache.Context().GetEntity(in.Uid)
+	if info == nil {
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	err := info.UpdateCover(in.Key, in.Operator)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Uid = in.Uid
 	out.Status = outLog(path, out)
 	return nil
 }

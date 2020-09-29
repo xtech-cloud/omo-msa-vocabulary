@@ -91,6 +91,12 @@ func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, plac
 	return err
 }
 
+func UpdateEventInfo(uid, name, desc, operator string) error {
+	msg := bson.M{"name": name, "desc": desc, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
 func UpdateEventTags(uid, operator string, list []string) error {
 	msg := bson.M{"tags": list, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)

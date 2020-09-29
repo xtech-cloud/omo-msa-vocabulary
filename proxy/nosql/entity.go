@@ -103,7 +103,7 @@ func GetEntityByName(table string, name string) (*Entity, error) {
 }
 
 func UpdateEntityBase(table, uid, name, remark, add, concept, operator string) error {
-	msg := bson.M{"name": name, "remark": remark, "add": add, "concept": concept, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "desc": remark, "add": add, "concept": concept, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

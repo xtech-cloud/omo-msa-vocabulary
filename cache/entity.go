@@ -409,6 +409,15 @@ func (mine *EntityInfo)HadEventBy(time, place string) bool {
 	return false
 }
 
+func (mine *EntityInfo)GetEventBy(time, place string) *EventInfo {
+	for _, event := range mine.events {
+		if event.Date.Begin.String() == time && event.Place.Name == place {
+			return event
+		}
+	}
+	return nil
+}
+
 func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
 	if mine.events == nil {
 		return errors.New("must call construct fist")
@@ -536,4 +545,25 @@ func (mine *EntityInfo) GetProperty(attribute string) *proxy.PropertyInfo {
 	return nil
 }
 
+func (mine *EntityInfo) IsSatisfy(concepts, attributes, tags []string) bool {
+	if hadItem(concepts, mine.Concept) {
+		return true
+	}
+	if mine.properties != nil {
+		for i := 0; i < len(mine.properties); i += 1 {
+			if hadItem(attributes, mine.properties[i].Key) {
+				return true
+			}
+		}
+	}
+	if mine.Tags != nil {
+		for _, tag := range mine.Tags {
+			if hadItem(tags, tag) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
 //endregion

@@ -79,6 +79,23 @@ func (mine *EventInfo) UpdateBase(name, remark, operator string, date proxy.Date
 	return err
 }
 
+func (mine *EventInfo) UpdateInfo(name, remark, operator string) error {
+	if name == "" {
+		name = mine.Name
+	}
+	if remark == "" {
+		remark = mine.Description
+	}
+	err := nosql.UpdateEventInfo(mine.UID, name, remark, operator)
+	if err == nil {
+		mine.Name = name
+		mine.Description = remark
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
 func (mine *EventInfo) UpdateAssets(operator string, list []string) error {
 	if operator == "" {
 		operator = mine.Operator

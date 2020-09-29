@@ -50,8 +50,15 @@ func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	if info.HadEventBy(in.Date.Begin, in.Place.Name) {
-		out.Status = outError(path,"the event of entity had existed", pb.ResultStatus_NotExisted)
+	event := info.GetEventBy(in.Date.Begin, in.Place.Name)
+	if event != nil {
+		er := event.UpdateInfo(in.Name, in.Description, in.Operator)
+		if er != nil {
+			out.Status = outError(path, er.Error(), pb.ResultStatus_DBException)
+		}else{
+			out.Info = switchEntityEvent(event)
+			out.Status = outLog(path, out)
+		}
 		return nil
 	}
 	begin := proxy.Date{}
