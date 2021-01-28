@@ -1,4 +1,4 @@
-APP_NAME := omo.msa.vocabulary
+APP_NAME := xm-msa-vocabulary
 BUILD_VERSION   := $(shell git tag --contains)
 BUILD_TIME      := $(shell date "+%F %T")
 COMMIT_SHA1     := $(shell git rev-parse HEAD )

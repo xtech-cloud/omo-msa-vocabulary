@@ -1,6 +1,6 @@
 module omo.msa.vocabulary
 
-go 1.13
+go 1.15
 
 replace google.golang.org/grpc => github.com/grpc/grpc-go v1.26.0
 
@@ -19,5 +19,5 @@ require (
 	github.com/xtech-cloud/omo-msp-vocabulary v1.3.4
 	go.mongodb.org/mongo-driver v1.3.4
 	google.golang.org/protobuf v1.24.0 // indirect
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
