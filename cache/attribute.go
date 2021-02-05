@@ -65,6 +65,15 @@ func (mine *cacheContext)HadAttributeByName(name string) bool {
 	return false
 }
 
+func (mine *cacheContext)HadAttributeByKey(key string) bool {
+	for i := 0;i < len(mine.attributes);i += 1 {
+		if mine.attributes[i].Key == key {
+			return true
+		}
+	}
+	return false
+}
+
 func (mine *cacheContext)GetAttribute(uid string) *AttributeInfo {
 	for _, value := range mine.attributes {
 		if value.UID == uid {

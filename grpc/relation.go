@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 )
@@ -105,12 +106,14 @@ func (mine *RelationService)RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 }
 
 func (mine *RelationService)GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyRelationList) error {
+	path := "relation.getAll"
+	inLog(path, in)
 	array := cache.Context().AllRelations()
 	out.List = make([]*pb.RelationInfo, 0, len(array))
 	for _, value := range array {
 		out.List = append(out.List, switchRelation(value))
 	}
-	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
 

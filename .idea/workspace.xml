@@ -20,16 +20,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3181afbf-a61d-49e2-a7f4-c2d8b76d8b8e" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/cache/tool.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.sh" beforeDir="false" afterPath="$PROJECT_DIR$/build.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cache/attribute.go" beforeDir="false" afterPath="$PROJECT_DIR$/cache/attribute.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cache/entity.go" beforeDir="false" afterPath="$PROJECT_DIR$/cache/entity.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cache/event.go" beforeDir="false" afterPath="$PROJECT_DIR$/cache/event.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/grpc/attribute.go" beforeDir="false" afterPath="$PROJECT_DIR$/grpc/attribute.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/grpc/concept.go" beforeDir="false" afterPath="$PROJECT_DIR$/grpc/concept.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/grpc/entity.go" beforeDir="false" afterPath="$PROJECT_DIR$/grpc/entity.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/grpc/event.go" beforeDir="false" afterPath="$PROJECT_DIR$/grpc/event.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/grpc/relation.go" beforeDir="false" afterPath="$PROJECT_DIR$/grpc/relation.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proxy/base.go" beforeDir="false" afterPath="$PROJECT_DIR$/proxy/base.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/proxy/nosql/entity.go" beforeDir="false" afterPath="$PROJECT_DIR$/proxy/nosql/entity.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proxy/nosql/event.go" beforeDir="false" afterPath="$PROJECT_DIR$/proxy/nosql/event.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,7 +60,7 @@
       </list>
     </option>
   </component>
-  <component name="GOROOT" path="$PROJECT_DIR$/../../../../sdk/golang/go1.13.4" />
+  <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../sdk/golang/go1.15.6" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -73,7 +76,10 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="ASKED_MARK_IGNORED_FILES_AS_EXCLUDED" value="true" />
     <property name="DefaultGoTemplateProperty" value="Go File" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="configurable.Global.GOPATH.is.expanded" value="true" />
@@ -82,7 +88,7 @@
     <property name="go.gopath.indexing.explicitly.defined" value="true" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../rdp-bla-family" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
@@ -92,7 +98,7 @@
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="nodejs_package_manager_path" value="npm" />
-    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+    <property name="settings.editor.selected.configurable" value="go.vgo" />
   </component>
   <component name="RunManager">
     <configuration name="omo.msa.vocabulary" type="GoApplicationRunConfiguration" factoryName="Go Application">
@@ -106,11 +112,12 @@
       <method v="2" />
     </configuration>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="StructureViewFactory">
     <option name="ACTIVE_ACTIONS" value=",ALPHA_COMPARATOR" />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="2" />
+    <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
@@ -135,99 +142,10 @@
     <integration-enabled>true</integration-enabled>
     <environment>
       <map>
-        <entry key="GOPROXY" value="https://goproxy.cn" />
+        <entry key="GOPROXY" value="https://mirrors.aliyun.com/goproxy" />
       </map>
     </environment>
     <proxy>https://goproxy.cn</proxy>
-  </component>
-  <component name="WindowStateProjectService">
-    <state x="721" y="92" key="#Dockerfile" timestamp="1592892278924">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state x="721" y="92" key="#Dockerfile/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1592892278924" />
-    <state x="248" y="228" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1592900068557">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state x="248" y="228" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1592900068557" />
-    <state width="466" height="466" key="DebuggerActiveHint" timestamp="1592898920127">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state width="466" height="466" key="DebuggerActiveHint/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1592898920127" />
-    <state x="2653" y="93" width="1862" height="926" key="DiffContextDialog" timestamp="1599101849954">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state x="93" y="93" width="1862" height="926" key="DiffContextDialog/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1592902094656" />
-    <state x="2653" y="93" width="1862" height="926" key="DiffContextDialog/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1599101849954" />
-    <state x="912" y="416" width="395" height="374" key="EnvironmentVariablesDialog" timestamp="1592892459387">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state x="912" y="416" width="395" height="374" key="EnvironmentVariablesDialog/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1592892459387" />
-    <state x="805" y="311" key="FileChooserDialogImpl" timestamp="1598838494890">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state x="805" y="311" key="FileChooserDialogImpl/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1598838494890" />
-    <state x="3365" y="311" key="FileChooserDialogImpl/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1598000074504" />
-    <state width="2005" height="439" key="GridCell.Tab.0.bottom" timestamp="1601189008587">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state width="2005" height="439" key="GridCell.Tab.0.bottom/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1600941100132" />
-    <state width="2005" height="439" key="GridCell.Tab.0.bottom/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1601189008587" />
-    <state width="2005" height="439" key="GridCell.Tab.0.center" timestamp="1601189008587">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state width="2005" height="439" key="GridCell.Tab.0.center/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1600941100132" />
-    <state width="2005" height="439" key="GridCell.Tab.0.center/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1601189008587" />
-    <state width="2005" height="439" key="GridCell.Tab.0.left" timestamp="1601189008587">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state width="2005" height="439" key="GridCell.Tab.0.left/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1600941100132" />
-    <state width="2005" height="439" key="GridCell.Tab.0.left/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1601189008587" />
-    <state width="2005" height="439" key="GridCell.Tab.0.right" timestamp="1601189008587">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state width="2005" height="439" key="GridCell.Tab.0.right/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1600941100132" />
-    <state width="2005" height="439" key="GridCell.Tab.0.right/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1601189008587" />
-    <state width="2005" height="439" key="GridCell.Tab.1.bottom" timestamp="1601189008587">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state width="2005" height="439" key="GridCell.Tab.1.bottom/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1600941100132" />
-    <state width="2005" height="439" key="GridCell.Tab.1.bottom/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1601189008587" />
-    <state width="2005" height="439" key="GridCell.Tab.1.center" timestamp="1601189008587">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state width="2005" height="439" key="GridCell.Tab.1.center/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1600941100132" />
-    <state width="2005" height="439" key="GridCell.Tab.1.center/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1601189008587" />
-    <state width="2005" height="439" key="GridCell.Tab.1.left" timestamp="1601189008587">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state width="2005" height="439" key="GridCell.Tab.1.left/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1600941100132" />
-    <state width="2005" height="439" key="GridCell.Tab.1.left/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1601189008587" />
-    <state width="2005" height="439" key="GridCell.Tab.1.right" timestamp="1601189008587">
-      <screen x="2560" y="0" width="2048" height="1112" />
-    </state>
-    <state width="2005" height="439" key="GridCell.Tab.1.right/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1600941100132" />
-    <state width="2005" height="439" key="GridCell.Tab.1.right/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1601189008587" />
-    <state x="795" y="258" key="RollbackChangesDialog" timestamp="1597027779657">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state x="795" y="258" key="RollbackChangesDialog/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1597027779657" />
-    <state x="526" y="201" key="SettingsEditor" timestamp="1595815277925">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state x="526" y="201" key="SettingsEditor/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1595815277925" />
-    <state width="1031" height="563" key="XDebugger.FullValuePopup" timestamp="1597375802757">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state width="1031" height="563" key="XDebugger.FullValuePopup/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1597375802757" />
-    <state x="724" y="154" width="600" height="804" key="find.popup" timestamp="1592898472454">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state x="724" y="154" width="600" height="804" key="find.popup/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1592898472454" />
-    <state x="687" y="243" width="672" height="678" key="search.everywhere.popup" timestamp="1597299656596">
-      <screen x="0" y="0" width="2048" height="1112" />
-    </state>
-    <state x="687" y="243" width="672" height="678" key="search.everywhere.popup/0.0.2048.1112/2560.0.2048.1112@0.0.2048.1112" timestamp="1597299656596" />
-    <state x="3247" y="243" width="672" height="678" key="search.everywhere.popup/0.0.2048.1112/2560.0.2048.1112@2560.0.2048.1112" timestamp="1594106465824" />
   </component>
   <component name="XDebuggerManager">
     <watches-manager>

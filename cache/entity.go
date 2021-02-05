@@ -128,6 +128,17 @@ func (mine *cacheContext)GetEntitiesByOwner(owner string) []*EntityInfo {
 	return list
 }
 
+func (mine *cacheContext)GetEntitiesByProp(key, val string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 10)
+	for _, value := range mine.entities {
+		prop := value.GetProperty(key)
+		if prop != nil && prop.HadWordByValue(val) {
+			list = append(list, value)
+		}
+	}
+	return list
+}
+
 func (mine *cacheContext)GetEntity(uid string) *EntityInfo {
 	if len(uid) < 1 {
 		return nil

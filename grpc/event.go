@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
@@ -127,7 +128,7 @@ func (mine *EventService)GetList(ctx context.Context, in *pb.RequestInfo, out *p
 	for _, value := range info.AllEvents() {
 		out.List = append(out.List, switchEntityEvent(value))
 	}
-	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
 

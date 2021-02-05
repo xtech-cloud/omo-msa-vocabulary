@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 )
@@ -28,6 +29,14 @@ func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd,
 	inLog(path, in)
 	if cache.Context().HadAttributeByName(in.Name) {
 		out.Status = outError(path, "the name of attribute is repeated", pb.ResultStatus_Repeated)
+		return nil
+	}
+	if len(in.Key) < 1 {
+		out.Status = outError(path, "the key of attribute is empty", pb.ResultStatus_Repeated)
+		return nil
+	}
+	if cache.Context().HadAttributeByName(in.Key) {
+		out.Status = outError(path, "the key of attribute is repeated", pb.ResultStatus_Empty)
 		return nil
 	}
 	info := new(cache.AttributeInfo)
@@ -87,11 +96,13 @@ func (mine *AttributeService)RemoveOne(ctx context.Context, in *pb.RequestInfo, 
 }
 
 func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeList) error {
+	path := "attribute.all"
+	inLog(path, in)
 	out.List = make([]*pb.AttributeInfo, 0, 10)
 	for _, value := range cache.Context().AllAttributes() {
 		out.List = append(out.List, switchAttribute(value))
 	}
-	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
 

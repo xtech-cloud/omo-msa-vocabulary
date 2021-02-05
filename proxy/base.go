@@ -18,6 +18,7 @@ type PropertyInfo struct {
 type WordInfo struct {
 	// 实体UID,如果存在说明该属性对应一个实体
 	UID  string `json:"uid" bson:"uid"`
+	// 属性值
 	Name string `json:"name" bson:"name"`
 }
 
@@ -64,6 +65,15 @@ type Location struct {
 func (mine *PropertyInfo) HadWordByEntity(uid string) bool {
 	for i := 0; i < len(mine.Words); i += 1 {
 		if mine.Words[i].UID == uid {
+			return true
+		}
+	}
+	return false
+}
+
+func (mine *PropertyInfo) HadWordByValue(val string) bool {
+	for i := 0; i < len(mine.Words); i += 1 {
+		if mine.Words[i].Name == val {
 			return true
 		}
 	}

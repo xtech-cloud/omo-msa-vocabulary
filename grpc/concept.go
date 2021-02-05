@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 )
@@ -134,12 +135,14 @@ func (mine *ConceptService)RemoveOne(ctx context.Context, in *pb.RequestInfo, ou
 }
 
 func (mine *ConceptService)GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyConceptList) error {
+	path := "concept.getAll"
+	inLog(path, in)
 	all := cache.Context().GetTopConcepts()
 	out.List = make([]*pb.ConceptInfo, 0, len(all))
 	for _, value := range all {
 		out.List = append(out.List, switchConcept(value))
 	}
-	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
 

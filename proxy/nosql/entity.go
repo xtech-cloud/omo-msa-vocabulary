@@ -70,12 +70,12 @@ func GetLinkNextID() uint64 {
 	return num
 }
 
-func RemoveEntity(table string, uid string, operator string) error {
+func RemoveEntity(table, uid string, operator string) error {
 	_, err := removeOne(table, uid, operator)
 	return err
 }
 
-func GetEntity(table string, uid string) (*Entity, error) {
+func GetEntity(table, uid string) (*Entity, error) {
 	result, err := findOne(table, uid)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func GetEntity(table string, uid string) (*Entity, error) {
 	return model, nil
 }
 
-func GetEntityByName(table string, name string) (*Entity, error) {
+func GetEntityByName(table, name string) (*Entity, error) {
 	msg := bson.M{"name": name }
 	result, err := findOneBy(table, msg)
 	if err != nil {
@@ -108,31 +108,31 @@ func UpdateEntityBase(table, uid, name, remark, add, concept, operator string) e
 	return err
 }
 
-func UpdateEntityStatus(table string, uid string, state uint8, operator string) error {
+func UpdateEntityStatus(table, uid string, state uint8, operator string) error {
 	msg := bson.M{"status": state, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntityCover(table string, uid string, cover string, operator string) error {
+func UpdateEntityCover(table, uid string, cover string, operator string) error {
 	msg := bson.M{"cover": cover, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntityTags(table string, uid string, operator string, tags []string) error {
+func UpdateEntityTags(table, uid string, operator string, tags []string) error {
 	msg := bson.M{"tags": tags, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntityAdd(table string, uid string, add string, operator string) error {
+func UpdateEntityAdd(table, uid string, add string, operator string) error {
 	msg := bson.M{"add": add, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
-func UpdateEntitySynonyms(table string, uid string, operator string, synonyms []string) error {
+func UpdateEntitySynonyms(table, uid string, operator string, synonyms []string) error {
 	msg := bson.M{"synonyms": synonyms, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
@@ -144,7 +144,7 @@ func UpdateEntityProperties(table, uid string, operator string, array []*proxy.P
 	return err
 }
 
-func AppendEntityProperty(table string, uid string, prop proxy.PropertyInfo) error {
+func AppendEntityProperty(table, uid string, prop proxy.PropertyInfo) error {
 	if len(uid) < 1 {
 		return errors.New("the uid is empty")
 	}
@@ -153,7 +153,7 @@ func AppendEntityProperty(table string, uid string, prop proxy.PropertyInfo) err
 	return err
 }
 
-func SubtractEntityProperty(table string, uid string, key string) error {
+func SubtractEntityProperty(table, uid string, key string) error {
 	if len(uid) < 1 {
 		return errors.New("the uid is empty")
 	}

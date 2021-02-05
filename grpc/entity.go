@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
@@ -127,7 +128,7 @@ func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 	return nil
 }
 
-func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy, out *pb.ReplyEntityAll) error {
+func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy, out *pb.ReplyEntityList) error {
 	path := "entity.getByOwner"
 	inLog(path, in)
 	out.Flag = in.Owner
@@ -145,11 +146,13 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 			}
 		}
 	}
-	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
+	out.Page = uint32(in.Page)
+	out.Total = uint32(len(out.List))
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
 
-func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySearch, out *pb.ReplyEntityAll) error {
+func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySearch, out *pb.ReplyEntityList) error {
 	path := "entity.searchPublic"
 	inLog(path, in)
 	out.Flag = ""
@@ -159,7 +162,7 @@ func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySear
 			out.List = append(out.List, switchEntity(value))
 		}
 	}
-	out.Status = &pb.ReplyStatus{Code: 0, Msg: ""}
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
 
@@ -373,5 +376,22 @@ func (mine *EntityService)SubtractProperty(ctx context.Context, in *pb.RequestIn
 		out.Properties = append(out.Properties, tmp)
 	}
 	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EntityService)GetByProperty(ctx context.Context, in *pb.ReqEntityByProp, out *pb.ReplyEntityList) error {
+	path := "entity.getByProperty"
+	inLog(path, in)
+	if len(in.Key) < 1 || len(in.Value) < 1{
+		out.Status = outError(path, "the key or value is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	list := cache.Context().GetEntitiesByProp(in.Key, in.Value)
+	out.List = make([]*pb.EntityInfo, 0, 5)
+	for _, value := range list {
+		out.List = append(out.List, switchEntity(value))
+	}
+
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
