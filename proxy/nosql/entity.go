@@ -88,8 +88,8 @@ func GetEntity(table, uid string) (*Entity, error) {
 	return model, nil
 }
 
-func GetEntityByName(table, name string) (*Entity, error) {
-	msg := bson.M{"name": name }
+func GetEntityByName(table, name, add string) (*Entity, error) {
+	msg := bson.M{"name": name, "add": add}
 	result, err := findOneBy(table, msg)
 	if err != nil {
 		return nil, err
@@ -100,6 +100,42 @@ func GetEntityByName(table, name string) (*Entity, error) {
 		return nil, err1
 	}
 	return model, nil
+}
+
+func GetEntitiesByProp(table, key, value string) ([]*Entity, error) {
+	msg := bson.M{"props": bson.M{"$elemMatch":bson.M{"key":key, "values": bson.M{"$elemMatch":bson.M{"name":value}}}}}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEntitiesByOwner(table, owner string) ([]*Entity, error) {
+	msg := bson.M{"scene": owner}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
 }
 
 func UpdateEntityBase(table, uid, name, remark, add, concept, operator string) error {

@@ -79,7 +79,7 @@ func (mine *cacheContext)CreateEntity(info *EntityInfo) error {
 	err = nosql.CreateEntity(db, info.table())
 	if err == nil {
 		info.initInfo(db)
-		mine.entities = append(mine.entities, info)
+		//mine.entities = append(mine.entities, info)
 		mine.syncGraphNode(info)
 	}
 	return err
@@ -94,14 +94,36 @@ func (mine *cacheContext)syncGraphNode(info *EntityInfo)  {
 }
 
 func (mine *cacheContext)AllEntities() []*EntityInfo {
-	return mine.entities
+	array,err := nosql.GetEntities(DefaultEntityTable)
+	if err == nil {
+		return make([]*EntityInfo, 0, 0)
+	}
+	list := make([]*EntityInfo, 0, len(array))
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	for i := 0; i < len(mine.concepts); i += 1 {
+		tb := mine.concepts[i].Table
+		if len(tb) > 0 {
+			arr, err := nosql.GetEntities(tb)
+			if err == nil && arr != nil {
+				for _, entity := range arr {
+					info := new(EntityInfo)
+					info.initInfo(entity)
+					list = append(list, info)
+				}
+			}
+		}
+	}
+	return list
 }
 
 func (mine *cacheContext)HadEntityByName(name, add string) bool {
-	for i := 0; i < len(mine.entities); i++ {
-		if mine.entities[i].Name == name && mine.entities[i].Add == add {
-			return true
-		}
+	info := mine.GetEntityByName(name, add)
+	if info != nil {
+		return true
 	}
 	return false
 }
@@ -110,9 +132,21 @@ func (mine *cacheContext)GetEntityByName(name, add string) *EntityInfo {
 	if len(name) < 1 {
 		return nil
 	}
-	for i := 0; i < len(mine.entities); i++ {
-		if mine.entities[i].Name == name && mine.entities[i].Add == add {
-			return mine.entities[i]
+	db,err := nosql.GetEntityByName(DefaultEntityTable, name, add)
+	if err == nil && db != nil {
+		info := new(EntityInfo)
+		info.initInfo(db)
+		return info
+	}
+	for i := 0; i < len(mine.concepts); i += 1 {
+		tb := mine.concepts[i].Table
+		if len(tb) > 0 {
+			db, err = nosql.GetEntityByName(tb, name, add)
+			if err == nil && db != nil {
+				info := new(EntityInfo)
+				info.initInfo(db)
+				return info
+			}
 		}
 	}
 	return nil
@@ -120,22 +154,68 @@ func (mine *cacheContext)GetEntityByName(name, add string) *EntityInfo {
 
 func (mine *cacheContext)GetEntitiesByOwner(owner string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
-	for _, value := range mine.entities {
-		if value.Owner == owner {
-			list = append(list, value)
+	array,err := nosql.GetEntitiesByOwner(DefaultEntityTable, owner)
+	if err != nil {
+		return list
+	}
+
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	for i := 0; i < len(mine.concepts); i += 1 {
+		tb := mine.concepts[i].Table
+		if len(tb) > 0 {
+			arr, err := nosql.GetEntitiesByOwner(tb, owner)
+			if err == nil && arr != nil {
+				for _, entity := range arr {
+					info := new(EntityInfo)
+					info.initInfo(entity)
+					list = append(list, info)
+				}
+			}
 		}
 	}
+	//for _, value := range mine.entities {
+	//	if value.Owner == owner {
+	//		list = append(list, value)
+	//	}
+	//}
 	return list
 }
 
 func (mine *cacheContext)GetEntitiesByProp(key, val string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
-	for _, value := range mine.entities {
-		prop := value.GetProperty(key)
-		if prop != nil && prop.HadWordByValue(val) {
-			list = append(list, value)
+	array,err := nosql.GetEntitiesByProp(DefaultEntityTable, key, val)
+	if err != nil {
+		return list
+	}
+
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	for i := 0; i < len(mine.concepts); i += 1 {
+		tb := mine.concepts[i].Table
+		if len(tb) > 0 {
+			arr, err := nosql.GetEntitiesByProp(tb, key, val)
+			if err == nil && arr != nil {
+				for _, entity := range arr {
+					info := new(EntityInfo)
+					info.initInfo(entity)
+					list = append(list, info)
+				}
+			}
 		}
 	}
+	//for _, value := range mine.entities {
+	//	prop := value.GetProperty(key)
+	//	if prop != nil && prop.HadWordByValue(val) {
+	//		list = append(list, value)
+	//	}
+	//}
 	return list
 }
 
@@ -143,24 +223,24 @@ func (mine *cacheContext)GetEntity(uid string) *EntityInfo {
 	if len(uid) < 1 {
 		return nil
 	}
-	for i := 0; i < len(mine.entities); i++ {
-		if mine.entities[i].UID == uid {
-			return mine.entities[i]
-		}
-	}
+	//for i := 0; i < len(mine.entities); i++ {
+	//	if mine.entities[i].UID == uid {
+	//		return mine.entities[i]
+	//	}
+	//}
 	db := mine.getEntityFromDB(uid)
 	if db != nil {
 		info := new(EntityInfo)
 		info.initInfo(db)
-		mine.entities = append(mine.entities, info)
+		//mine.entities = append(mine.entities, info)
 		return info
 	}
 	return nil
 }
 
 func (mine *cacheContext)getEntityFromDB(uid string) *nosql.Entity {
-	for i := 0; i < len(mine.concerts); i += 1 {
-		tb := mine.concerts[i].Table
+	for i := 0; i < len(mine.concepts); i += 1 {
+		tb := mine.concepts[i].Table
 		if len(tb) > 0 {
 			db, err := nosql.GetEntity(tb, uid)
 			if err == nil && db != nil {
@@ -176,12 +256,17 @@ func (mine *cacheContext)getEntityFromDB(uid string) *nosql.Entity {
 }
 
 func (mine *cacheContext)HadEntity(uid string) bool {
-	for i := 0; i < len(mine.entities); i += 1 {
-		if mine.entities[i].UID == uid {
-			return true
-		}
+	db := mine.getEntityFromDB(uid)
+	if db != nil {
+		return true
 	}
 	return false
+	//for i := 0; i < len(mine.entities); i += 1 {
+	//	if mine.entities[i].UID == uid {
+	//		return true
+	//	}
+	//}
+	//return false
 }
 
 func (mine *cacheContext)RemoveEntity(uid, operator string) error {
@@ -191,15 +276,14 @@ func (mine *cacheContext)RemoveEntity(uid, operator string) error {
 	tmp := mine.GetEntity(uid)
 	err := nosql.RemoveEntity(tmp.table(), uid, operator)
 	if err == nil {
-		length := len(mine.entities)
-		for i := 0; i < length; i++ {
-			if mine.entities[i].UID == uid {
-				mine.entities[i].clear()
-				mine.entities = append(mine.entities[:i], mine.entities[i+1:]...)
-				break
-			}
-		}
-
+		//length := len(mine.entities)
+		//for i := 0; i < length; i++ {
+		//	if mine.entities[i].UID == uid {
+		//		mine.entities[i].clear()
+		//		mine.entities = append(mine.entities[:i], mine.entities[i+1:]...)
+		//		break
+		//	}
+		//}
 	}
 
 	return err

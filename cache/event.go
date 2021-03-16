@@ -20,22 +20,18 @@ type EventInfo struct {
 }
 
 func (mine *cacheContext)GetEvent(uid string) *EventInfo {
-	for i := 0; i < len(mine.entities); i += 1 {
-		info := mine.entities[i].GetEvent(uid)
-		if info != nil {
-			return info
-		}
+	event,err := nosql.GetEvent(uid)
+	if err == nil && event != nil {
+		info := new(EventInfo)
+		info.initInfo(event)
+		return info
 	}
+
 	return nil
 }
 
 func (mine *cacheContext)RemoveEvent(uid, operator string) error {
-	for i := 0; i < len(mine.entities); i += 1 {
-		if mine.entities[i].HadEvent(uid) {
-			return mine.entities[i].RemoveEvent(uid, operator)
-		}
-	}
-	return nil
+	return nosql.RemoveEvent(uid, operator)
 }
 
 func (mine *EventInfo) initInfo(db *nosql.Event) {

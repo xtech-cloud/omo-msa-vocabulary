@@ -70,8 +70,8 @@ type CountMap struct {
 
 type cacheContext struct {
 	graph      *GraphInfo
-	entities   []*EntityInfo
-	concerts   []*ConceptInfo
+	//entities   []*EntityInfo
+	concepts   []*ConceptInfo
 	attributes []*AttributeInfo
 	relations  []*RelationshipInfo
 	nodesMap   *CountMap
@@ -82,8 +82,8 @@ var cacheCtx *cacheContext
 
 func InitData() error {
 	cacheCtx = &cacheContext{}
-	cacheCtx.entities = make([]*EntityInfo, 0, 1000)
-	cacheCtx.concerts = make([]*ConceptInfo, 0, 50)
+	//cacheCtx.entities = make([]*EntityInfo, 0, 1000)
+	cacheCtx.concepts = make([]*ConceptInfo, 0, 50)
 	cacheCtx.attributes = make([]*AttributeInfo, 0, 100)
 	cacheCtx.relations = make([]*RelationshipInfo, 0, 100)
 	cacheCtx.graph = new(GraphInfo)
@@ -119,27 +119,27 @@ func InitData() error {
 	for i := 0; i < len(concerts); i += 1 {
 		info := new(ConceptInfo)
 		info.initInfo(concerts[i])
-		cacheCtx.concerts = append(cacheCtx.concerts, info)
+		cacheCtx.concepts = append(cacheCtx.concepts, info)
 	}
-	logger.Infof("init concerts!!! number = %d", len(cacheCtx.concerts))
+	logger.Infof("init concerts!!! number = %d", len(cacheCtx.concepts))
 
-	for _, kind := range cacheCtx.concerts {
-		if kind.Table != "" {
-			entities,_ := nosql.GetEntities(kind.Table)
-			for i := 0; i < len(entities); i += 1 {
-				info := new(EntityInfo)
-				info.initInfo(entities[i])
-				cacheCtx.entities = append(cacheCtx.entities, info)
-			}
-		}
-	}
-	entities,_ := nosql.GetEntities(DefaultEntityTable)
-	for i := 0; i < len(entities); i += 1 {
-		info := new(EntityInfo)
-		info.initInfo(entities[i])
-		cacheCtx.entities = append(cacheCtx.entities, info)
-	}
-	logger.Infof("init entities!!! number = %d", len(cacheCtx.entities))
+	//for _, kind := range cacheCtx.concerts {
+	//	if kind.Table != "" {
+	//		entities,_ := nosql.GetEntities(kind.Table)
+	//		for i := 0; i < len(entities); i += 1 {
+	//			info := new(EntityInfo)
+	//			info.initInfo(entities[i])
+	//			cacheCtx.entities = append(cacheCtx.entities, info)
+	//		}
+	//	}
+	//}
+	//entities,_ := nosql.GetEntities(DefaultEntityTable)
+	//for i := 0; i < len(entities); i += 1 {
+	//	info := new(EntityInfo)
+	//	info.initInfo(entities[i])
+	//	cacheCtx.entities = append(cacheCtx.entities, info)
+	//}
+	//logger.Infof("init entities!!! number = %d", len(cacheCtx.entities))
 	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
 
 	return nil

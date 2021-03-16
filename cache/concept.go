@@ -38,17 +38,17 @@ type ConceptInfo struct {
 //region Global Fun
 
 func (mine *cacheContext)GetTopConcept(uid string) *ConceptInfo {
-	for i := 0; i < len(mine.concerts); i += 1 {
-		if mine.concerts[i].HadChild(uid) {
-			return mine.concerts[i]
+	for i := 0; i < len(mine.concepts); i += 1 {
+		if mine.concepts[i].HadChild(uid) {
+			return mine.concepts[i]
 		}
 	}
 	return nil
 }
 
 func (mine *cacheContext)GetConceptByName(name string) *ConceptInfo {
-	for i := 0; i < len(mine.concerts); i += 1 {
-		child := mine.concerts[i].GetChildByName(name)
+	for i := 0; i < len(mine.concepts); i += 1 {
+		child := mine.concepts[i].GetChildByName(name)
 		if child != nil {
 			return child
 		}
@@ -57,8 +57,8 @@ func (mine *cacheContext)GetConceptByName(name string) *ConceptInfo {
 }
 
 func (mine *cacheContext)GetConcept(uid string) *ConceptInfo {
-	for i := 0; i < len(mine.concerts); i += 1 {
-		child := mine.concerts[i].GetChild(uid)
+	for i := 0; i < len(mine.concepts); i += 1 {
+		child := mine.concepts[i].GetChild(uid)
 		if child != nil {
 			return child
 		}
@@ -67,7 +67,7 @@ func (mine *cacheContext)GetConcept(uid string) *ConceptInfo {
 }
 
 func (mine *cacheContext)GetTopConcepts() []*ConceptInfo {
-	return mine.concerts
+	return mine.concepts
 }
 
 func (mine *cacheContext)CreateTopConcept(info *ConceptInfo) error {
@@ -90,7 +90,7 @@ func (mine *cacheContext)CreateTopConcept(info *ConceptInfo) error {
 	err := nosql.CreateConcept(db)
 	if err == nil {
 		info.initInfo(db)
-		mine.concerts = append(mine.concerts, info)
+		mine.concepts = append(mine.concepts, info)
 	}
 	return err
 }
@@ -98,12 +98,12 @@ func (mine *cacheContext)CreateTopConcept(info *ConceptInfo) error {
 func (mine *cacheContext)RemoveConcept(uid, operator string) error {
 	err := nosql.RemoveConcept(uid, operator)
 	if err == nil {
-		for i := 0; i < len(mine.concerts); i += 1 {
-			if mine.concerts[i].UID == uid {
-				mine.concerts = append(mine.concerts[:i], mine.concerts[i+1:]...)
+		for i := 0; i < len(mine.concepts); i += 1 {
+			if mine.concepts[i].UID == uid {
+				mine.concepts = append(mine.concepts[:i], mine.concepts[i+1:]...)
 				break
-			}else if mine.concerts[i].HadChild(uid) {
-				_ = mine.concerts[i].RemoveChild(uid)
+			}else if mine.concepts[i].HadChild(uid) {
+				_ = mine.concepts[i].RemoveChild(uid)
 			}
 		}
 	}
@@ -111,8 +111,8 @@ func (mine *cacheContext)RemoveConcept(uid, operator string) error {
 }
 
 func (mine *cacheContext)HadConceptByTable(table string) bool {
-	for i := 0; i < len(mine.concerts); i += 1 {
-		if mine.concerts[i].Table == table {
+	for i := 0; i < len(mine.concepts); i += 1 {
+		if mine.concepts[i].Table == table {
 			return true
 		}
 	}
@@ -121,8 +121,8 @@ func (mine *cacheContext)HadConceptByTable(table string) bool {
 
 func (mine *cacheContext)HadConceptByName(name, parent string) bool {
 	if parent == ""{
-		for i := 0; i < len(mine.concerts); i += 1 {
-			if mine.concerts[i].Name == name {
+		for i := 0; i < len(mine.concepts); i += 1 {
+			if mine.concepts[i].Name == name {
 				return true
 			}
 		}
@@ -138,9 +138,9 @@ func (mine *cacheContext)HadConceptByName(name, parent string) bool {
 
 func (mine *cacheContext)HadConceptProperty(uid, key string) bool {
 	var had = false
-	for i := 0;i < len(mine.concerts);i += 1 {
-		if mine.concerts[i].HadChild(uid) {
-			had = mine.concerts[i].HadAttribute(key)
+	for i := 0;i < len(mine.concepts);i += 1 {
+		if mine.concepts[i].HadChild(uid) {
+			had = mine.concepts[i].HadAttribute(key)
 			break
 		}
 	}
