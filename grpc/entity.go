@@ -132,22 +132,24 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 	path := "entity.getByOwner"
 	inLog(path, in)
 	out.Flag = in.Owner
-	out.List = make([]*pb.EntityInfo, 0, 10)
 	if len(in.Owner) > 0 {
-		for _, value := range cache.Context().AllEntities() {
-			if value.Owner == in.Owner && value.Status == cache.EntityStatus(in.Status) {
-				out.List = append(out.List, switchEntity(value))
-			}
+		array := cache.Context().GetEntitiesByOwnerStatus(in.Owner, cache.EntityStatus(in.Status))
+		total, _, list := checkPage(in.Page, in.Number, array)
+		out.List = make([]*pb.EntityInfo, 0, in.Number)
+		out.Total = uint32(total)
+		for _, value := range list.([]*cache.EntityInfo) {
+			out.List = append(out.List, switchEntity(value))
 		}
 	}else{
-		for _, value := range cache.Context().AllEntities() {
-			if value.Status == cache.EntityStatus(in.Status) {
-				out.List = append(out.List, switchEntity(value))
-			}
+		array := cache.Context().GetEntitiesByStatus(cache.EntityStatus(in.Status))
+		total, _, list := checkPage(in.Page, in.Number, array)
+		out.List = make([]*pb.EntityInfo, 0, in.Number)
+		out.Total = uint32(total)
+		for _, value := range list.([]*cache.EntityInfo) {
+			out.List = append(out.List, switchEntity(value))
 		}
 	}
 	out.Page = uint32(in.Page)
-	out.Total = uint32(len(out.List))
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
@@ -157,7 +159,8 @@ func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySear
 	inLog(path, in)
 	out.Flag = ""
 	out.List = make([]*pb.EntityInfo, 0, 200)
-	for _, value := range cache.Context().AllEntities() {
+	list := cache.Context().AllEntities()
+	for _, value := range list {
 		if value.Status == cache.EntityStatusUsable && value.IsSatisfy(in.Concept, in.Attribute, in.Tags){
 			out.List = append(out.List, switchEntity(value))
 		}

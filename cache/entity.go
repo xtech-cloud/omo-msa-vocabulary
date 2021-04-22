@@ -95,7 +95,7 @@ func (mine *cacheContext)syncGraphNode(info *EntityInfo)  {
 
 func (mine *cacheContext)AllEntities() []*EntityInfo {
 	array,err := nosql.GetEntities(DefaultEntityTable)
-	if err == nil {
+	if err != nil {
 		return make([]*EntityInfo, 0, 0)
 	}
 	list := make([]*EntityInfo, 0, len(array))
@@ -182,6 +182,78 @@ func (mine *cacheContext)GetEntitiesByOwner(owner string) []*EntityInfo {
 	//		list = append(list, value)
 	//	}
 	//}
+	return list
+}
+
+func (mine *cacheContext)GetEntitiesByConcept(concept string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 10)
+	array,err := nosql.GetEntitiesByConcept(DefaultEntityTable, concept)
+	if err != nil {
+		return list
+	}
+
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+
+	return list
+}
+
+func (mine *cacheContext)GetEntitiesByStatus(status EntityStatus) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 10)
+	array,err := nosql.GetEntitiesByStatus(DefaultEntityTable, uint8(status))
+	if err != nil {
+		return list
+	}
+
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	for i := 0; i < len(mine.concepts); i += 1 {
+		tb := mine.concepts[i].Table
+		if len(tb) > 0 {
+			arr, err := nosql.GetEntitiesByStatus(tb, uint8(status))
+			if err == nil && arr != nil {
+				for _, entity := range arr {
+					info := new(EntityInfo)
+					info.initInfo(entity)
+					list = append(list, info)
+				}
+			}
+		}
+	}
+	return list
+}
+
+func (mine *cacheContext)GetEntitiesByOwnerStatus(owner string, status EntityStatus) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 10)
+	array,err := nosql.GetEntitiesByOwnerAndStatus(DefaultEntityTable, owner, uint8(status))
+	if err != nil {
+		return list
+	}
+
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	for i := 0; i < len(mine.concepts); i += 1 {
+		tb := mine.concepts[i].Table
+		if len(tb) > 0 {
+			arr, err := nosql.GetEntitiesByOwnerAndStatus(tb, owner, uint8(status))
+			if err == nil && arr != nil {
+				for _, entity := range arr {
+					info := new(EntityInfo)
+					info.initInfo(entity)
+					list = append(list, info)
+				}
+			}
+		}
+	}
 	return list
 }
 

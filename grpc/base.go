@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/micro/go-micro/v2/logger"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
+	"reflect"
 )
 
 func inLog(name, data interface{})  {
@@ -39,4 +40,25 @@ func ByteString(p []byte) string {
 		}
 	}
 	return string(p)
+}
+
+func checkPage( page, number int32, all interface{}) (int32, int32, interface{}) {
+	if number < 1 {
+		number = 10
+	}
+	array := reflect.ValueOf(all)
+	total := int32(array.Len())
+	maxPage := total/number + 1
+	if page < 1 {
+		return total, maxPage, all
+	}
+
+	var start = (page - 1) * number
+	var end = start + number
+	if end > total {
+		end = total
+	}
+
+	list := array.Slice(int(start), int(end))
+	return total, maxPage, list.Interface()
 }
