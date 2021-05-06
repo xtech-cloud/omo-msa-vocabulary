@@ -35,6 +35,16 @@ type RelationCaseInfo struct {
 	Entity  	string `json:"entity" bson:"entity"` //对应实体UID
 }
 
+type EventBrief struct {
+	Name string
+	Description string // 描述
+	Quote       string // 引用或者备注
+	Date        DateInfo
+	Place       PlaceInfo
+	Tags        []string
+	Assets      []string
+}
+
 type Date struct {
 	Type uint8 `json:"type" bson:"type"` // AD or BC
 	Day   uint8  `json:"day" bson:"day"`

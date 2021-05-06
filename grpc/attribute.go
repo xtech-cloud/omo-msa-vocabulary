@@ -35,7 +35,7 @@ func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd,
 		out.Status = outError(path, "the key of attribute is empty", pb.ResultStatus_Repeated)
 		return nil
 	}
-	if cache.Context().HadAttributeByName(in.Key) {
+	if cache.Context().HadAttributeByKey(in.Key) {
 		out.Status = outError(path, "the key of attribute is repeated", pb.ResultStatus_Empty)
 		return nil
 	}

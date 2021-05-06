@@ -2,7 +2,6 @@ package nosql
 
 import (
 	"context"
-	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
@@ -116,27 +115,18 @@ func RemoveConcept(uid, operator string) error {
 }
 
 func UpdateConceptAttributes(uid string, attrs []string) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
 	msg := bson.M{"attributes": attrs, "updatedAt": time.Now()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }
 
 func AppendConceptAttribute(uid string, attr string) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
 	msg := bson.M{"attributes": attr}
 	_, err := appendElement(TableConcept, uid, msg)
 	return err
 }
 
 func SubtractConceptAttribute(uid string, attr string) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
 	msg := bson.M{"attributes": attr}
 	_, err := removeElement(TableConcept, uid, msg)
 	return err

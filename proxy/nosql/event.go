@@ -2,7 +2,6 @@ package nosql
 
 import (
 	"context"
-	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy"
@@ -116,36 +115,24 @@ func UpdateEventCover(uid, operator, cover string) error {
 }
 
 func AppendEventAsset(uid string, asset string) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
 	msg := bson.M{"assets": asset}
 	_, err := appendElement(TableEvent, uid, msg)
 	return err
 }
 
 func SubtractEventAsset(uid string, asset string) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
 	msg := bson.M{"assets": asset}
 	_, err := removeElement(TableEvent, uid, msg)
 	return err
 }
 
 func AppendEventRelation(uid string, relation *proxy.RelationCaseInfo) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
 	msg := bson.M{"relations": relation}
 	_, err := appendElement(TableEvent, uid, msg)
 	return err
 }
 
 func SubtractEventRelation(uid string, relation string) error {
-	if len(uid) < 1 {
-		return errors.New("the uid is empty")
-	}
 	msg := bson.M{"relations": bson.M{"uid": relation}}
 	_, err := removeElement(TableEvent, uid, msg)
 	return err

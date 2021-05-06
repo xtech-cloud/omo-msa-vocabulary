@@ -9,9 +9,10 @@ import (
 
 type EventInfo struct {
 	BaseInfo
-	Description string
+	Description string // 描述
 	Parent      string
 	Cover       string
+	Quote      string // 引用或者备注
 	Date        proxy.DateInfo
 	Place       proxy.PlaceInfo
 	Tags        []string

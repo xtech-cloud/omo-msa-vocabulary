@@ -47,6 +47,9 @@ func getCount(collection string) (int64, error) {
 }
 
 func deleteOne(collection string, uid string) (int64, error) {
+	if len(uid) < 1 {
+		return 0,errors.New("the uid is empty")
+	}
 	if len(collection) < 1 {
 		return 0,	errors.New("the collection is empty")
 	}
@@ -69,6 +72,9 @@ func deleteOne(collection string, uid string) (int64, error) {
 }
 
 func removeOne(collection string, uid string, operator string) (int64, error) {
+	if len(uid) < 1 {
+		return 0,errors.New("the uid is empty")
+	}
 	if len(collection) < 1 {
 		return 0,	errors.New("the collection is empty")
 	}
@@ -109,6 +115,9 @@ func hadOne(collection string, filter bson.M) (bool, error) {
 }
 
 func updateOne(collection string, uid string, data bson.M) (int64, error) {
+	if len(uid) < 1 {
+		return 0,errors.New("the uid is empty")
+	}
 	if len(collection) < 1 {
 		return 0,	errors.New("the collection is empty")
 	}
@@ -135,6 +144,9 @@ func updateOne(collection string, uid string, data bson.M) (int64, error) {
 往数组里面追加一个元素
 */
 func appendElement(collection string, uid string, data bson.M) (int64, error) {
+	if len(uid) < 1 {
+		return 0, errors.New("the uid is empty")
+	}
 	if len(collection) < 1 {
 		return 0,	errors.New("the collection is empty")
 	}
@@ -161,6 +173,9 @@ func appendElement(collection string, uid string, data bson.M) (int64, error) {
 从数组里面移除一个元素
 */
 func removeElement(collection string, uid string, data bson.M) (int64, error) {
+	if len(uid) < 1 {
+		return 0, errors.New("the uid is empty")
+	}
 	if len(collection) < 1 {
 		return 0,	errors.New("the collection is empty")
 	}
@@ -201,6 +216,9 @@ func updateOneBy(collection string, filter bson.M, update bson.M) (int64, error)
 }
 
 func findOne(collection string, uid string) (*mongo.SingleResult, error) {
+	if len(uid) < 1 {
+		return nil,errors.New("the uid is empty")
+	}
 	if len(collection) < 1 {
 		return nil,	errors.New("the collection is empty")
 	}
@@ -240,6 +258,9 @@ func findOneBy(collection string, filter bson.M) (*mongo.SingleResult, error) {
 }
 
 func findOneOfField(collection string, uid string, selector bson.M) (*mongo.SingleResult, error) {
+	if len(uid) < 1 {
+		return nil,errors.New("the uid is empty")
+	}
 	if len(collection) < 1 {
 		return nil,	errors.New("the collection is empty")
 	}

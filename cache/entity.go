@@ -9,10 +9,12 @@ import (
 )
 
 const (
-	EntityStatusIdle    EntityStatus = 0
-	EntityStatusPending EntityStatus = 1
-	EntityStatusUsable  EntityStatus = 2
-	EntityStatusFailed  EntityStatus = 3
+	EntityStatusDraft    EntityStatus = 0
+	EntityStatusFirst EntityStatus = 1
+	EntityStatusPending EntityStatus = 2
+	EntityStatusSpecial  EntityStatus = 3
+	EntityStatusUsable  EntityStatus = 4
+	EntityStatusFailed  EntityStatus = 10
 )
 
 const DefaultEntityTable = "entities"
@@ -23,15 +25,20 @@ type EntityInfo struct {
 	Status EntityStatus
 	BaseInfo
 	Concept     string
-	Description string
-	Cover       string
-	Add         string   //消歧义
-	Creator     string   //创建者
-	Owner       string   //所属单位
-	Synonyms    []string //同义词
-	Tags        []string //标签
-	properties  []*proxy.PropertyInfo
-	events      []*EventInfo
+	Summary         string
+	Description     string
+	Cover           string
+	Add             string   //消歧义
+	Creator         string   //创建者
+	Owner           string   //所属单位
+	Mark            string // 标记或者来源
+	Quote           string   // 引用
+	Synonyms        []string //同义词
+	Tags            []string //标签
+	Properties      []*proxy.PropertyInfo
+	StaticEvents    []*proxy.EventBrief
+	StaticRelations []*proxy.RelationCaseInfo
+	events          []*EventInfo
 }
 
 func switchEntityLabel(concept string) string {
@@ -62,13 +69,21 @@ func (mine *cacheContext)CreateEntity(info *EntityInfo) error {
 	db.Operator = info.Operator
 	db.Add = info.Add
 	db.Cover = info.Cover
+	db.Summary = info.Summary
+	db.Quote = info.Quote
+	db.Mark = info.Mark
 	db.Concept = info.Concept
 	db.Status = uint8(info.Status)
 	db.Tags = info.Tags
 	db.Synonyms = info.Synonyms
+	db.Events = info.StaticEvents
+	db.Relations = info.StaticRelations
 	info.events = make([]*EventInfo, 0, 1)
-	info.properties = make([]*proxy.PropertyInfo, 0, 1)
-	db.Properties = info.properties
+	if info.Properties == nil {
+		info.Properties = make([]*proxy.PropertyInfo, 0, 1)
+	}
+
+	db.Properties = info.Properties
 	if db.Tags == nil {
 		db.Tags = make([]string, 0, 1)
 	}
@@ -128,6 +143,14 @@ func (mine *cacheContext)HadEntityByName(name, add string) bool {
 	return false
 }
 
+func (mine *cacheContext)HadEntityByMark(mark string) bool {
+	info := mine.GetEntityByMark(mark)
+	if info != nil {
+		return true
+	}
+	return false
+}
+
 func (mine *cacheContext)GetEntityByName(name, add string) *EntityInfo {
 	if len(name) < 1 {
 		return nil
@@ -149,6 +172,20 @@ func (mine *cacheContext)GetEntityByName(name, add string) *EntityInfo {
 			}
 		}
 	}
+	return nil
+}
+
+func (mine *cacheContext)GetEntityByMark(mark string) *EntityInfo {
+	if len(mark) < 1 {
+		return nil
+	}
+	db,err := nosql.GetEntityByMark(DefaultEntityTable, mark)
+	if err == nil && db != nil {
+		info := new(EntityInfo)
+		info.initInfo(db)
+		return info
+	}
+
 	return nil
 }
 
@@ -372,7 +409,7 @@ func (mine *cacheContext)HadOwnerOfAsset(owner string) bool {
 func (mine *EntityInfo) Construct() {
 	mine.Tags = make([]string, 0, 5)
 	mine.events = make([]*EventInfo, 0, 10)
-	mine.properties = make([]*proxy.PropertyInfo, 0, 10)
+	mine.Properties = make([]*proxy.PropertyInfo, 0, 10)
 }
 
 func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
@@ -393,10 +430,21 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Status = EntityStatus(db.Status)
 	mine.Owner = db.Scene
 	mine.Cover = db.Cover
+	mine.Mark = db.Mark
+	mine.Quote = db.Quote
+	mine.Summary = db.Summary
+	mine.StaticEvents = db.Events
+	mine.StaticRelations = db.Relations
+	if mine.StaticRelations == nil {
+		mine.StaticRelations = make([]*proxy.RelationCaseInfo, 0, 1)
+	}
+	if mine.StaticEvents == nil {
+		mine.StaticEvents = make([]*proxy.EventBrief, 0, 1)
+	}
 
-	mine.properties = make([]*proxy.PropertyInfo, 0, 10)
+	mine.Properties = make([]*proxy.PropertyInfo, 0, 10)
 	if db.Properties != nil {
-		mine.properties = db.Properties
+		mine.Properties = db.Properties
 	}
 	events, err := nosql.GetEventsByParent(mine.UID)
 
@@ -435,7 +483,7 @@ func (mine *EntityInfo) table() string {
 	}
 }
 
-func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, operator string) error {
+func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, mark, quote, sum, operator string) error {
 	if concept == "" {
 		concept = mine.Concept
 	}
@@ -447,6 +495,15 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, operator s
 	}
 	if name == "" {
 		name = mine.Name
+	}
+	if mark == "" {
+		mark = mine.Mark
+	}
+	if sum == "" {
+		sum = mine.Summary
+	}
+	if quote == "" {
+		quote = mine.Quote
 	}
 	var err error
 	if len(cover) > 0 {
@@ -462,6 +519,18 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, operator s
 			mine.Operator = operator
 			mine.UpdateTime = time.Now()
 		}
+	}
+	return err
+}
+
+func (mine *EntityInfo) UpdateStatic(info *EntityInfo) error {
+	mine.UpdateBase(info.Name, info.Description, info.Add, info.Concept, info.Cover, info.Mark, info.Quote, info.Summary, info.Operator)
+	err := nosql.UpdateEntityStatic(mine.table(), mine.UID, info.Operator, info.Properties, info.StaticEvents, info.StaticRelations)
+	if err == nil {
+		mine.Properties = info.Properties
+		mine.StaticEvents = info.StaticEvents
+		mine.StaticRelations = info.StaticRelations
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -621,14 +690,14 @@ func (mine *EntityInfo) GetEvent(uid string) *EventInfo {
 
 //region Property Fun
 func (mine *EntityInfo) addProp(key string, words []proxy.WordInfo) {
-	if mine.properties == nil {
+	if mine.Properties == nil {
 		return
 	}
-	mine.properties = append(mine.properties, &proxy.PropertyInfo{Key: key, Words: words})
+	mine.Properties = append(mine.Properties, &proxy.PropertyInfo{Key: key, Words: words})
 }
 
 func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
-	if mine.properties == nil {
+	if mine.Properties == nil {
 		return errors.New("must call construct fist")
 	}
 	if len(key) < 1 || len(words) < 1 {
@@ -637,7 +706,7 @@ func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
 	pair := proxy.PropertyInfo{Key: key, Words: words}
 	err := nosql.AppendEntityProperty(mine.table(), mine.UID, pair)
 	if err == nil {
-		mine.properties = append(mine.properties, &pair)
+		mine.Properties = append(mine.Properties, &pair)
 		mine.UpdateTime = time.Now()
 	}
 	return err
@@ -646,22 +715,18 @@ func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
 func (mine *EntityInfo) UpdateProperties(array []*proxy.PropertyInfo, operator string) error {
 	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, operator, array)
 	if err == nil {
-		mine.properties = array
+		mine.Properties = array
 		mine.UpdateTime = time.Now()
 	}
 	return err
 }
 
-func (mine *EntityInfo) Properties() []*proxy.PropertyInfo {
-	return mine.properties
-}
-
 func (mine *EntityInfo) HadProperty(attribute string) bool {
-	if mine.properties == nil {
+	if mine.Properties == nil {
 		return false
 	}
-	for i := 0; i < len(mine.properties); i += 1 {
-		if mine.properties[i].Key == attribute {
+	for i := 0; i < len(mine.Properties); i += 1 {
+		if mine.Properties[i].Key == attribute {
 			return true
 		}
 	}
@@ -669,11 +734,11 @@ func (mine *EntityInfo) HadProperty(attribute string) bool {
 }
 
 func (mine *EntityInfo) HadPropertyByEntity(uid string) bool {
-	if mine.properties == nil {
+	if mine.Properties == nil {
 		return false
 	}
-	for i := 0; i < len(mine.properties); i += 1 {
-		if mine.properties[i].HadWordByEntity(uid) {
+	for i := 0; i < len(mine.Properties); i += 1 {
+		if mine.Properties[i].HadWordByEntity(uid) {
 			return true
 		}
 	}
@@ -681,7 +746,7 @@ func (mine *EntityInfo) HadPropertyByEntity(uid string) bool {
 }
 
 func (mine *EntityInfo) RemoveProperty(attribute string) error {
-	if mine.properties == nil {
+	if mine.Properties == nil {
 		return errors.New("must call construct fist")
 	}
 	if !mine.HadProperty(attribute) {
@@ -689,9 +754,9 @@ func (mine *EntityInfo) RemoveProperty(attribute string) error {
 	}
 	err := nosql.SubtractEntityProperty(mine.table(), mine.UID, attribute)
 	if err == nil {
-		for i := 0; i < len(mine.properties); i += 1 {
-			if mine.properties[i].Key == attribute {
-				mine.properties = append(mine.properties[:i], mine.properties[i+1:]...)
+		for i := 0; i < len(mine.Properties); i += 1 {
+			if mine.Properties[i].Key == attribute {
+				mine.Properties = append(mine.Properties[:i], mine.Properties[i+1:]...)
 				break
 			}
 		}
@@ -701,12 +766,12 @@ func (mine *EntityInfo) RemoveProperty(attribute string) error {
 }
 
 func (mine *EntityInfo) GetProperty(attribute string) *proxy.PropertyInfo {
-	if mine.properties == nil {
+	if mine.Properties == nil {
 		return nil
 	}
-	for i := 0; i < len(mine.properties); i += 1 {
-		if mine.properties[i].Key == attribute {
-			return mine.properties[i]
+	for i := 0; i < len(mine.Properties); i += 1 {
+		if mine.Properties[i].Key == attribute {
+			return mine.Properties[i]
 		}
 	}
 	return nil
@@ -716,9 +781,9 @@ func (mine *EntityInfo) IsSatisfy(concepts, attributes, tags []string) bool {
 	if hadItem(concepts, mine.Concept) {
 		return true
 	}
-	if mine.properties != nil {
-		for i := 0; i < len(mine.properties); i += 1 {
-			if hadItem(attributes, mine.properties[i].Key) {
+	if mine.Properties != nil {
+		for i := 0; i < len(mine.Properties); i += 1 {
+			if hadItem(attributes, mine.Properties[i].Key) {
 				return true
 			}
 		}

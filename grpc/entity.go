@@ -26,9 +26,20 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp.Tags = info.Tags
 	tmp.Synonyms = info.Synonyms
 	tmp.Add = info.Add
-	length := len(info.Properties())
+	tmp.Summary = info.Summary
+	tmp.Mark = info.Mark
+	tmp.Quote = info.Quote
+	tmp.Events = make([]*pb.EventBrief, 0, len(info.StaticEvents))
+	for _, event := range info.StaticEvents {
+		tmp.Events = append(tmp.Events, switchREventBrief(event))
+	}
+	tmp.Relations = make([]*pb.RelationBrief, 0, len(info.StaticRelations))
+	for _, item := range info.StaticRelations {
+		tmp.Relations = append(tmp.Relations, switchRRelationBrief(item))
+	}
+	length := len(info.Properties)
 	tmp.Properties = make([]*pb.PropertyInfo, 0, length)
-	for _, value := range info.Properties() {
+	for _, value := range info.Properties {
 		tmp.Properties = append(tmp.Properties, switchEntityProperty(value))
 	}
 
@@ -45,6 +56,76 @@ func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
 	return tmp
 }
 
+func switchEntityRProperty(info *pb.PropertyInfo) *proxy.PropertyInfo {
+	tmp := new(proxy.PropertyInfo)
+	tmp.Key = info.Uid
+	tmp.Words = make([]proxy.WordInfo, 0, len(info.Words))
+	for _, value := range info.Words {
+		tmp.Words = append(tmp.Words, proxy.WordInfo{UID:value.Uid, Name:value.Name})
+	}
+	return tmp
+}
+
+func switchEventBrief(info *pb.EventBrief) *proxy.EventBrief {
+	tmp := new(proxy.EventBrief)
+	tmp.Name = info.Name
+	tmp.Quote = info.Quote
+	tmp.Description = info.Desc
+	tmp.Place.Name = info.Place.Name
+	tmp.Place.UID = info.Place.Uid
+	tmp.Place.Location = info.Place.Location
+	tmp.Assets = info.Assets
+	if tmp.Assets == nil {
+		tmp.Assets = make([]string, 0, 0)
+	}
+	tmp.Tags = info.Tags
+	if tmp.Tags == nil {
+		tmp.Tags = make([]string, 0, 0)
+	}
+	tmp.Date.UID = info.Date.Uid
+	tmp.Date.Name = info.Date.Name
+	tmp.Date.Begin.Parse(info.Date.Begin)
+	tmp.Date.End.Parse(info.Date.End)
+	return tmp
+}
+
+func switchREventBrief(info *proxy.EventBrief) *pb.EventBrief {
+	tmp := new(pb.EventBrief)
+	tmp.Name = info.Name
+	tmp.Quote = info.Quote
+	tmp.Desc = info.Description
+	tmp.Place = new(pb.PlaceInfo)
+	tmp.Place.Name = info.Place.Name
+	tmp.Place.Uid = info.Place.UID
+	tmp.Place.Location = info.Place.Location
+	tmp.Assets = info.Assets
+	tmp.Tags = info.Tags
+	tmp.Date = new(pb.DateInfo)
+	tmp.Date.Uid = info.Date.UID
+	tmp.Date.Name = info.Date.Name
+	tmp.Date.Begin = info.Date.Begin.String()
+	tmp.Date.End = info.Date.End.String()
+	return tmp
+}
+
+func switchRelationBrief(info *pb.RelationBrief) *proxy.RelationCaseInfo {
+	tmp := new(proxy.RelationCaseInfo)
+	tmp.Name = info.Name
+	tmp.Entity = info.Entity
+	tmp.Category = info.Type
+	tmp.Direction = uint8(info.Direction)
+	return tmp
+}
+
+func switchRRelationBrief(info *proxy.RelationCaseInfo) *pb.RelationBrief {
+	tmp := new(pb.RelationBrief)
+	tmp.Name = info.Name
+	tmp.Entity = info.Entity
+	tmp.Type = info.Category
+	tmp.Direction = uint32(info.Direction)
+	return tmp
+}
+
 func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityInfo) error {
 	path := "entity.addOne"
 	inLog(path, in)
@@ -54,6 +135,10 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 	}
 	if cache.Context().HadEntityByName(in.Name, in.Add){
 		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
+		return nil
+	}
+	if len(in.Mark) > 0 && cache.Context().HadEntityByMark(in.Mark) {
+		out.Status = outError(path,"the entity mark is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
 	info := new(cache.EntityInfo)
@@ -66,7 +151,23 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 	info.Concept = in.Concept
 	info.Synonyms = in.Synonyms
 	info.Tags = in.Tags
-	info.Status = cache.EntityStatusIdle
+	info.Quote = in.Quote
+	info.Summary = in.Summary
+	info.Status = cache.EntityStatus(in.Status)
+	info.Mark = in.Mark
+	info.StaticEvents = make([]*proxy.EventBrief, 0, len(in.Events))
+	for _, event := range in.Events {
+		info.StaticEvents = append(info.StaticEvents, switchEventBrief(event))
+	}
+	info.StaticRelations = make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
+	for _, relation := range in.Relations {
+		info.StaticRelations = append(info.StaticRelations, switchRelationBrief(relation))
+	}
+	info.Properties = make([]*proxy.PropertyInfo, 0, len(in.Relations))
+	for _, prop := range in.Properties {
+		info.Properties = append(info.Properties, switchEntityRProperty(prop))
+	}
+
 	err := cache.Context().CreateEntity(info)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
@@ -220,8 +321,8 @@ func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntity
 		return nil
 	}
 	out.Uid = info.UID
-	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties()))
-	for _, value := range info.Properties() {
+	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties))
+	for _, value := range info.Properties {
 		tmp := switchEntityProperty(value)
 		out.Properties = append(out.Properties, tmp)
 	}
@@ -245,7 +346,7 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	err := info.UpdateBase(in.Name, in.Desc, in.Add, in.Concept, in.Cover, in.Operator)
+	err := info.UpdateBase(in.Name, in.Desc, in.Add, in.Concept, in.Cover, in.Mark, in.Quote, in.Summary, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -347,8 +448,8 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
-	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties()))
-	for _, value := range info.Properties() {
+	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties))
+	for _, value := range info.Properties {
 		tmp := switchEntityProperty(value)
 		out.Properties = append(out.Properties, tmp)
 	}
@@ -373,8 +474,8 @@ func (mine *EntityService)SubtractProperty(ctx context.Context, in *pb.RequestIn
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
-	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties()))
-	for _, value := range info.Properties() {
+	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties))
+	for _, value := range info.Properties {
 		tmp := switchEntityProperty(value)
 		out.Properties = append(out.Properties, tmp)
 	}
@@ -396,5 +497,60 @@ func (mine *EntityService)GetByProperty(ctx context.Context, in *pb.ReqEntityByP
 	}
 
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
+func (mine *EntityService)UpdateStatic(ctx context.Context, in *pb.ReqEntityStatic, out *pb.ReplyInfo) error {
+	path := "entity.updateStatic"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the uid is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	entity := cache.Context().GetEntity(in.Uid)
+	if entity == nil {
+		out.Status = outError(path, "not found the entity", pb.ResultStatus_Empty)
+		return nil
+	}
+	if entity.Name != in.Name || entity.Add != in.Add {
+		if cache.Context().HadEntityByName(in.Name, in.Add){
+			out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
+			return nil
+		}
+	}
+	if len(in.Mark) > 0 && in.Mark != entity.Mark {
+		out.Status = outError(path,"the entity mark is not equal", pb.ResultStatus_DBException)
+		return nil
+	}
+	info := new(cache.EntityInfo)
+	info.Name = in.Name
+	info.Description = in.Desc
+	info.Add = in.Add
+	info.Creator = in.Operator
+	info.Cover = in.Cover
+	info.Concept = in.Concept
+	info.Synonyms = in.Synonyms
+	info.Tags = in.Tags
+	info.Quote = in.Quote
+	info.Summary = in.Summary
+	info.Mark = in.Mark
+	info.StaticEvents = make([]*proxy.EventBrief, 0, len(in.Events))
+	for _, event := range in.Events {
+		info.StaticEvents = append(info.StaticEvents, switchEventBrief(event))
+	}
+	info.StaticRelations = make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
+	for _, relation := range in.Relations {
+		info.StaticRelations = append(info.StaticRelations, switchRelationBrief(relation))
+	}
+	info.Properties = make([]*proxy.PropertyInfo, 0, len(in.Relations))
+	for _, prop := range in.Properties {
+		info.Properties = append(info.Properties, switchEntityRProperty(prop))
+	}
+	err := entity.UpdateStatic(info)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Status = outLog(path, out)
 	return nil
 }

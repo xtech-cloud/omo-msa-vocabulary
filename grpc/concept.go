@@ -31,6 +31,7 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	}else {
 		tmp.Children = make([]*pb.ConceptInfo, 0, 1)
 	}
+
 	return tmp
 }
 

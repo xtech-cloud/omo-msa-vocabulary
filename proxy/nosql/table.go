@@ -15,4 +15,5 @@ const (
 	TableAttribute = "voc_attributes"
 	TableEvent = "voc_events"
 	TableRelationCase = "voc_cases"
+	TableBox = "voc_boxes"
 )

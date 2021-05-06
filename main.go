@@ -47,6 +47,7 @@ func main() {
 	_ = proto.RegisterAttributeServiceHandler(service.Server(), new(grpc.AttributeService))
 	_ = proto.RegisterRelationServiceHandler(service.Server(), new(grpc.RelationService))
 	_ = proto.RegisterEventServiceHandler(service.Server(), new(grpc.EventService))
+	_ = proto.RegisterBoxServiceHandler(service.Server(), new(grpc.BoxService))
 
 	checkTimer()
 
