@@ -21,6 +21,7 @@ type Box struct {
 	Cover  string                `json:"cover" bson:"cover"`
 	Remark string                `json:"remark" bson:"remark"`
 	Concept string                `json:"concept" bson:"concept"`
+	Workflow string `json:"workflow" bson:"workflow"`
 	Keywords  []string `json:"keywords" bson:"keywords"`
 }
 

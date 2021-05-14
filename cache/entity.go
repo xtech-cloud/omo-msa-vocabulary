@@ -13,7 +13,7 @@ const (
 	EntityStatusFirst EntityStatus = 1
 	EntityStatusPending EntityStatus = 2
 	EntityStatusSpecial  EntityStatus = 3
-	EntityStatusUsable  EntityStatus = 4
+	EntityStatusUsable  EntityStatus = 4 //审核通过
 	EntityStatusFailed  EntityStatus = 10
 )
 
@@ -22,22 +22,22 @@ const DefaultEntityTable = "entities"
 type EntityStatus uint8
 
 type EntityInfo struct {
-	Status EntityStatus
+	Status EntityStatus `json:"_"`
 	BaseInfo
-	Concept     string
-	Summary         string
-	Description     string
-	Cover           string
-	Add             string   //消歧义
-	Creator         string   //创建者
-	Owner           string   //所属单位
-	Mark            string // 标记或者来源
-	Quote           string   // 引用
-	Synonyms        []string //同义词
-	Tags            []string //标签
-	Properties      []*proxy.PropertyInfo
-	StaticEvents    []*proxy.EventBrief
-	StaticRelations []*proxy.RelationCaseInfo
+	Concept     string `json:"concept"`
+	Summary         string `json:"summary"`
+	Description     string `json:"description"`
+	Cover           string   `json:"cover"`
+	Add             string   `json:"add"` //消歧义
+	//Creator         string   `json:"creator"` //创建者
+	Owner           string   `json:"owner"` //所属单位
+	Mark            string   `json:"mark"` // 标记或者来源
+	Quote           string   `json:"quote"` // 引用
+	Synonyms        []string `json:"synonyms"` //同义词
+	Tags            []string `json:"tags"` //标签
+	Properties      []*proxy.PropertyInfo `json:"properties"`
+	StaticEvents    []*proxy.EventBrief `json:"events"`
+	StaticRelations []*proxy.RelationCaseInfo `json:"relations"`
 	events          []*EventInfo
 }
 
@@ -238,27 +238,31 @@ func (mine *cacheContext)GetEntitiesByConcept(concept string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext)GetEntitiesByStatus(status EntityStatus) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 10)
-	array,err := nosql.GetEntitiesByStatus(DefaultEntityTable, uint8(status))
-	if err != nil {
-		return list
-	}
+func (mine *cacheContext)GetEntitiesByStatus(status EntityStatus, concept string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 100)
+	if status == EntityStatusUsable {
+		return mine.GetArchivedEntities("", concept)
+	}else{
+		array,err := nosql.GetEntitiesByStatus(DefaultEntityTable, uint8(status))
+		if err != nil {
+			return list
+		}
 
-	for _, entity := range array {
-		info := new(EntityInfo)
-		info.initInfo(entity)
-		list = append(list, info)
-	}
-	for i := 0; i < len(mine.concepts); i += 1 {
-		tb := mine.concepts[i].Table
-		if len(tb) > 0 {
-			arr, err := nosql.GetEntitiesByStatus(tb, uint8(status))
-			if err == nil && arr != nil {
-				for _, entity := range arr {
-					info := new(EntityInfo)
-					info.initInfo(entity)
-					list = append(list, info)
+		for _, entity := range array {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
+		for i := 0; i < len(mine.concepts); i += 1 {
+			tb := mine.concepts[i].Table
+			if len(tb) > 0 {
+				arr, err := nosql.GetEntitiesByStatus(tb, uint8(status))
+				if err == nil && arr != nil {
+					for _, entity := range arr {
+						info := new(EntityInfo)
+						info.initInfo(entity)
+						list = append(list, info)
+					}
 				}
 			}
 		}
@@ -266,27 +270,31 @@ func (mine *cacheContext)GetEntitiesByStatus(status EntityStatus) []*EntityInfo 
 	return list
 }
 
-func (mine *cacheContext)GetEntitiesByOwnerStatus(owner string, status EntityStatus) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 10)
-	array,err := nosql.GetEntitiesByOwnerAndStatus(DefaultEntityTable, owner, uint8(status))
-	if err != nil {
-		return list
-	}
+func (mine *cacheContext)GetEntitiesByOwnerStatus(owner, concept string, status EntityStatus) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 50)
+	if status == EntityStatusUsable {
+		return mine.GetArchivedEntities(owner, concept)
+	}else{
+		array,err := nosql.GetEntitiesByOwnerAndStatus(DefaultEntityTable, owner, uint8(status))
+		if err != nil {
+			return list
+		}
 
-	for _, entity := range array {
-		info := new(EntityInfo)
-		info.initInfo(entity)
-		list = append(list, info)
-	}
-	for i := 0; i < len(mine.concepts); i += 1 {
-		tb := mine.concepts[i].Table
-		if len(tb) > 0 {
-			arr, err := nosql.GetEntitiesByOwnerAndStatus(tb, owner, uint8(status))
-			if err == nil && arr != nil {
-				for _, entity := range arr {
-					info := new(EntityInfo)
-					info.initInfo(entity)
-					list = append(list, info)
+		for _, entity := range array {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
+		for i := 0; i < len(mine.concepts); i += 1 {
+			tb := mine.concepts[i].Table
+			if len(tb) > 0 {
+				arr, err := nosql.GetEntitiesByOwnerAndStatus(tb, owner, uint8(status))
+				if err == nil && arr != nil {
+					for _, entity := range arr {
+						info := new(EntityInfo)
+						info.initInfo(entity)
+						list = append(list, info)
+					}
 				}
 			}
 		}
@@ -345,6 +353,20 @@ func (mine *cacheContext)GetEntity(uid string) *EntityInfo {
 		return info
 	}
 	return nil
+}
+
+func (mine *cacheContext)GetEntitiesByList(array []string) ([]*EntityInfo,error) {
+	if array == nil || len(array) < 1 {
+		return nil,errors.New("the list is empty")
+	}
+		list := make([]*EntityInfo, 0, len(array))
+	for _, item := range array {
+		info := mine.GetEntity(item)
+		if info != nil {
+			list = append(list, info)
+		}
+	}
+	return list,nil
 }
 
 func (mine *cacheContext)getEntityFromDB(uid string) *nosql.Entity {
@@ -484,6 +506,9 @@ func (mine *EntityInfo) table() string {
 }
 
 func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, mark, quote, sum, operator string) error {
+	if mine.Status == EntityStatusUsable {
+		return errors.New("the entity had published so can not update")
+	}
 	if concept == "" {
 		concept = mine.Concept
 	}
@@ -524,6 +549,9 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, mark, quot
 }
 
 func (mine *EntityInfo) UpdateStatic(info *EntityInfo) error {
+	if mine.Status != EntityStatusDraft {
+		return errors.New("the entity had published so can not update")
+	}
 	mine.UpdateBase(info.Name, info.Description, info.Add, info.Concept, info.Cover, info.Mark, info.Quote, info.Summary, info.Operator)
 	err := nosql.UpdateEntityStatic(mine.table(), mine.UID, info.Operator, info.Properties, info.StaticEvents, info.StaticRelations)
 	if err == nil {
@@ -536,6 +564,9 @@ func (mine *EntityInfo) UpdateStatic(info *EntityInfo) error {
 }
 
 func (mine *EntityInfo) UpdateCover(cover, operator string) error {
+	if mine.Status == EntityStatusUsable {
+		return errors.New("the entity had published so can not update")
+	}
 	if cover == "" {
 		cover = mine.Cover
 	}
@@ -550,6 +581,9 @@ func (mine *EntityInfo) UpdateCover(cover, operator string) error {
 }
 
 func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
+	if mine.Status == EntityStatusUsable {
+		return errors.New("the entity had published so can not update")
+	}
 	err := nosql.UpdateEntityTags(mine.table(), mine.UID, operator, tags)
 	if err == nil {
 		mine.Tags = tags
@@ -560,6 +594,9 @@ func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
 }
 
 func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
+	if mine.Status == EntityStatusUsable {
+		return errors.New("the entity had published so can not update")
+	}
 	err := nosql.UpdateEntitySynonyms(mine.table(), mine.UID, operator, list)
 	if err == nil {
 		mine.Synonyms = list
@@ -570,13 +607,31 @@ func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
 }
 
 func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator string) error {
-	err := nosql.UpdateEntityStatus(mine.table(), mine.UID, uint8(status), operator)
-	if err == nil {
-		mine.Status = status
-		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+	if mine.Status == status {
+		return nil
 	}
-	return err
+	err := nosql.UpdateEntityStatus(mine.table(), mine.UID, uint8(status), operator)
+	if err != nil {
+		return err
+	}
+	mine.Operator = operator
+	if status == EntityStatusUsable {
+		tmp := Context().GetArchivedByEntity(mine.UID)
+		if tmp == nil {
+			err = Context().CreateArchived(mine)
+			if err != nil {
+				return err
+			}
+		}else{
+			err = tmp.UpdateFile(mine, operator)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	mine.Status = status
+	mine.UpdateTime = time.Now()
+	return nil
 }
 
 //region Event Fun
@@ -585,6 +640,9 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 }
 
 func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, cover, operator string, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
+	if mine.Status == EntityStatusUsable {
+		return nil, errors.New("the entity had published so can not update")
+	}
 	if mine.events == nil {
 		return nil, errors.New("must call construct fist")
 	}
@@ -655,6 +713,9 @@ func (mine *EntityInfo)GetEventBy(time, place string) *EventInfo {
 }
 
 func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
+	if mine.Status == EntityStatusUsable {
+		return errors.New("the entity had published so can not update")
+	}
 	if mine.events == nil {
 		return errors.New("must call construct fist")
 	}
@@ -697,6 +758,9 @@ func (mine *EntityInfo) addProp(key string, words []proxy.WordInfo) {
 }
 
 func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
+	if mine.Status == EntityStatusUsable {
+		return errors.New("the entity had published so can not update")
+	}
 	if mine.Properties == nil {
 		return errors.New("must call construct fist")
 	}
@@ -713,6 +777,9 @@ func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
 }
 
 func (mine *EntityInfo) UpdateProperties(array []*proxy.PropertyInfo, operator string) error {
+	if mine.Status == EntityStatusUsable {
+		return errors.New("the entity had published so can not update")
+	}
 	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, operator, array)
 	if err == nil {
 		mine.Properties = array
@@ -746,6 +813,9 @@ func (mine *EntityInfo) HadPropertyByEntity(uid string) bool {
 }
 
 func (mine *EntityInfo) RemoveProperty(attribute string) error {
+	if mine.Status == EntityStatusUsable {
+		return errors.New("the entity had published so can not update")
+	}
 	if mine.Properties == nil {
 		return errors.New("must call construct fist")
 	}

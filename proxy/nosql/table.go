@@ -16,4 +16,5 @@ const (
 	TableEvent = "voc_events"
 	TableRelationCase = "voc_cases"
 	TableBox = "voc_boxes"
+	TableArchived = "voc_archived"
 )

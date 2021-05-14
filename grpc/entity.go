@@ -234,7 +234,7 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 	inLog(path, in)
 	out.Flag = in.Owner
 	if len(in.Owner) > 0 {
-		array := cache.Context().GetEntitiesByOwnerStatus(in.Owner, cache.EntityStatus(in.Status))
+		array := cache.Context().GetEntitiesByOwnerStatus(in.Owner, in.Concept, cache.EntityStatus(in.Status))
 		total, _, list := checkPage(in.Page, in.Number, array)
 		out.List = make([]*pb.EntityInfo, 0, in.Number)
 		out.Total = uint32(total)
@@ -242,7 +242,7 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 			out.List = append(out.List, switchEntity(value))
 		}
 	}else{
-		array := cache.Context().GetEntitiesByStatus(cache.EntityStatus(in.Status))
+		array := cache.Context().GetEntitiesByStatus(cache.EntityStatus(in.Status), in.Concept)
 		total, _, list := checkPage(in.Page, in.Number, array)
 		out.List = make([]*pb.EntityInfo, 0, in.Number)
 		out.Total = uint32(total)
@@ -251,6 +251,46 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 		}
 	}
 	out.Page = uint32(in.Page)
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
+func (mine *EntityService)GetListByBox(ctx context.Context, in *pb.RequestPage, out *pb.ReplyEntityList) error {
+	path := "entity.getListByBox"
+	inLog(path, in)
+	out.Flag = in.Parent
+	array, err := cache.Context().GetEntitiesByBox(in.Parent)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	total, _, list := checkPage(in.Page, in.Number, array)
+	out.List = make([]*pb.EntityInfo, 0, in.Number)
+	out.Total = uint32(total)
+	for _, value := range list.([]*cache.EntityInfo) {
+		out.List = append(out.List, switchEntity(value))
+	}
+	out.Page = uint32(in.Page)
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
+func (mine *EntityService)GetByList(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityList) error {
+	path := "entity.getByList"
+	inLog(path, in)
+
+	array, err := cache.Context().GetEntitiesByList(in.List)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+
+	out.List = make([]*pb.EntityInfo, 0, len(array))
+	out.Total = uint32(len(array))
+	for _, value := range array {
+		out.List = append(out.List, switchEntity(value))
+	}
+	out.Page = 0
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }

@@ -13,13 +13,13 @@ import (
 )
 
 type BaseInfo struct {
-	ID         uint64 `json:"-"`
+	ID         uint64 `json:"id"`
 	UID        string `json:"uid"`
 	Name       string `json:"name"`
-	CreateTime time.Time
-	UpdateTime time.Time
-	Creator string
-	Operator string
+	CreateTime time.Time `json:"create_time"`
+	UpdateTime time.Time `json:"update_time"`
+	Creator string `json:"creator"`
+	Operator string `json:"operator"`
 }
 
 type WritingInfo struct {

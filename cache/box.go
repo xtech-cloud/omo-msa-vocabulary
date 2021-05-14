@@ -13,7 +13,8 @@ type BoxInfo struct {
 	BaseInfo
 	Cover      string
 	Remark     string
-	Concept    string  // 针对的场景类型
+	Concept    string  // 针对的实体类型
+	Workflow   string
 	Keywords []string
 }
 
@@ -47,6 +48,27 @@ func (mine *cacheContext)GetBoxes(kind uint8) []*BoxInfo {
 	return list
 }
 
+func (mine *cacheContext)GetEntitiesByBox(uid string) ([]*EntityInfo,error) {
+	box := mine.GetBox(uid)
+	if box == nil {
+		return nil,errors.New("not found the box that uid = " + uid)
+	}
+	if box.Type < 1 {
+		return nil, errors.New("the box type must 1")
+	}
+	if box.Keywords == nil || len(box.Keywords) < 1 {
+		return nil, errors.New("the box keywords is empty")
+	}
+	list := make([]*EntityInfo, 0, len(box.Keywords))
+	for _, item := range box.Keywords {
+		info := mine.GetEntity(item)
+		if info != nil {
+			list = append(list, info)
+		}
+	}
+	return list,nil
+}
+
 func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db := new(nosql.Box)
 	db.UID = primitive.NewObjectID()
@@ -58,6 +80,7 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db.Cover = info.Cover
 	db.Remark = info.Remark
 	db.Type = info.Type
+	db.Workflow = info.Workflow
 	db.Keywords = make([]string, 0, 5)
 	err := nosql.CreateBox(db)
 	if err == nil {
@@ -107,6 +130,7 @@ func (mine *BoxInfo) initInfo(db *nosql.Box) {
 	mine.CreateTime = db.CreatedTime
 	mine.Operator = db.Operator
 	mine.Creator = db.Creator
+	mine.Workflow = db.Workflow
 	mine.Keywords = db.Keywords
 }
 
