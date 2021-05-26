@@ -135,6 +135,20 @@ func (mine *cacheContext)AllEntities() []*EntityInfo {
 	return list
 }
 
+func (mine *cacheContext)SearchEntities(key string) []*EntityInfo {
+	array,err := nosql.GetEntitiesByMatch(DefaultEntityTable, key)
+	if err != nil {
+		return make([]*EntityInfo, 0, 0)
+	}
+	list := make([]*EntityInfo, 0, len(array))
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	return list
+}
+
 func (mine *cacheContext)HadEntityByName(name, add string) bool {
 	info := mine.GetEntityByName(name, add)
 	if info != nil {
@@ -402,9 +416,19 @@ func (mine *cacheContext)HadEntity(uid string) bool {
 
 func (mine *cacheContext)RemoveEntity(uid, operator string) error {
 	if len(uid) < 1 {
-		return errors.New("the micro course uid is empty")
+		return errors.New("the entity uid is empty")
 	}
 	tmp := mine.GetEntity(uid)
+	if tmp == nil {
+		return nil
+	}
+	if tmp.Status != EntityStatusDraft {
+		return errors.New("the entity status not equal 0 ")
+	}
+	t,_ := nosql.GetArchivedByEntity(uid)
+	if t != nil {
+		return errors.New("the entity had published")
+	}
 	err := nosql.RemoveEntity(tmp.table(), uid, operator)
 	if err == nil {
 		//length := len(mine.entities)

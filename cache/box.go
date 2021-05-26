@@ -69,6 +69,23 @@ func (mine *cacheContext)GetEntitiesByBox(uid string) ([]*EntityInfo,error) {
 	return list,nil
 }
 
+func (mine *cacheContext)GetEntitiesByName(name string) ([]*EntityInfo,error) {
+	if len(name) < 1 {
+		return nil,errors.New("the name is empty")
+	}
+	array,err := nosql.GetEntitiesByName(DefaultEntityTable, name)
+	if err != nil {
+		return nil,err
+	}
+	list := make([]*EntityInfo, 0, len(array))
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	return list,nil
+}
+
 func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db := new(nosql.Box)
 	db.UID = primitive.NewObjectID()

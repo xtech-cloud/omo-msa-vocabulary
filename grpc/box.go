@@ -20,6 +20,7 @@ func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp.Cover = info.Cover
 	tmp.Type = uint32(info.Type)
 	tmp.Keywords = info.Keywords
+	tmp.Workflow = info.Workflow
 	return tmp
 }
 
@@ -38,6 +39,7 @@ func (mine *BoxService)AddOne(ctx context.Context, in *pb.ReqBoxAdd, out *pb.Rep
 	info.Cover = in.Cover
 	info.Concept = in.Concept
 	info.Creator = in.Operator
+	info.Workflow = in.Workflow
 	err := cache.Context().CreateBox(info)
 	if err != nil {
 		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
@@ -69,7 +71,15 @@ func (mine *BoxService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *p
 		out.Status = outError(path,"the box uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-
+	info := cache.Context().GetBox(in.Uid)
+	if info == nil {
+		out.Status = outError(path,"not found the box by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	if len(info.Keywords) > 0 {
+		out.Status = outError(path,"the box is not empty", pb.ResultStatus_Empty)
+		return nil
+	}
 	err := cache.Context().RemoveBox(in.Uid, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)

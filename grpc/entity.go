@@ -215,10 +215,6 @@ func (mine *EntityService)GetByName(ctx context.Context, in *pb.RequestInfo, out
 func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "entity.removeOne"
 	inLog(path, in)
-	if len(in.Uid) < 1 {
-		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
-		return nil
-	}
 	err := cache.Context().RemoveEntity(in.Uid, in.Operator)
 	out.Uid = in.Uid
 	if err != nil {
@@ -275,6 +271,29 @@ func (mine *EntityService)GetListByBox(ctx context.Context, in *pb.RequestPage, 
 	return nil
 }
 
+func (mine *EntityService)GetListByName(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityList) error {
+	path := "entity.getListByName"
+	inLog(path, in)
+	if len(in.List) < 1{
+		out.List = make([]*pb.EntityInfo, 0, 1)
+		return nil
+	}
+	out.List = make([]*pb.EntityInfo, 0, len(in.List))
+	for i :=0 ;i < len(in.List);i += 1 {
+		array, err := cache.Context().GetEntitiesByName(in.List[i])
+		if err == nil {
+			for _, info := range array {
+				out.List = append(out.List, switchEntity(info))
+			}
+		}
+	}
+
+	out.Total = uint32(len(out.List))
+	out.Page = 0
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
 func (mine *EntityService)GetByList(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityList) error {
 	path := "entity.getByList"
 	inLog(path, in)
@@ -305,6 +324,19 @@ func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySear
 		if value.Status == cache.EntityStatusUsable && value.IsSatisfy(in.Concept, in.Attribute, in.Tags){
 			out.List = append(out.List, switchEntity(value))
 		}
+	}
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
+func (mine *EntityService)SearchMatch(ctx context.Context, in *pb.ReqEntityMatch, out *pb.ReplyEntityList) error {
+	path := "entity.searchMatch"
+	inLog(path, in)
+	out.Flag = ""
+	out.List = make([]*pb.EntityInfo, 0, 200)
+	list := cache.Context().SearchEntities(in.Keywords)
+	for _, value := range list {
+		out.List = append(out.List, switchEntity(value))
 	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil

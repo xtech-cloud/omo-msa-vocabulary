@@ -97,6 +97,7 @@ func (mine *cacheContext)GetArchivedEntities(scene, concept string) []*EntityInf
 		entity := new(EntityInfo)
 		er := json.Unmarshal([]byte(info.File), entity)
 		if er == nil {
+			entity.Status = EntityStatusUsable
 			list = append(list, entity)
 		}
 	}
