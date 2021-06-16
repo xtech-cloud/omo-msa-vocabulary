@@ -56,7 +56,7 @@ func (mine *cacheContext)GetArchivedByEntity(entity string) *ArchivedInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetArchivedList(concept string) []*ArchivedInfo {
+func (mine *cacheContext)GetArchivedList(concept string) []*EntityInfo {
 	var array []*nosql.Archived
 	var err error
 	if len(concept) > 1 {
@@ -65,15 +65,17 @@ func (mine *cacheContext)GetArchivedList(concept string) []*ArchivedInfo {
 		array,err = nosql.GetAllArchived()
 	}
 	if err != nil {
-		return make([]*ArchivedInfo, 0, 1)
+		return make([]*EntityInfo, 0, 1)
 	}
-	list := make([]*ArchivedInfo, 0, len(array))
-	for _, entity := range array {
-		info := new(ArchivedInfo)
-		info.initInfo(entity)
-		list = append(list, info)
+	list := make([]*EntityInfo, 0, len(array))
+	for _, info := range array {
+		entity := new(EntityInfo)
+		er := json.Unmarshal([]byte(info.File), entity)
+		if er == nil {
+			entity.Status = EntityStatusUsable
+			list = append(list, entity)
+		}
 	}
-
 	return list
 }
 
@@ -139,4 +141,5 @@ func (mine *ArchivedInfo)UpdateFile(info *EntityInfo, operator string) error {
 	}
 	return err
 }
+
 

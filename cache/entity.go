@@ -558,12 +558,13 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, mark, quot
 	if len(cover) > 0 {
 		err = mine.UpdateCover(cover, operator)
 	}
-	if name != mine.Name || remark != mine.Description || add != mine.Add || concept != mine.Concept {
-		err = nosql.UpdateEntityBase(mine.table(), mine.UID, name, remark, add, concept, operator)
+	if name != mine.Name || remark != mine.Description || add != mine.Add || concept != mine.Concept || quote != mine.Quote {
+		err = nosql.UpdateEntityBase(mine.table(), mine.UID, name, remark, add, concept, quote, operator)
 		if err == nil {
 			mine.Name = name
 			mine.Description = remark
 			mine.Add = add
+			mine.Quote = quote
 			mine.Concept = concept
 			mine.Operator = operator
 			mine.UpdateTime = time.Now()

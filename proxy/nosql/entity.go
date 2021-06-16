@@ -93,7 +93,7 @@ func GetEntity(table, uid string) (*Entity, error) {
 }
 
 func GetEntityByName(table, name, add string) (*Entity, error) {
-	msg := bson.M{"name": name, "add": add}
+	msg := bson.M{"name": name, "add": add, "deleteAt": new(time.Time)}
 	result, err := findOneBy(table, msg)
 	if err != nil {
 		return nil, err
@@ -246,8 +246,8 @@ func GetEntitiesByStatus(table string, st uint8) ([]*Entity, error) {
 	return items, nil
 }
 
-func UpdateEntityBase(table, uid, name, remark, add, concept, operator string) error {
-	msg := bson.M{"name": name, "desc": remark, "add": add, "concept": concept, "operator": operator, "updatedAt": time.Now()}
+func UpdateEntityBase(table, uid, name, remark, add, concept, quote, operator string) error {
+	msg := bson.M{"name": name, "desc": remark, "add": add, "quote": quote, "concept": concept, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

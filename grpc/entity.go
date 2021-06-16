@@ -137,10 +137,10 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
-	if len(in.Mark) > 0 && cache.Context().HadEntityByMark(in.Mark) {
-		out.Status = outError(path,"the entity mark is repeated", pb.ResultStatus_Repeated)
-		return nil
-	}
+	//if len(in.Mark) > 0 && cache.Context().HadEntityByMark(in.Mark) {
+	//	out.Status = outError(path,"the entity mark is repeated", pb.ResultStatus_Repeated)
+	//	return nil
+	//}
 	info := new(cache.EntityInfo)
 	info.Name = in.Name
 	info.Description = in.Description
@@ -319,9 +319,9 @@ func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySear
 	inLog(path, in)
 	out.Flag = ""
 	out.List = make([]*pb.EntityInfo, 0, 200)
-	list := cache.Context().AllEntities()
+	list := cache.Context().GetArchivedList("")
 	for _, value := range list {
-		if value.Status == cache.EntityStatusUsable && value.IsSatisfy(in.Concept, in.Attribute, in.Tags){
+		if value.IsSatisfy(in.Concept, in.Attribute, in.Tags){
 			out.List = append(out.List, switchEntity(value))
 		}
 	}
@@ -333,11 +333,14 @@ func (mine *EntityService)SearchMatch(ctx context.Context, in *pb.ReqEntityMatch
 	path := "entity.searchMatch"
 	inLog(path, in)
 	out.Flag = ""
-	out.List = make([]*pb.EntityInfo, 0, 200)
-	list := cache.Context().SearchEntities(in.Keywords)
-	for _, value := range list {
+	array := cache.Context().SearchEntities(in.Keywords)
+	total, _, list := checkPage(in.Page, in.Number, array)
+	out.List = make([]*pb.EntityInfo, 0, total)
+	for _, value := range list.([]*cache.EntityInfo) {
 		out.List = append(out.List, switchEntity(value))
 	}
+	out.Page = uint32(in.Page)
+	out.Total = uint32(total)
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }

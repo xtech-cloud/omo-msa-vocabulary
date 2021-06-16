@@ -53,9 +53,7 @@ func GetBox(uid string) (*Box, error) {
 
 func GetBoxes() ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"deleteAt": def}
-	cursor, err1 := findMany(TableBox, filter, 0)
+	cursor, err1 := findAll(TableBox, 0)
 	if err1 != nil {
 		return nil, err1
 	}
