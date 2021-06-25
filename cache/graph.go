@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"omo.msa.vocabulary/tool"
 	"regexp"
 	"omo.msa.vocabulary/proxy"
 )
@@ -22,6 +23,45 @@ func (mine *cacheContext)GetGraphNode(uid string) *NodeInfo {
 
 func (mine *cacheContext)Graph() *GraphInfo {
 	return mine.graph
+}
+
+func (mine *cacheContext)checkRelations(old, now *EntityInfo)  {
+	if now == nil{
+		return
+	}
+	if old == nil {
+		for _, relation := range now.StaticRelations {
+			relationKind := Context().GetRelation(relation.Category)
+			if relationKind != nil {
+				Context().addSyncLink(now.UID, relation.Entity, relationKind.UID, relation.Name, switchRelationToLink(relationKind.Kind), relation.Direction)
+			}
+		}
+	}else{
+		oldList := make([]string, 0, 10)
+		for _, relation := range old.StaticRelations {
+			oldList = append(oldList, relation.Entity)
+		}
+		newList := make([]string, 0, 10)
+		for _, relation := range now.StaticRelations {
+			newList = append(newList, relation.Entity)
+		}
+		for _, oldR := range old.StaticRelations {
+			if !tool.HasItem(newList, oldR.Entity) {
+				link := Context().graph.GetRelationBy(now.UID, oldR.Entity)
+				if link != nil {
+					_ = Context().graph.RemoveLink(link.ID)
+				}
+			}
+		}
+		for _, nowR := range now.StaticRelations {
+			if !tool.HasItem(oldList, nowR.Entity) {
+				relationKind := Context().GetRelation(nowR.Category)
+				if relationKind != nil {
+					Context().addSyncLink(now.UID, nowR.Entity, relationKind.UID, nowR.Name, switchRelationToLink(relationKind.Kind), nowR.Direction)
+				}
+			}
+		}
+	}
 }
 
 func (mine *cacheContext)CreateLink(from, to *NodeInfo, name, relationUID string, direction DirectionType) (*LinkInfo, error) {
@@ -224,6 +264,21 @@ func (mine *GraphInfo)HadRelation(from, to string, name string) bool {
 		return true
 	}
 	return false
+}
+
+func (mine *GraphInfo)GetRelationBy(from, to string) *LinkInfo {
+	for i := 0;i < len(mine.links);i += 1 {
+		if mine.links[i].HadAll(from, to){
+			return mine.links[i]
+		}
+	}
+	link,_ := proxy.GetLink(from, to)
+	if link != nil {
+		info := new(LinkInfo)
+		info.initInfo(link, from, to)
+		return info
+	}
+	return nil
 }
 
 func (mine *GraphInfo) HadLinkNode(uid string) bool {

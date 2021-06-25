@@ -252,8 +252,8 @@ func UpdateEntityBase(table, uid, name, remark, add, concept, quote, operator st
 	return err
 }
 
-func UpdateEntityStatic(table, uid, operator string, props []*proxy.PropertyInfo, events []*proxy.EventBrief, relations []*proxy.RelationCaseInfo) error {
-	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "props": props, "events": events, "relations":relations}
+func UpdateEntityStatic(table, uid, operator string, tags []string, props []*proxy.PropertyInfo, events []*proxy.EventBrief, relations []*proxy.RelationCaseInfo) error {
+	msg := bson.M{"operator": operator, "updatedAt": time.Now(),"tags": tags, "props": props, "events": events, "relations":relations}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

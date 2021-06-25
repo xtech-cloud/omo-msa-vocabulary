@@ -180,8 +180,8 @@ func (mine *cacheContext)addSyncLink(from, to, relation, name string, kind LinkT
 		Name: name,
 		Direction: dir,
 	}
-	mine.nodesMap.Map.Store(tmp.UUID, &tmp)
-	mine.nodesMap.Count += 1
+	mine.linkMap.Map.Store(tmp.UUID, &tmp)
+	mine.linkMap.Count += 1
 }
 
 func (mine *CountMap)deleteSyncNode(uid string)  {

@@ -142,4 +142,14 @@ func (mine *ArchivedInfo)UpdateFile(info *EntityInfo, operator string) error {
 	return err
 }
 
+func (mine *ArchivedInfo)GetEntity() *EntityInfo {
+	entity := new(EntityInfo)
+	er := json.Unmarshal([]byte(mine.File), entity)
+	if er != nil {
+		return nil
+	}
+	entity.Status = EntityStatusUsable
+	return entity
+}
+
 

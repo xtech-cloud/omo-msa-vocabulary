@@ -8,6 +8,7 @@ import (
 )
 
 type EventInfo struct {
+	Type uint8
 	BaseInfo
 	Description string // 描述
 	Parent      string
@@ -38,6 +39,7 @@ func (mine *cacheContext)RemoveEvent(uid, operator string) error {
 func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID
+	mine.Type = db.Type
 	mine.CreateTime = db.CreatedTime
 	mine.UpdateTime = db.UpdatedTime
 	mine.Operator = db.Operator

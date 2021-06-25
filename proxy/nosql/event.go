@@ -17,6 +17,7 @@ type Event struct {
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
+	Type        uint8 					`json:"type" bson:"type"`
 	Entity      string                   `json:"entity" bson:"entity"`
 	Name        string                   `json:"name" bson:"name"`
 	Description string                   `json:"desc" bson:"desc"`

@@ -578,7 +578,7 @@ func (mine *EntityInfo) UpdateStatic(info *EntityInfo) error {
 		return errors.New("the entity had published so can not update")
 	}
 	mine.UpdateBase(info.Name, info.Description, info.Add, info.Concept, info.Cover, info.Mark, info.Quote, info.Summary, info.Operator)
-	err := nosql.UpdateEntityStatic(mine.table(), mine.UID, info.Operator, info.Properties, info.StaticEvents, info.StaticRelations)
+	err := nosql.UpdateEntityStatic(mine.table(), mine.UID, info.Operator, info.Tags, info.Properties, info.StaticEvents, info.StaticRelations)
 	if err == nil {
 		mine.Properties = info.Properties
 		mine.StaticEvents = info.StaticEvents
@@ -647,11 +647,14 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator string) error
 			if err != nil {
 				return err
 			}
+			cacheCtx.checkRelations(nil, mine)
 		}else{
+			old := tmp.GetEntity()
 			err = tmp.UpdateFile(mine, operator)
 			if err != nil {
 				return err
 			}
+			cacheCtx.checkRelations(old, mine)
 		}
 	}
 	mine.Status = status
@@ -664,7 +667,17 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 	return mine.events
 }
 
-func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, cover, operator string, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
+func (mine *EntityInfo)GetEventsByType(tp uint8) []*EventInfo {
+	list := make([]*EventInfo, 0, 10)
+	for _, event := range mine.events {
+		if event.Type == tp {
+			list = append(list, event)
+		}
+	}
+	return list
+}
+
+func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, cover, operator string, tp uint8, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
 	if mine.Status == EntityStatusUsable {
 		return nil, errors.New("the entity had published so can not update")
 	}
@@ -680,6 +693,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	db.Name = name
 	db.Date = date
 	db.Place = place
+	db.Type = tp
 	db.Entity = mine.UID
 	db.Description = desc
 	db.Relations = links

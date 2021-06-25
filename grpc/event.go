@@ -20,6 +20,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Updated = info.UpdateTime.Unix()
 	tmp.Parent = info.Parent
 	tmp.Name = info.Name
+	tmp.Type = uint32(info.Type)
 	tmp.Description = info.Description
 	tmp.Date = &pb.DateInfo{Uid:info.Date.UID, Name:info.Date.Name, Begin:info.Date.Begin.String(), End:info.Date.End.String()}
 	tmp.Place = &pb.PlaceInfo{Uid:info.Place.UID, Name:info.Place.Name, Location:info.Place.Location}
@@ -76,7 +77,7 @@ func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb
 		relations = append(relations, proxy.RelationCaseInfo{UID: value.Uid, Direction:uint8(value.Direction),
 			Name:value.Name, Category:value.Category, Entity:value.Entity})
 	}
-	event,err := info.AddEvent(date, place,in.Name, in.Description, in.Cover, in.Operator, relations,in.Tags, in.Assets)
+	event,err := info.AddEvent(date, place,in.Name, in.Description, in.Cover, in.Operator, uint8(in.Type), relations,in.Tags, in.Assets)
 	if err == nil {
 		out.Info = switchEntityEvent(event)
 		out.Status = outLog(path, out)
@@ -125,9 +126,17 @@ func (mine *EventService)GetList(ctx context.Context, in *pb.RequestInfo, out *p
 		return nil
 	}
 	out.List = make([]*pb.EventInfo, 0, 10)
-	for _, value := range info.AllEvents() {
-		out.List = append(out.List, switchEntityEvent(value))
+	if in.Id > 0 {
+		list := info.GetEventsByType(uint8(in.Id))
+		for _, value := range list {
+			out.List = append(out.List, switchEntityEvent(value))
+		}
+	}else{
+		for _, value := range info.AllEvents() {
+			out.List = append(out.List, switchEntityEvent(value))
+		}
 	}
+
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
