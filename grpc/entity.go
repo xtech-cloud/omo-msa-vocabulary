@@ -617,7 +617,7 @@ func (mine *EntityService)UpdateStatic(ctx context.Context, in *pb.ReqEntityStat
 	for _, relation := range in.Relations {
 		info.StaticRelations = append(info.StaticRelations, switchRelationBrief(relation))
 	}
-	info.Properties = make([]*proxy.PropertyInfo, 0, len(in.Relations))
+	info.Properties = make([]*proxy.PropertyInfo, 0, len(in.Properties))
 	for _, prop := range in.Properties {
 		info.Properties = append(info.Properties, switchEntityRProperty(prop))
 	}
