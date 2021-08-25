@@ -115,6 +115,13 @@ func (mine *BoxService)Update(ctx context.Context, in *pb.ReqBoxUpdate, out *pb.
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
+	if len(in.Keywords) > 0 {
+		err = info.UpdateKeywords(in.Keywords)
+		if err != nil {
+			out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+			return nil
+		}
+	}
 	out.Info = switchBox(info)
 	out.Status = outLog(path, out)
 	return nil

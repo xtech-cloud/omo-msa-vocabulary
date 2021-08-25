@@ -12,6 +12,26 @@ type EntityService struct{}
 
 func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp := new(pb.EntityInfo)
+	tmp.Brief = switchEntityBrief(info)
+	tmp.Events = make([]*pb.EventBrief, 0, len(info.StaticEvents))
+	for _, event := range info.StaticEvents {
+		tmp.Events = append(tmp.Events, switchREventBrief(event))
+	}
+	tmp.Relations = make([]*pb.RelationBrief, 0, len(info.StaticRelations))
+	for _, item := range info.StaticRelations {
+		tmp.Relations = append(tmp.Relations, switchRRelationBrief(item))
+	}
+	length := len(info.Properties)
+	tmp.Properties = make([]*pb.PropertyInfo, 0, length)
+	for _, value := range info.Properties {
+		tmp.Properties = append(tmp.Properties, switchEntityProperty(value))
+	}
+
+	return tmp
+}
+
+func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
+	tmp := new(pb.EntityBrief)
 	tmp.Uid = info.UID
 	tmp.Concept = info.Concept
 	tmp.Cover = info.Cover
@@ -29,20 +49,12 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp.Summary = info.Summary
 	tmp.Mark = info.Mark
 	tmp.Quote = info.Quote
-	tmp.Events = make([]*pb.EventBrief, 0, len(info.StaticEvents))
-	for _, event := range info.StaticEvents {
-		tmp.Events = append(tmp.Events, switchREventBrief(event))
-	}
-	tmp.Relations = make([]*pb.RelationBrief, 0, len(info.StaticRelations))
-	for _, item := range info.StaticRelations {
-		tmp.Relations = append(tmp.Relations, switchRRelationBrief(item))
-	}
-	length := len(info.Properties)
-	tmp.Properties = make([]*pb.PropertyInfo, 0, length)
-	for _, value := range info.Properties {
-		tmp.Properties = append(tmp.Properties, switchEntityProperty(value))
-	}
 
+	//length := len(info.Properties)
+	//tmp.Properties = make([]*pb.PropertyInfo, 0, length)
+	//for _, value := range info.Properties {
+	//	tmp.Properties = append(tmp.Properties, switchEntityProperty(value))
+	//}
 	return tmp
 }
 
@@ -195,16 +207,50 @@ func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 	return nil
 }
 
-func (mine *EntityService)GetByName(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
-	path := "entity.getByName"
+func (mine *EntityService)GetBrief(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityBrief) error {
+	path := "entity.getBrief"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
+	info := cache.Context().GetEntity(in.Uid)
+	if info == nil {
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	out.Info = switchEntityBrief(info)
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EntityService)GetByName(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
+	path := "entity.getByName"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the entity name is empty", pb.ResultStatus_Empty)
+		return nil
+	}
 	info := cache.Context().GetEntityByName(in.Uid, in.Key)
 	if info == nil {
 		out.Status = outError(path,"not found the entity by name", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	out.Info = switchEntity(info)
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EntityService)GetByMark(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
+	path := "entity.getByName"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the entity mark is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	info := cache.Context().GetEntityByMark(in.Uid)
+	if info == nil {
+		out.Status = outError(path,"not found the entity by mark", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	out.Info = switchEntity(info)
@@ -364,6 +410,7 @@ func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.RequestList, ou
 	}
 	out.Uid = info.UID
 	out.List = info.Tags
+	out.Updated = uint64(info.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -390,7 +437,7 @@ func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntity
 		}
 		list = append(list, prop)
 	}
-	err := info.UpdateProperties(list, "")
+	err := info.UpdateProperties(list, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -401,6 +448,7 @@ func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntity
 		tmp := switchEntityProperty(value)
 		out.Properties = append(out.Properties, tmp)
 	}
+	out.Updated = uint64(info.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -426,6 +474,7 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
+	out.Updated = uint64(info.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -448,6 +497,7 @@ func (mine *EntityService)UpdateCover(ctx context.Context, in *pb.RequestInfo, o
 		return nil
 	}
 	out.Uid = in.Uid
+	out.Updated = uint64(info.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -471,6 +521,7 @@ func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStat
 	}
 	out.Uid = in.Uid
 	out.State = in.Status
+	out.Updated = uint64(info.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -494,6 +545,7 @@ func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.RequestList
 	}
 	out.Uid = info.UID
 	out.List = info.Synonyms
+	out.Updated = uint64(info.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -593,15 +645,12 @@ func (mine *EntityService)UpdateStatic(ctx context.Context, in *pb.ReqEntityStat
 			return nil
 		}
 	}
-	if len(in.Mark) > 0 && in.Mark != entity.Mark {
-		out.Status = outError(path,"the entity mark is not equal", pb.ResultStatus_DBException)
-		return nil
-	}
+
 	info := new(cache.EntityInfo)
 	info.Name = in.Name
 	info.Description = in.Desc
 	info.Add = in.Add
-	info.Creator = in.Operator
+	info.Operator = in.Operator
 	info.Cover = in.Cover
 	info.Concept = in.Concept
 	info.Synonyms = in.Synonyms
@@ -626,6 +675,62 @@ func (mine *EntityService)UpdateStatic(ctx context.Context, in *pb.ReqEntityStat
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
+	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EntityService)UpdateRelations(ctx context.Context, in *pb.ReqEntityRelations, out *pb.ReplyInfo) error {
+	path := "entity.updateStRelations"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the uid is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	entity := cache.Context().GetEntity(in.Uid)
+	if entity == nil {
+		out.Status = outError(path, "not found the entity", pb.ResultStatus_Empty)
+		return nil
+	}
+
+	relations := make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
+	for _, relation := range in.Relations {
+		relations = append(relations, switchRelationBrief(relation))
+	}
+
+	err := entity.UpdateStaticRelations(in.Operator, relations)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Updated = uint64(entity.UpdateTime.Unix())
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EntityService)UpdateEvents(ctx context.Context, in *pb.ReqEntityEvents, out *pb.ReplyInfo) error {
+	path := "entity.updateStEvents"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the uid is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	entity := cache.Context().GetEntity(in.Uid)
+	if entity == nil {
+		out.Status = outError(path, "not found the entity", pb.ResultStatus_Empty)
+		return nil
+	}
+	events := make([]*proxy.EventBrief, 0, len(in.Events))
+	for _, event := range in.Events {
+		events = append(events, switchEventBrief(event))
+	}
+
+	err := entity.UpdateStaticEvents(in.Operator, events)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Updated = uint64(entity.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }

@@ -150,11 +150,36 @@ func (mine *cacheContext)SearchEntities(key string) []*EntityInfo {
 }
 
 func (mine *cacheContext)HadEntityByName(name, add string) bool {
-	info := mine.GetEntityByName(name, add)
-	if info != nil {
+	if len(name) < 1 {
 		return true
 	}
-	return false
+	if len(add) > 0 {
+		info := mine.GetEntityByName(name, add)
+		if info != nil {
+			return true
+		}else{
+			return false
+		}
+	}else{
+		db,err := nosql.GetEntitiesByName(DefaultEntityTable, name)
+		if err == nil && db != nil {
+			if len(db) > 0 {
+				return true
+			}
+		}
+		//for i := 0; i < len(mine.concepts); i += 1 {
+		//	tb := mine.concepts[i].Table
+		//	if len(tb) > 0 {
+		//		db, err = nosql.GetEntitiesByName(tb, name)
+		//		if err == nil && db != nil {
+		//			if len(db) > 0 {
+		//				return true
+		//			}
+		//		}
+		//	}
+		//}
+		return false
+	}
 }
 
 func (mine *cacheContext)HadEntityByMark(mark string) bool {
@@ -425,22 +450,16 @@ func (mine *cacheContext)RemoveEntity(uid, operator string) error {
 	if tmp.Status != EntityStatusDraft {
 		return errors.New("the entity status not equal 0 ")
 	}
-	t,_ := nosql.GetArchivedByEntity(uid)
-	if t != nil {
-		return errors.New("the entity had published")
-	}
+
 	err := nosql.RemoveEntity(tmp.table(), uid, operator)
 	if err == nil {
-		//length := len(mine.entities)
-		//for i := 0; i < length; i++ {
-		//	if mine.entities[i].UID == uid {
-		//		mine.entities[i].clear()
-		//		mine.entities = append(mine.entities[:i], mine.entities[i+1:]...)
-		//		break
-		//	}
-		//}
+		t,_ := nosql.GetArchivedByEntity(uid)
+		if t != nil {
+			_ = nosql.RemoveArchived(t.UID.Hex(), operator)
+			//return errors.New("the entity had published")
+		}
+		mine.checkEntityFromBoxes(uid, tmp.Name)
 	}
-
 	return err
 }
 
@@ -492,19 +511,6 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	if db.Properties != nil {
 		mine.Properties = db.Properties
 	}
-	events, err := nosql.GetEventsByParent(mine.UID)
-
-	if err == nil {
-		mine.events = make([]*EventInfo, 0, len(events))
-		for _, event := range events {
-			tmp := new(EventInfo)
-			tmp.initInfo(event)
-			mine.events = append(mine.events, tmp)
-		}
-	} else {
-		mine.events = make([]*EventInfo, 0, 2)
-	}
-
 	return true
 }
 
@@ -530,8 +536,8 @@ func (mine *EntityInfo) table() string {
 }
 
 func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, mark, quote, sum, operator string) error {
-	if mine.Status == EntityStatusUsable {
-		return errors.New("the entity had published so can not update")
+	if mine.Status != EntityStatusDraft {
+		return errors.New("the entity is not draft so can not update")
 	}
 	if concept == "" {
 		concept = mine.Concept
@@ -575,14 +581,45 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, mark, quot
 
 func (mine *EntityInfo) UpdateStatic(info *EntityInfo) error {
 	if mine.Status != EntityStatusDraft {
-		return errors.New("the entity had published so can not update")
+		return errors.New("the entity is not draft so can not update")
 	}
-	mine.UpdateBase(info.Name, info.Description, info.Add, info.Concept, info.Cover, info.Mark, info.Quote, info.Summary, info.Operator)
-	err := nosql.UpdateEntityStatic(mine.table(), mine.UID, info.Operator, info.Tags, info.Properties, info.StaticEvents, info.StaticRelations)
+	_ = mine.UpdateBase(info.Name, info.Description, info.Add, info.Concept, info.Cover, info.Mark, info.Quote, info.Summary, info.Operator)
+	err := nosql.UpdateEntityStatic(mine.table(), mine.UID, info.Operator, info.Tags, info.Properties)
 	if err == nil {
+		mine.Tags = info.Tags
 		mine.Properties = info.Properties
-		mine.StaticEvents = info.StaticEvents
-		mine.StaticRelations = info.StaticRelations
+		mine.UpdateTime = time.Now()
+	}
+	if len(info.StaticEvents) > 0 {
+		_ = mine.UpdateStaticEvents(info.Operator,info.StaticEvents)
+	}
+	if len(info.StaticRelations) > 0 {
+		_ = mine.UpdateStaticRelations(info.Operator,info.StaticRelations)
+	}
+	return err
+}
+
+func (mine *EntityInfo) UpdateStaticEvents(operator string, events []*proxy.EventBrief) error {
+	if mine.Status != EntityStatusDraft {
+		return errors.New("the entity is not draft so can not update")
+	}
+	err := nosql.UpdateEntityEvents(mine.table(), mine.UID, operator, events)
+	if err == nil {
+		mine.Operator = operator
+		mine.StaticEvents = events
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *EntityInfo) UpdateStaticRelations(operator string,list []*proxy.RelationCaseInfo) error {
+	if mine.Status != EntityStatusDraft {
+		return errors.New("the entity is not draft so can not update")
+	}
+	err := nosql.UpdateEntityRelations(mine.table(), mine.UID, operator, list)
+	if err == nil {
+		mine.Operator = operator
+		mine.StaticRelations = list
 		mine.UpdateTime = time.Now()
 	}
 	return err
@@ -663,11 +700,31 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator string) error
 }
 
 //region Event Fun
+func (mine *EntityInfo)initEvents()  {
+	if mine.events != nil {
+		return
+	}
+	events, err := nosql.GetEventsByParent(mine.UID)
+	if err == nil {
+		mine.events = make([]*EventInfo, 0, len(events))
+		for _, event := range events {
+			tmp := new(EventInfo)
+			tmp.initInfo(event)
+			mine.events = append(mine.events, tmp)
+		}
+	} else {
+		mine.events = make([]*EventInfo, 0, 1)
+	}
+
+}
+
 func (mine *EntityInfo) AllEvents() []*EventInfo {
+	mine.initEvents()
 	return mine.events
 }
 
 func (mine *EntityInfo)GetEventsByType(tp uint8) []*EventInfo {
+	mine.initEvents()
 	list := make([]*EventInfo, 0, 10)
 	for _, event := range mine.events {
 		if event.Type == tp {
@@ -681,9 +738,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	if mine.Status == EntityStatusUsable {
 		return nil, errors.New("the entity had published so can not update")
 	}
-	if mine.events == nil {
-		return nil, errors.New("must call construct fist")
-	}
+	mine.initEvents()
 
 	db := new(nosql.Event)
 	db.UID = primitive.NewObjectID()
@@ -708,6 +763,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	}
 	err := nosql.CreateEvent(db)
 	if err == nil {
+		mine.initEvents()
 		info := new(EventInfo)
 		info.initInfo(db)
 		mine.events = append(mine.events, info)
@@ -725,6 +781,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 }
 
 func (mine *EntityInfo) HadEvent(uid string) bool {
+	mine.initEvents()
 	for i := 0; i < len(mine.events); i += 1 {
 		if mine.events[i].UID == uid {
 			return true
@@ -734,6 +791,7 @@ func (mine *EntityInfo) HadEvent(uid string) bool {
 }
 
 func (mine *EntityInfo)HadEventBy(time, place string) bool {
+	mine.initEvents()
 	for _, event := range mine.events {
 		if event.Date.Begin.String() == time && event.Place.Name == place {
 			return true
@@ -743,6 +801,7 @@ func (mine *EntityInfo)HadEventBy(time, place string) bool {
 }
 
 func (mine *EntityInfo)GetEventBy(time, place string) *EventInfo {
+	mine.initEvents()
 	for _, event := range mine.events {
 		if event.Date.Begin.String() == time && event.Place.Name == place {
 			return event
@@ -755,9 +814,7 @@ func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
 	if mine.Status == EntityStatusUsable {
 		return errors.New("the entity had published so can not update")
 	}
-	if mine.events == nil {
-		return errors.New("must call construct fist")
-	}
+    mine.initEvents()
 	if !mine.HadEvent(uid) {
 		return errors.New("not found the event")
 	}
@@ -775,6 +832,7 @@ func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
 }
 
 func (mine *EntityInfo) GetEvent(uid string) *EventInfo {
+	mine.initEvents()
 	if mine.events == nil {
 		return nil
 	}
@@ -797,8 +855,8 @@ func (mine *EntityInfo) addProp(key string, words []proxy.WordInfo) {
 }
 
 func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
-	if mine.Status == EntityStatusUsable {
-		return errors.New("the entity had published so can not update")
+	if mine.Status != EntityStatusDraft {
+		return errors.New("the entity is not draft so can not update")
 	}
 	if mine.Properties == nil {
 		return errors.New("must call construct fist")
@@ -816,8 +874,8 @@ func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
 }
 
 func (mine *EntityInfo) UpdateProperties(array []*proxy.PropertyInfo, operator string) error {
-	if mine.Status == EntityStatusUsable {
-		return errors.New("the entity had published so can not update")
+	if mine.Status != EntityStatusDraft {
+		return errors.New("the entity is not draft so can not update")
 	}
 	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, operator, array)
 	if err == nil {

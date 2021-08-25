@@ -52,17 +52,17 @@ func (mine *EventService)AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb
 		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	event := info.GetEventBy(in.Date.Begin, in.Place.Name)
-	if event != nil {
-		er := event.UpdateInfo(in.Name, in.Description, in.Operator)
-		if er != nil {
-			out.Status = outError(path, er.Error(), pb.ResultStatus_DBException)
-		}else{
-			out.Info = switchEntityEvent(event)
-			out.Status = outLog(path, out)
-		}
-		return nil
-	}
+	//event := info.GetEventBy(in.Date.Begin, in.Place.Name)
+	//if event != nil {
+	//	er := event.UpdateInfo(in.Name, in.Description, in.Operator)
+	//	if er != nil {
+	//		out.Status = outError(path, er.Error(), pb.ResultStatus_DBException)
+	//	}else{
+	//		out.Info = switchEntityEvent(event)
+	//		out.Status = outLog(path, out)
+	//	}
+	//	return nil
+	//}
 	begin := proxy.Date{}
 	end := proxy.Date{}
 	if in.Date != nil {
@@ -122,7 +122,7 @@ func (mine *EventService)GetList(ctx context.Context, in *pb.RequestInfo, out *p
 	inLog(path, in)
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	out.List = make([]*pb.EventInfo, 0, 10)

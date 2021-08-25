@@ -2,6 +2,7 @@ package nosql
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy"
@@ -88,6 +89,9 @@ func GetEntity(table, uid string) (*Entity, error) {
 	err1 := result.Decode(model)
 	if err1 != nil {
 		return nil, err1
+	}
+	if model.DeleteTime.UnixNano() > 100 {
+		return nil,errors.New("the entity had deleted")
 	}
 	return model, nil
 }
@@ -252,8 +256,20 @@ func UpdateEntityBase(table, uid, name, remark, add, concept, quote, operator st
 	return err
 }
 
-func UpdateEntityStatic(table, uid, operator string, tags []string, props []*proxy.PropertyInfo, events []*proxy.EventBrief, relations []*proxy.RelationCaseInfo) error {
-	msg := bson.M{"operator": operator, "updatedAt": time.Now(),"tags": tags, "props": props, "events": events, "relations":relations}
+func UpdateEntityStatic(table, uid, operator string, tags []string, props []*proxy.PropertyInfo) error {
+	msg := bson.M{"operator": operator, "updatedAt": time.Now(),"tags": tags, "props": props}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityEvents(table, uid, operator string, events []*proxy.EventBrief) error {
+	msg := bson.M{"operator": operator, "updatedAt": time.Now(),"events": events}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityRelations(table, uid, operator string, relations []*proxy.RelationCaseInfo) error {
+	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "relations":relations}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

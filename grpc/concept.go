@@ -65,10 +65,10 @@ func (mine *ConceptService)AddOne(ctx context.Context, in *pb.ReqConceptAdd, out
 			out.Status = outLog(path, out)
 		}
 	}else{
-		if len(in.Table) > 0 && cache.Context().HadConceptByTable(in.Table) {
-			out.Status = outError(path,"the table name is repeated", pb.ResultStatus_Repeated)
-			return nil
-		}
+		//if len(in.Table) > 0 && cache.Context().HadConceptByTable(in.Table) {
+		//	out.Status = outError(path,"the table name is repeated", pb.ResultStatus_Repeated)
+		//	return nil
+		//}
 
 		if cache.Context().HadConceptByName(in.Name, in.Parent) {
 			out.Status = outError(path,"the concept name is repeated", pb.ResultStatus_Repeated)

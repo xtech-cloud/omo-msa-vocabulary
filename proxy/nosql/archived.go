@@ -134,6 +134,11 @@ func UpdateArchivedFile(uid, operator, file, md5  string) error {
 	return err
 }
 
+func RemoveArchived(uid, operator string) error {
+	_, err := removeOne(TableArchived, uid, operator)
+	return err
+}
+
 func HadArchivedByName(name string) (bool, error) {
 	msg := bson.M{"name": name}
 	return hadOne(TableArchived, msg)

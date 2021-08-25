@@ -129,6 +129,15 @@ func (mine *cacheContext)HadBoxByName(name string) bool {
 	return false
 }
 
+func (mine *cacheContext)checkEntityFromBoxes(uid,name string)  {
+	for _, box := range mine.boxes {
+		if box.HadKeyword(uid) {
+			_ = box.RemoveKeyword(uid)
+			_ = box.AppendKeyword(name)
+		}
+	}
+}
+
 //endregion
 
 //region Base Fun
@@ -207,6 +216,25 @@ func (mine *BoxInfo) RemoveKeywords(keys []string) error {
 	return err
 }
 
+func (mine *BoxInfo) AppendKeyword(key string) error {
+	if mine.Keywords == nil {
+		return errors.New("must call construct fist")
+	}
+	if !mine.HadKeyword(key) {
+		return errors.New("not found the property when remove")
+	}
+	err := nosql.AppendBoxKeyword(mine.UID, key)
+	if err == nil {
+		for i := 0; i < len(mine.Keywords); i += 1 {
+			if mine.Keywords[i] == key {
+				mine.Keywords = append(mine.Keywords[:i], mine.Keywords[i+1:]...)
+				break
+			}
+		}
+	}
+	return err
+}
+
 func (mine *BoxInfo) RemoveKeyword(key string) error {
 	if mine.Keywords == nil {
 		return errors.New("must call construct fist")
@@ -227,15 +255,18 @@ func (mine *BoxInfo) RemoveKeyword(key string) error {
 }
 
 func (mine *BoxInfo) UpdateBase(name, remark,operator, concept string) error {
-	err := nosql.UpdateBoxBase(mine.UID, name, remark, concept, operator)
-	if err == nil {
-		mine.Name = name
-		mine.Remark = remark
-		mine.Operator = operator
-		mine.Concept = concept
-		mine.UpdateTime = time.Now()
+	if mine.Name != name || mine.Remark != remark || mine.Concept != concept {
+		err := nosql.UpdateBoxBase(mine.UID, name, remark, concept, operator)
+		if err == nil {
+			mine.Name = name
+			mine.Remark = remark
+			mine.Operator = operator
+			mine.Concept = concept
+			mine.UpdateTime = time.Now()
+		}
+		return err
 	}
-	return err
+	return nil
 }
 
 func (mine *BoxInfo) UpdateCover(cover string) error {

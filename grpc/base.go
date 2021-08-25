@@ -55,8 +55,8 @@ func checkPage( page, number int32, all interface{}) (int32, int32, interface{})
 
 	var start = (page - 1) * number
 	var end = start + number
-	if end > total {
-		end = total
+	if end > total-1 {
+		end = total-1
 	}
 
 	list := array.Slice(int(start), int(end))

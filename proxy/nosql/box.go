@@ -97,14 +97,14 @@ func RemoveBox(uid, operator string) error {
 	return err
 }
 
-func AppendBoxKeywords(uid string, attr []string) error {
-	msg := bson.M{"keywords": attr}
+func AppendBoxKeyword(uid string, key string) error {
+	msg := bson.M{"keywords": key}
 	_, err := appendElement(TableBox, uid, msg)
 	return err
 }
 
-func SubtractBoxKeyword(uid string, attr string) error {
-	msg := bson.M{"keywords": attr}
+func SubtractBoxKeyword(uid string, key string) error {
+	msg := bson.M{"keywords": key}
 	_, err := removeElement(TableBox, uid, msg)
 	return err
 }
