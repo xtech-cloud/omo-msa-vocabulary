@@ -25,11 +25,11 @@ type RelationshipInfo struct {
 	Children []*RelationshipInfo
 }
 
-func (mine *cacheContext)AllRelations() []*RelationshipInfo {
+func (mine *cacheContext) AllRelations() []*RelationshipInfo {
 	return mine.relations
 }
 
-func (mine *cacheContext)CreateRelation(parent, creator string, info *RelationshipInfo) error {
+func (mine *cacheContext) CreateRelation(parent, creator string, info *RelationshipInfo) error {
 	if info == nil {
 		return errors.New("the attribute info is nil")
 	}
@@ -57,7 +57,7 @@ func (mine *cacheContext)CreateRelation(parent, creator string, info *Relationsh
 	return err
 }
 
-func (mine *cacheContext)HadRelation(uid string) bool {
+func (mine *cacheContext) HadRelation(uid string) bool {
 	for i := 0; i < len(mine.relations); i += 1 {
 		if mine.relations[i].UID == uid {
 			return true
@@ -66,7 +66,7 @@ func (mine *cacheContext)HadRelation(uid string) bool {
 	return false
 }
 
-func (mine *cacheContext)GetRelationByName(name string) *RelationshipInfo {
+func (mine *cacheContext) GetRelationByName(name string) *RelationshipInfo {
 	for i := 0; i < len(mine.relations); i += 1 {
 		child := mine.relations[i].GetChildByName(name)
 		if child != nil {
@@ -76,16 +76,16 @@ func (mine *cacheContext)GetRelationByName(name string) *RelationshipInfo {
 	return nil
 }
 
-func (mine *cacheContext)HadRelationByName(name, parent string) bool {
-	if parent == ""{
+func (mine *cacheContext) HadRelationByName(name, parent string) bool {
+	if parent == "" {
 		for i := 0; i < len(mine.relations); i += 1 {
 			if mine.relations[i].Name == name {
 				return true
 			}
 		}
-	}else{
+	} else {
 		p := mine.GetRelation(parent)
-		if p != nil && p.HadChildByName(name){
+		if p != nil && p.HadChildByName(name) {
 			return true
 		}
 	}
@@ -98,14 +98,14 @@ func switchRelationToLink(kind RelationType) LinkType {
 		return LinkTypeEvents
 	} else if kind == RelationPersons {
 		return LinkTypePersons
-	}else if kind == RelationInhuman {
+	} else if kind == RelationInhuman {
 		return LinkTypeInhuman
-	}else{
+	} else {
 		return LinkTypeEmpty
 	}
 }
 
-func (mine *cacheContext)RemoveRelation(uid, operator string) error {
+func (mine *cacheContext) RemoveRelation(uid, operator string) error {
 	err := nosql.RemoveRelation(uid, operator)
 	if err == nil {
 		for i := 0; i < len(mine.relations); i += 1 {
@@ -120,7 +120,7 @@ func (mine *cacheContext)RemoveRelation(uid, operator string) error {
 	return err
 }
 
-func (mine *cacheContext)GetRelation(uid string) *RelationshipInfo {
+func (mine *cacheContext) GetRelation(uid string) *RelationshipInfo {
 	for i := 0; i < len(mine.relations); i += 1 {
 		child := mine.relations[i].GetChild(uid)
 		if child != nil {

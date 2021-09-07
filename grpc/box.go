@@ -7,7 +7,7 @@ import (
 	"omo.msa.vocabulary/cache"
 )
 
-type BoxService struct {}
+type BoxService struct{}
 
 func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp := new(pb.BoxInfo)
@@ -19,16 +19,18 @@ func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp.Concept = info.Concept
 	tmp.Cover = info.Cover
 	tmp.Type = uint32(info.Type)
+	tmp.Count = 0
 	tmp.Keywords = info.Keywords
 	tmp.Workflow = info.Workflow
+	//logger.Info(fmt.Sprintf("the keywords length = %d of name = %s", len(tmp.Keywords), tmp.Name))
 	return tmp
 }
 
-func (mine *BoxService)AddOne(ctx context.Context, in *pb.ReqBoxAdd, out *pb.ReplyBoxInfo) error {
+func (mine *BoxService) AddOne(ctx context.Context, in *pb.ReqBoxAdd, out *pb.ReplyBoxInfo) error {
 	path := "box.addOne"
 	inLog(path, in)
 	if cache.Context().HadBoxByName(in.Name) {
-		out.Status = outError(path,"the box name is repeated", pb.ResultStatus_Repeated)
+		out.Status = outError(path, "the box name is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
 
@@ -42,21 +44,21 @@ func (mine *BoxService)AddOne(ctx context.Context, in *pb.ReqBoxAdd, out *pb.Rep
 	info.Workflow = in.Workflow
 	err := cache.Context().CreateBox(info)
 	if err != nil {
-		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
-	}else{
+	} else {
 		out.Info = switchBox(info)
 		out.Status = outLog(path, out)
 	}
 	return nil
 }
 
-func (mine *BoxService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyBoxInfo) error {
+func (mine *BoxService) GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyBoxInfo) error {
 	path := "box.getOne"
 	inLog(path, in)
 	info := cache.Context().GetBox(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the box by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	out.Info = switchBox(info)
@@ -64,20 +66,20 @@ func (mine *BoxService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.R
 	return nil
 }
 
-func (mine *BoxService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+func (mine *BoxService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "box.removeOne"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.Status = outError(path,"the box uid is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the box uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
 	info := cache.Context().GetBox(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the box by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	if len(info.Keywords) > 0 {
-		out.Status = outError(path,"the box is not empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the box is not empty", pb.ResultStatus_Empty)
 		return nil
 	}
 	err := cache.Context().RemoveBox(in.Uid, in.Operator)
@@ -90,7 +92,7 @@ func (mine *BoxService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *p
 	return nil
 }
 
-func (mine *BoxService)GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyBoxList) error {
+func (mine *BoxService) GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyBoxList) error {
 	path := "box.getAll"
 	inLog(path, in)
 	all := cache.Context().GetBoxes(uint8(in.Id))
@@ -102,12 +104,24 @@ func (mine *BoxService)GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.R
 	return nil
 }
 
-func (mine *BoxService)Update(ctx context.Context, in *pb.ReqBoxUpdate, out *pb.ReplyBoxInfo) error {
-	path := "box.update"
+func (mine *BoxService) GetListByUser(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyBoxList) error {
+	path := "box.getListByUser"
+	inLog(path, in)
+	list := cache.Context().GetBoxesByUser(in.Uid)
+	out.List = make([]*pb.BoxInfo, 0, len(list))
+	for _, value := range list {
+		out.List = append(out.List, switchBox(value))
+	}
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
+func (mine *BoxService) UpdateBase(ctx context.Context, in *pb.ReqBoxUpdate, out *pb.ReplyBoxInfo) error {
+	path := "box.updateBase"
 	inLog(path, in)
 	info := cache.Context().GetBox(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the box by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateBase(in.Name, in.Remark, in.Operator, in.Concept)
@@ -116,7 +130,7 @@ func (mine *BoxService)Update(ctx context.Context, in *pb.ReqBoxUpdate, out *pb.
 		return nil
 	}
 	if len(in.Keywords) > 0 {
-		err = info.UpdateKeywords(in.Keywords)
+		err = info.UpdateKeywords(in.Keywords, in.Operator)
 		if err != nil {
 			out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 			return nil
@@ -127,16 +141,16 @@ func (mine *BoxService)Update(ctx context.Context, in *pb.ReqBoxUpdate, out *pb.
 	return nil
 }
 
-func (mine *BoxService)Appends(ctx context.Context, in *pb.ReqBoxKeywords, out *pb.ReplyBoxInfo) error {
+func (mine *BoxService) AppendKeywords(ctx context.Context, in *pb.ReqBoxKeywords, out *pb.ReplyBoxInfo) error {
 	path := "box.appendsKeywords"
 	inLog(path, in)
 	info := cache.Context().GetBox(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the box by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 
-	err := info.AppendKeywords(in.Keywords)
+	err := info.AppendKeywords(in.Keywords, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -146,16 +160,16 @@ func (mine *BoxService)Appends(ctx context.Context, in *pb.ReqBoxKeywords, out *
 	return nil
 }
 
-func (mine *BoxService)Subtracts(ctx context.Context, in *pb.ReqBoxKeywords, out *pb.ReplyBoxInfo) error {
+func (mine *BoxService) SubtractKeywords(ctx context.Context, in *pb.ReqBoxKeywords, out *pb.ReplyBoxInfo) error {
 	path := "box.sub"
 	inLog(path, in)
 	info := cache.Context().GetBox(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the box by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 
-	err := info.RemoveKeywords(in.Keywords)
+	err := info.RemoveKeywords(in.Keywords, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -165,3 +179,59 @@ func (mine *BoxService)Subtracts(ctx context.Context, in *pb.ReqBoxKeywords, out
 	return nil
 }
 
+func (mine *BoxService) AppendUsers(ctx context.Context, in *pb.ReqBoxKeywords, out *pb.ReplyBoxInfo) error {
+	path := "box.appendsUsers"
+	inLog(path, in)
+	info := cache.Context().GetBox(in.Uid)
+	if info == nil {
+		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+
+	err := info.AppendUsers(in.Keywords, in.Operator)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Info = switchBox(info)
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *BoxService) SubtractUsers(ctx context.Context, in *pb.ReqBoxKeywords, out *pb.ReplyBoxInfo) error {
+	path := "box.subtractUsers"
+	inLog(path, in)
+	info := cache.Context().GetBox(in.Uid)
+	if info == nil {
+		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+
+	err := info.RemoveUsers(in.Keywords, in.Operator)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Info = switchBox(info)
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *BoxService) UpdateUsers(ctx context.Context, in *pb.ReqBoxKeywords, out *pb.ReplyBoxInfo) error {
+	path := "box.updateUsers"
+	inLog(path, in)
+	info := cache.Context().GetBox(in.Uid)
+	if info == nil {
+		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+
+	err := info.UpdateUsers(in.Keywords, in.Operator)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Info = switchBox(info)
+	out.Status = outLog(path, out)
+	return nil
+}

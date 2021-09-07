@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	ConceptTypeUnknown = 0
+	ConceptTypeUnknown  = 0
 	ConceptTypePersonal = 1
 	ConceptTypeUtensil  = 2  // 器物
 	ConceptTypeEvent    = 3  //事件
@@ -30,14 +30,14 @@ type ConceptInfo struct {
 	Remark     string
 	Table      string
 	Parent     string
-	Scene      uint8  // 针对的场景类型
+	Scene      uint8 // 针对的场景类型
 	attributes []string
 	Children   []*ConceptInfo
 }
 
 //region Global Fun
 
-func (mine *cacheContext)GetTopConcept(uid string) *ConceptInfo {
+func (mine *cacheContext) GetTopConcept(uid string) *ConceptInfo {
 	for i := 0; i < len(mine.concepts); i += 1 {
 		if mine.concepts[i].HadChild(uid) {
 			return mine.concepts[i]
@@ -46,7 +46,7 @@ func (mine *cacheContext)GetTopConcept(uid string) *ConceptInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetConceptByName(name string) *ConceptInfo {
+func (mine *cacheContext) GetConceptByName(name string) *ConceptInfo {
 	for i := 0; i < len(mine.concepts); i += 1 {
 		child := mine.concepts[i].GetChildByName(name)
 		if child != nil {
@@ -56,7 +56,7 @@ func (mine *cacheContext)GetConceptByName(name string) *ConceptInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetConcept(uid string) *ConceptInfo {
+func (mine *cacheContext) GetConcept(uid string) *ConceptInfo {
 	for i := 0; i < len(mine.concepts); i += 1 {
 		child := mine.concepts[i].GetChild(uid)
 		if child != nil {
@@ -66,11 +66,11 @@ func (mine *cacheContext)GetConcept(uid string) *ConceptInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetTopConcepts() []*ConceptInfo {
+func (mine *cacheContext) GetTopConcepts() []*ConceptInfo {
 	return mine.concepts
 }
 
-func (mine *cacheContext)CreateTopConcept(info *ConceptInfo) error {
+func (mine *cacheContext) CreateTopConcept(info *ConceptInfo) error {
 	//if len(info.Table) < 1 {
 	//	return errors.New("the table must not null")
 	//}
@@ -95,14 +95,14 @@ func (mine *cacheContext)CreateTopConcept(info *ConceptInfo) error {
 	return err
 }
 
-func (mine *cacheContext)RemoveConcept(uid, operator string) error {
+func (mine *cacheContext) RemoveConcept(uid, operator string) error {
 	err := nosql.RemoveConcept(uid, operator)
 	if err == nil {
 		for i := 0; i < len(mine.concepts); i += 1 {
 			if mine.concepts[i].UID == uid {
 				mine.concepts = append(mine.concepts[:i], mine.concepts[i+1:]...)
 				break
-			}else if mine.concepts[i].HadChild(uid) {
+			} else if mine.concepts[i].HadChild(uid) {
 				_ = mine.concepts[i].RemoveChild(uid)
 			}
 		}
@@ -110,7 +110,7 @@ func (mine *cacheContext)RemoveConcept(uid, operator string) error {
 	return err
 }
 
-func (mine *cacheContext)HadConceptByTable(table string) bool {
+func (mine *cacheContext) HadConceptByTable(table string) bool {
 	for i := 0; i < len(mine.concepts); i += 1 {
 		if mine.concepts[i].Table == table {
 			return true
@@ -119,16 +119,16 @@ func (mine *cacheContext)HadConceptByTable(table string) bool {
 	return false
 }
 
-func (mine *cacheContext)HadConceptByName(name, parent string) bool {
-	if parent == ""{
+func (mine *cacheContext) HadConceptByName(name, parent string) bool {
+	if parent == "" {
 		for i := 0; i < len(mine.concepts); i += 1 {
 			if mine.concepts[i].Name == name {
 				return true
 			}
 		}
-	}else{
+	} else {
 		p := mine.GetConcept(parent)
-		if p != nil && p.HadChildByName(name){
+		if p != nil && p.HadChildByName(name) {
 			return true
 		}
 	}
@@ -136,9 +136,9 @@ func (mine *cacheContext)HadConceptByName(name, parent string) bool {
 	return false
 }
 
-func (mine *cacheContext)HadConceptProperty(uid, key string) bool {
+func (mine *cacheContext) HadConceptProperty(uid, key string) bool {
 	var had = false
-	for i := 0;i < len(mine.concepts);i += 1 {
+	for i := 0; i < len(mine.concepts); i += 1 {
 		if mine.concepts[i].HadChild(uid) {
 			had = mine.concepts[i].HadAttribute(key)
 			break
@@ -146,6 +146,7 @@ func (mine *cacheContext)HadConceptProperty(uid, key string) bool {
 	}
 	return had
 }
+
 //endregion
 
 //region Base Fun
@@ -200,7 +201,7 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 	return err
 }
 
-func (mine *ConceptInfo)Label() string {
+func (mine *ConceptInfo) Label() string {
 	if mine.Type == ConceptTypePersonal {
 		return "personals"
 	} else if mine.Type == ConceptTypeUtensil {
@@ -237,7 +238,7 @@ func (mine *ConceptInfo) RemoveChild(uid string) bool {
 			return true
 		}
 		if mine.Children[i].HadChild(uid) {
-			return  mine.Children[i].RemoveChild(uid)
+			return mine.Children[i].RemoveChild(uid)
 		}
 	}
 	return false
@@ -297,7 +298,7 @@ func (mine *ConceptInfo) Attributes() []string {
 	return mine.attributes
 }
 
-func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string,kind AttributeType) error {
+func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string, kind AttributeType) error {
 	if mine.attributes == nil {
 		return errors.New("must call construct fist")
 	}
@@ -322,7 +323,7 @@ func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string,kind Attrib
 	return err
 }
 
-func (mine *ConceptInfo)UpdateAttributes(attributes []string) error {
+func (mine *ConceptInfo) UpdateAttributes(attributes []string) error {
 	if attributes == nil {
 		return errors.New("the attributes is nil when update")
 	}
@@ -335,7 +336,7 @@ func (mine *ConceptInfo)UpdateAttributes(attributes []string) error {
 	return err
 }
 
-func (mine *ConceptInfo)AppendAttribute(info *AttributeInfo) error {
+func (mine *ConceptInfo) AppendAttribute(info *AttributeInfo) error {
 	if info == nil {
 		return errors.New("the attribute is nil when append")
 	}
@@ -351,7 +352,7 @@ func (mine *ConceptInfo)AppendAttribute(info *AttributeInfo) error {
 }
 
 func (mine *ConceptInfo) GetAttributeName(key string) string {
-	for i := 0;i < len(mine.attributes);i += 1 {
+	for i := 0; i < len(mine.attributes); i += 1 {
 		t := Context().GetAttribute(mine.attributes[i])
 		if t != nil && t.Key == key {
 			return t.Name
@@ -361,7 +362,7 @@ func (mine *ConceptInfo) GetAttributeName(key string) string {
 }
 
 func (mine *ConceptInfo) GetAttribute(key string) *AttributeInfo {
-	for i := 0;i < len(mine.attributes);i += 1 {
+	for i := 0; i < len(mine.attributes); i += 1 {
 		t := Context().GetAttribute(mine.attributes[i])
 		if t != nil && t.Key == key {
 			return t
@@ -380,7 +381,7 @@ func (mine *ConceptInfo) HadAttribute(key string) bool {
 			return true
 		}
 	}
-	for i := 0;i < len(mine.Children);i += 1{
+	for i := 0; i < len(mine.Children); i += 1 {
 		if mine.Children[i].HadAttribute(key) {
 			return true
 		}
@@ -419,7 +420,7 @@ func (mine *ConceptInfo) RemoveAttribute(uid string) error {
 	return err
 }
 
-func (mine *ConceptInfo) UpdateBase(name, remark,operator string, kind, scene uint8) error {
+func (mine *ConceptInfo) UpdateBase(name, remark, operator string, kind, scene uint8) error {
 	err := nosql.UpdateConceptBase(mine.UID, name, remark, operator, kind, scene)
 	if err == nil {
 		mine.Name = name
@@ -440,4 +441,5 @@ func (mine *ConceptInfo) UpdateCover(cover string) error {
 	}
 	return err
 }
+
 //endregion

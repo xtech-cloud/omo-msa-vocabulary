@@ -13,15 +13,15 @@ type Archived struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
-	Creator     string                `json:"creator" bson:"creator"`
-	Operator    string                `json:"operator" bson:"operator"`
+	Creator     string             `json:"creator" bson:"creator"`
+	Operator    string             `json:"operator" bson:"operator"`
 
-	Concept string 				 `json:"concept" bson:"concept"`
-	Name   string                `json:"name" bson:"name"`
-	Entity  string                `json:"entity" bson:"entity"`
-	Scene   string 				  `json:"scene" bson:"scene"`
-	File string                	  `json:"file" bson:"file"`
-	MD5 string 					  `json:"md5" bson:"md5"`
+	Concept string `json:"concept" bson:"concept"`
+	Name    string `json:"name" bson:"name"`
+	Entity  string `json:"entity" bson:"entity"`
+	Scene   string `json:"scene" bson:"scene"`
+	File    string `json:"file" bson:"file"`
+	MD5     string `json:"md5" bson:"md5"`
 }
 
 func CreateArchived(info *Archived) error {
@@ -69,6 +69,12 @@ func GetAllArchived() ([]*Archived, error) {
 		}
 	}
 	return items, nil
+}
+
+func HadArchivedItem(entity string) bool {
+	filter := bson.M{"entity": entity}
+	had, _ := hadOne(TableArchived, filter)
+	return had
 }
 
 func GetArchivedItems(concept string) ([]*Archived, error) {
@@ -128,8 +134,8 @@ func GetArchivedListBy(scene, concept string) ([]*Archived, error) {
 	return items, nil
 }
 
-func UpdateArchivedFile(uid, operator, file, md5  string) error {
-	msg := bson.M{"file": file, "md5":md5, "operator": operator, "updatedAt": time.Now()}
+func UpdateArchivedFile(uid, operator, file, md5 string) error {
+	msg := bson.M{"file": file, "md5": md5, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableArchived, uid, msg)
 	return err
 }
@@ -143,4 +149,3 @@ func HadArchivedByName(name string) (bool, error) {
 	msg := bson.M{"name": name}
 	return hadOne(TableArchived, msg)
 }
-

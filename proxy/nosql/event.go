@@ -17,7 +17,7 @@ type Event struct {
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
-	Type        uint8 					`json:"type" bson:"type"`
+	Type        uint8                    `json:"type" bson:"type"`
 	Entity      string                   `json:"entity" bson:"entity"`
 	Name        string                   `json:"name" bson:"name"`
 	Description string                   `json:"desc" bson:"desc"`
@@ -86,7 +86,7 @@ func RemoveEvent(uid string, operator string) error {
 }
 
 func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
-	msg := bson.M{"name": name, "desc": desc, "assets":assets, "date": date, "place": place, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "desc": desc, "assets": assets, "date": date, "place": place, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }

@@ -16,15 +16,15 @@ type Attribute struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
-	Creator     string                `json:"creator" bson:"creator"`
-	Operator    string                `json:"operator" bson:"operator"`
+	Creator     string             `json:"creator" bson:"creator"`
+	Operator    string             `json:"operator" bson:"operator"`
 
-	Kind  uint8 `json:"type" bson:"type"`
-	Key   string        `json:"key" bson:"key"`
-	Name  string        `json:"name" bson:"name"`
-	Remark string 		`json:"remark" bson:"remark"`
-	Begin string        `json:"begin" bson:"begin"`
-	End   string        `json:"end" bson:"end"`
+	Kind   uint8  `json:"type" bson:"type"`
+	Key    string `json:"key" bson:"key"`
+	Name   string `json:"name" bson:"name"`
+	Remark string `json:"remark" bson:"remark"`
+	Begin  string `json:"begin" bson:"begin"`
+	End    string `json:"end" bson:"end"`
 }
 
 func CreateAttribute(info *Attribute) error {
@@ -77,7 +77,7 @@ func RemoveAttribute(uid, operator string) error {
 }
 
 func UpdateAttributeBase(uid, name, desc, begin, end, operator string, kind uint8) error {
-	msg := bson.M{"name": name, "remark": desc, "type":kind, "begin": begin,"end": end,"operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "remark": desc, "type": kind, "begin": begin, "end": end, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableAttribute, uid, msg)
 	return err
 }

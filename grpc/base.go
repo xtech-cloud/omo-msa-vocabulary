@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-func inLog(name, data interface{})  {
+func inLog(name, data interface{}) {
 	bytes, _ := json.Marshal(data)
 	msg := ByteString(bytes)
 	logger.Infof("[in.%s]:data = %s", name, msg)
@@ -17,7 +17,7 @@ func outError(name, msg string, code pb.ResultStatus) *pb.ReplyStatus {
 	logger.Warnf("[error.%s]:code = %d, msg = %s", name, code, msg)
 	tmp := &pb.ReplyStatus{
 		Code: uint32(code),
-		Msg: msg,
+		Msg:  msg,
 	}
 	return tmp
 }
@@ -28,7 +28,7 @@ func outLog(name, data interface{}) *pb.ReplyStatus {
 	logger.Infof("[out.%s]:data = %s", name, msg)
 	tmp := &pb.ReplyStatus{
 		Code: 0,
-		Msg: "",
+		Msg:  "",
 	}
 	return tmp
 }
@@ -42,7 +42,7 @@ func ByteString(p []byte) string {
 	return string(p)
 }
 
-func checkPage( page, number int32, all interface{}) (int32, int32, interface{}) {
+func checkPage(page, number int32, all interface{}) (int32, int32, interface{}) {
 	if number < 1 {
 		number = 10
 	}
@@ -56,7 +56,7 @@ func checkPage( page, number int32, all interface{}) (int32, int32, interface{})
 	var start = (page - 1) * number
 	var end = start + number
 	if end > total-1 {
-		end = total-1
+		end = total - 1
 	}
 
 	list := array.Slice(int(start), int(end))

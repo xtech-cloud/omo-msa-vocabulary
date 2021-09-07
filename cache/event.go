@@ -13,7 +13,7 @@ type EventInfo struct {
 	Description string // 描述
 	Parent      string
 	Cover       string
-	Quote      string // 引用或者备注
+	Quote       string // 引用或者备注
 	Date        proxy.DateInfo
 	Place       proxy.PlaceInfo
 	Tags        []string
@@ -21,8 +21,8 @@ type EventInfo struct {
 	Relations   []proxy.RelationCaseInfo
 }
 
-func (mine *cacheContext)GetEvent(uid string) *EventInfo {
-	event,err := nosql.GetEvent(uid)
+func (mine *cacheContext) GetEvent(uid string) *EventInfo {
+	event, err := nosql.GetEvent(uid)
 	if err == nil && event != nil {
 		info := new(EventInfo)
 		info.initInfo(event)
@@ -32,7 +32,7 @@ func (mine *cacheContext)GetEvent(uid string) *EventInfo {
 	return nil
 }
 
-func (mine *cacheContext)RemoveEvent(uid, operator string) error {
+func (mine *cacheContext) RemoveEvent(uid, operator string) error {
 	return nosql.RemoveEvent(uid, operator)
 }
 
@@ -137,7 +137,7 @@ func (mine *EventInfo) UpdateCover(operator, cover string) error {
 	return err
 }
 
-func (mine *EventInfo)hadAsset(asset string) bool {
+func (mine *EventInfo) hadAsset(asset string) bool {
 	for _, s := range mine.Assets {
 		if s == asset {
 			return true

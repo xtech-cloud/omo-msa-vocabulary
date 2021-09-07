@@ -7,7 +7,7 @@ import (
 	"omo.msa.vocabulary/cache"
 )
 
-type AttributeService struct {}
+type AttributeService struct{}
 
 func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 	tmp := new(pb.AttributeInfo)
@@ -24,18 +24,15 @@ func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 	return tmp
 }
 
-func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd, out *pb.ReplyAttributeInfo) error {
+func (mine *AttributeService) AddOne(ctx context.Context, in *pb.ReqAttributeAdd, out *pb.ReplyAttributeInfo) error {
 	path := "attribute.addOne"
 	inLog(path, in)
 	if cache.Context().HadAttributeByName(in.Name) {
 		out.Status = outError(path, "the name of attribute is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
-	if len(in.Key) < 1 {
-		out.Status = outError(path, "the key of attribute is empty", pb.ResultStatus_Repeated)
-		return nil
-	}
-	if cache.Context().HadAttributeByKey(in.Key) {
+
+	if len(in.Key) > 1 && cache.Context().HadAttributeByKey(in.Key) {
 		out.Status = outError(path, "the key of attribute is repeated", pb.ResultStatus_Empty)
 		return nil
 	}
@@ -51,43 +48,43 @@ func (mine *AttributeService)AddOne(ctx context.Context, in *pb.ReqAttributeAdd,
 	if err == nil {
 		out.Info = switchAttribute(info)
 		out.Status = outLog(path, out)
-	}else{
+	} else {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 	}
 	return nil
 }
 
-func (mine *AttributeService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeInfo) error {
+func (mine *AttributeService) GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeInfo) error {
 	path := "attribute.getOne"
 	inLog(path, in)
 	if len(in.Uid) > 0 {
 		info := cache.Context().GetAttribute(in.Uid)
 		if info == nil {
-			out.Status = outError(path,"not found the attribute by uid", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the attribute by uid", pb.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchAttribute(info)
 		out.Status = outLog(path, out)
-	}else if len(in.Key) > 0 {
+	} else if len(in.Key) > 0 {
 		info := cache.Context().GetAttributeByKey(in.Key)
 		if info == nil {
-			out.Status = outError(path,"not found the attribute by key", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the attribute by key", pb.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchAttribute(info)
 		out.Status = outLog(path, out)
-	}else{
-		out.Status = outError(path,"param is empty", pb.ResultStatus_Empty)
+	} else {
+		out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
 	}
 	return nil
 }
 
-func (mine *AttributeService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+func (mine *AttributeService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "attribute.removeOne"
 	inLog(path, in)
 	err := cache.Context().RemoveAttribute(in.Uid, in.Operator)
 	if err != nil {
-		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = in.Uid
@@ -95,7 +92,7 @@ func (mine *AttributeService)RemoveOne(ctx context.Context, in *pb.RequestInfo, 
 	return nil
 }
 
-func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeList) error {
+func (mine *AttributeService) All(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeList) error {
 	path := "attribute.all"
 	inLog(path, in)
 	out.List = make([]*pb.AttributeInfo, 0, 10)
@@ -106,21 +103,20 @@ func (mine *AttributeService)All(ctx context.Context, in *pb.RequestInfo, out *p
 	return nil
 }
 
-func (mine *AttributeService)Update(ctx context.Context, in *pb.ReqAttributeUpdate, out *pb.ReplyAttributeInfo) error {
+func (mine *AttributeService) Update(ctx context.Context, in *pb.ReqAttributeUpdate, out *pb.ReplyAttributeInfo) error {
 	path := "attribute.update"
 	inLog(path, in)
 	info := cache.Context().GetAttribute(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the attribute by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the attribute by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateBase(in.Name, in.Remark, in.Begin, in.End, in.Operator, uint8(in.Type))
 	if err != nil {
-		out.Status = outError(path,err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
 	out.Info = switchAttribute(info)
 	out.Status = outLog(path, out)
 	return nil
 }
-

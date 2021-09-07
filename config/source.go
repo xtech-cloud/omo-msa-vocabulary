@@ -174,12 +174,12 @@ func Setup() {
 func getLoggerOut() io.Writer {
 	path := Schema.Logger.File
 	logger.Info("logger path = " + path)
-	log :=&lumberjack.Logger{
+	log := &lumberjack.Logger{
 		LocalTime:  true,
 		Filename:   path,
 		MaxSize:    20, // megabytes
 		MaxBackups: 20,
-		MaxAge:     0,    //days
+		MaxAge:     0,     //days
 		Compress:   false, // disabled by default
 	}
 	if Schema.Logger.Std {
@@ -188,7 +188,7 @@ func getLoggerOut() io.Writer {
 			os.Stdout,
 		}
 		return io.MultiWriter(writers...)
-	}else{
+	} else {
 		writers := []io.Writer{
 			log,
 		}
@@ -196,7 +196,7 @@ func getLoggerOut() io.Writer {
 	}
 }
 
-func initLogger(mode string){
+func initLogger(mode string) {
 	out := getLoggerOut()
 	if "debug" == mode {
 		logger.DefaultLogger = logrusPlugin.NewLogger(

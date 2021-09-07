@@ -13,16 +13,17 @@ type Box struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
-	Creator     string                `json:"creator" bson:"creator"`
-	Operator    string                `json:"operator" bson:"operator"`
+	Creator     string             `json:"creator" bson:"creator"`
+	Operator    string             `json:"operator" bson:"operator"`
 
-	Name   string                `json:"name" bson:"name"`
-	Type   uint8 				 `json:"type" bson:"type"`
-	Cover  string                `json:"cover" bson:"cover"`
-	Remark string                `json:"remark" bson:"remark"`
-	Concept string                `json:"concept" bson:"concept"`
-	Workflow string `json:"workflow" bson:"workflow"`
-	Keywords  []string `json:"keywords" bson:"keywords"`
+	Name     string   `json:"name" bson:"name"`
+	Type     uint8    `json:"type" bson:"type"`
+	Cover    string   `json:"cover" bson:"cover"`
+	Remark   string   `json:"remark" bson:"remark"`
+	Concept  string   `json:"concept" bson:"concept"`
+	Workflow string   `json:"workflow" bson:"workflow"`
+	Keywords []string `json:"keywords" bson:"keywords"`
+	Users    []string `json:"users" bson:"users"`
 }
 
 func CreateBox(info *Box) error {
@@ -75,7 +76,7 @@ func HadBoxByName(name string) (bool, error) {
 }
 
 func UpdateBoxBase(uid, name, desc, concept, operator string) error {
-	msg := bson.M{"name": name, "remark": desc,"operator":operator,"concept": concept, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "remark": desc, "operator": operator, "concept": concept, "updatedAt": time.Now()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
@@ -86,14 +87,20 @@ func UpdateBoxCover(uid string, icon string) error {
 	return err
 }
 
-func UpdateBoxKeywords(uid string, list []string) error {
-	msg := bson.M{"keywords": list, "updatedAt": time.Now()}
+func UpdateBoxKeywords(uid, operator string, list []string) error {
+	msg := bson.M{"keywords": list, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
 
 func RemoveBox(uid, operator string) error {
 	_, err := removeOne(TableBox, uid, operator)
+	return err
+}
+
+func UpdateBoxUsers(uid, operator string, list []string) error {
+	msg := bson.M{"users": list, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
 

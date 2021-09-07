@@ -13,13 +13,13 @@ import (
 type ArchivedInfo struct {
 	BaseInfo
 	Concept string
-	Entity string
-	File string
-	MD5 string
-	Scene string
+	Entity  string
+	File    string
+	MD5     string
+	Scene   string
 }
 
-func (mine *cacheContext)CreateArchived(info *EntityInfo) error {
+func (mine *cacheContext) CreateArchived(info *EntityInfo) error {
 	if info == nil {
 		return errors.New("the entity info is nil")
 	}
@@ -27,13 +27,13 @@ func (mine *cacheContext)CreateArchived(info *EntityInfo) error {
 	db.UID = primitive.NewObjectID()
 	db.CreatedTime = time.Now()
 	db.ID = nosql.GetEntityNextID(info.table())
-	db.Name = fmt.Sprintf("%s(%s)",info.Name, info.Add)
+	db.Name = fmt.Sprintf("%s(%s)", info.Name, info.Add)
 	db.Concept = info.Concept
 	db.Entity = info.UID
 	db.Scene = info.Owner
 	db.Creator = info.Creator
 	db.Operator = info.Operator
-	file,er := json.Marshal(info)
+	file, er := json.Marshal(info)
 	if er != nil {
 		return er
 	}
@@ -43,11 +43,11 @@ func (mine *cacheContext)CreateArchived(info *EntityInfo) error {
 	return er
 }
 
-func (mine *cacheContext)GetArchivedByEntity(entity string) *ArchivedInfo {
+func (mine *cacheContext) GetArchivedByEntity(entity string) *ArchivedInfo {
 	if len(entity) < 1 {
 		return nil
 	}
-	db,err := nosql.GetArchivedByEntity(entity)
+	db, err := nosql.GetArchivedByEntity(entity)
 	if err == nil && db != nil {
 		info := new(ArchivedInfo)
 		info.initInfo(db)
@@ -56,13 +56,34 @@ func (mine *cacheContext)GetArchivedByEntity(entity string) *ArchivedInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetArchivedList(concept string) []*EntityInfo {
+func (mine *cacheContext) HadArchivedByEntity(entity string) bool {
+	if len(entity) < 1 {
+		return false
+	}
+	return nosql.HadArchivedItem(entity)
+}
+
+func (mine *cacheContext) GetArchivedByList(list []string) ([]*EntityInfo, error) {
+	if list == nil || len(list) < 1 {
+		return nil, errors.New("the array is empty")
+	}
+	arr := make([]*EntityInfo, 0, len(list))
+	for _, key := range list {
+		info := mine.GetArchivedByEntity(key)
+		if info != nil {
+			arr = append(arr, info.GetEntity())
+		}
+	}
+	return arr, nil
+}
+
+func (mine *cacheContext) GetArchivedList(concept string) []*EntityInfo {
 	var array []*nosql.Archived
 	var err error
 	if len(concept) > 1 {
-		array,err = nosql.GetArchivedItems(concept)
-	}else{
-		array,err = nosql.GetAllArchived()
+		array, err = nosql.GetArchivedItems(concept)
+	} else {
+		array, err = nosql.GetAllArchived()
 	}
 	if err != nil {
 		return make([]*EntityInfo, 0, 1)
@@ -79,17 +100,17 @@ func (mine *cacheContext)GetArchivedList(concept string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext)GetArchivedEntities(scene, concept string) []*EntityInfo {
+func (mine *cacheContext) GetArchivedEntities(scene, concept string) []*EntityInfo {
 	var array []*nosql.Archived
 	var err error
 	if len(scene) > 1 && len(concept) > 1 {
-		array,err = nosql.GetArchivedListBy(scene, concept)
-	}else if len(scene) > 1 {
-		array,err = nosql.GetArchivedListByScene(scene)
-	}else if len(concept) > 1 {
-		array,err = nosql.GetArchivedItems(concept)
-	}else{
-		array,err = nosql.GetAllArchived()
+		array, err = nosql.GetArchivedListBy(scene, concept)
+	} else if len(scene) > 1 {
+		array, err = nosql.GetArchivedListByScene(scene)
+	} else if len(concept) > 1 {
+		array, err = nosql.GetArchivedItems(concept)
+	} else {
+		array, err = nosql.GetAllArchived()
 	}
 	if err != nil {
 		return make([]*EntityInfo, 0, 1)
@@ -125,11 +146,11 @@ func (mine *ArchivedInfo) initInfo(db *nosql.Archived) bool {
 	return true
 }
 
-func (mine *ArchivedInfo)UpdateFile(info *EntityInfo, operator string) error {
+func (mine *ArchivedInfo) UpdateFile(info *EntityInfo, operator string) error {
 	if info == nil {
 		return errors.New("the entity info is nil")
 	}
-	data,er := json.Marshal(info)
+	data, er := json.Marshal(info)
 	if er != nil {
 		return er
 	}
@@ -142,14 +163,14 @@ func (mine *ArchivedInfo)UpdateFile(info *EntityInfo, operator string) error {
 	return err
 }
 
-func (mine *ArchivedInfo)GetEntity() *EntityInfo {
+func (mine *ArchivedInfo) GetEntity() *EntityInfo {
 	entity := new(EntityInfo)
 	er := json.Unmarshal([]byte(mine.File), entity)
 	if er != nil {
 		return nil
 	}
-	entity.Status = EntityStatusUsable
+	now := cacheCtx.GetEntity(entity.UID)
+	entity.Status = now.Status
+	entity.Published = true
 	return entity
 }
-
-

@@ -49,6 +49,7 @@ func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	tmp.Summary = info.Summary
 	tmp.Mark = info.Mark
 	tmp.Quote = info.Quote
+	tmp.Published = info.Published
 
 	//length := len(info.Properties)
 	//tmp.Properties = make([]*pb.PropertyInfo, 0, length)
@@ -63,7 +64,7 @@ func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
 	tmp.Uid = info.Key
 	tmp.Words = make([]*pb.WordInfo, 0, len(info.Words))
 	for _, value := range info.Words {
-		tmp.Words = append(tmp.Words, &pb.WordInfo{Uid:value.UID, Name:value.Name})
+		tmp.Words = append(tmp.Words, &pb.WordInfo{Uid: value.UID, Name: value.Name})
 	}
 	return tmp
 }
@@ -73,7 +74,7 @@ func switchEntityRProperty(info *pb.PropertyInfo) *proxy.PropertyInfo {
 	tmp.Key = info.Uid
 	tmp.Words = make([]proxy.WordInfo, 0, len(info.Words))
 	for _, value := range info.Words {
-		tmp.Words = append(tmp.Words, proxy.WordInfo{UID:value.Uid, Name:value.Name})
+		tmp.Words = append(tmp.Words, proxy.WordInfo{UID: value.Uid, Name: value.Name})
 	}
 	return tmp
 }
@@ -138,15 +139,15 @@ func switchRRelationBrief(info *proxy.RelationCaseInfo) *pb.RelationBrief {
 	return tmp
 }
 
-func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityInfo) error {
+func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityInfo) error {
 	path := "entity.addOne"
 	inLog(path, in)
 	if in.Name == "" {
-		out.Status = outError(path,"the entity name is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the entity name is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	if cache.Context().HadEntityByName(in.Name, in.Add){
-		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
+	if cache.Context().HadEntityByName(in.Name, in.Add) {
+		out.Status = outError(path, "the entity name is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
 	//if len(in.Mark) > 0 && cache.Context().HadEntityByMark(in.Mark) {
@@ -190,7 +191,7 @@ func (mine *EntityService)AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *
 	return nil
 }
 
-func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
+func (mine *EntityService) GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
 	path := "entity.getOne"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -199,7 +200,7 @@ func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	out.Info = switchEntity(info)
@@ -207,7 +208,7 @@ func (mine *EntityService)GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 	return nil
 }
 
-func (mine *EntityService)GetBrief(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityBrief) error {
+func (mine *EntityService) GetBrief(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityBrief) error {
 	path := "entity.getBrief"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -216,7 +217,7 @@ func (mine *EntityService)GetBrief(ctx context.Context, in *pb.RequestInfo, out 
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	out.Info = switchEntityBrief(info)
@@ -224,7 +225,7 @@ func (mine *EntityService)GetBrief(ctx context.Context, in *pb.RequestInfo, out 
 	return nil
 }
 
-func (mine *EntityService)GetByName(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
+func (mine *EntityService) GetByName(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
 	path := "entity.getByName"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -233,7 +234,7 @@ func (mine *EntityService)GetByName(ctx context.Context, in *pb.RequestInfo, out
 	}
 	info := cache.Context().GetEntityByName(in.Uid, in.Key)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by name", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by name", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	out.Info = switchEntity(info)
@@ -241,8 +242,8 @@ func (mine *EntityService)GetByName(ctx context.Context, in *pb.RequestInfo, out
 	return nil
 }
 
-func (mine *EntityService)GetByMark(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
-	path := "entity.getByName"
+func (mine *EntityService) GetByMark(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityInfo) error {
+	path := "entity.getByMark"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
 		out.Status = outError(path, "the entity mark is empty", pb.ResultStatus_Empty)
@@ -250,7 +251,7 @@ func (mine *EntityService)GetByMark(ctx context.Context, in *pb.RequestInfo, out
 	}
 	info := cache.Context().GetEntityByMark(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by mark", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by mark", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	out.Info = switchEntity(info)
@@ -258,7 +259,7 @@ func (mine *EntityService)GetByMark(ctx context.Context, in *pb.RequestInfo, out
 	return nil
 }
 
-func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+func (mine *EntityService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "entity.removeOne"
 	inLog(path, in)
 	err := cache.Context().RemoveEntity(in.Uid, in.Operator)
@@ -271,7 +272,7 @@ func (mine *EntityService)RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 	return nil
 }
 
-func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy, out *pb.ReplyEntityList) error {
+func (mine *EntityService) GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy, out *pb.ReplyEntityList) error {
 	path := "entity.getByOwner"
 	inLog(path, in)
 	out.Flag = in.Owner
@@ -283,7 +284,7 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 		for _, value := range list.([]*cache.EntityInfo) {
 			out.List = append(out.List, switchEntity(value))
 		}
-	}else{
+	} else {
 		array := cache.Context().GetEntitiesByStatus(cache.EntityStatus(in.Status), in.Concept)
 		total, _, list := checkPage(in.Page, in.Number, array)
 		out.List = make([]*pb.EntityInfo, 0, in.Number)
@@ -297,11 +298,11 @@ func (mine *EntityService)GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy,
 	return nil
 }
 
-func (mine *EntityService)GetListByBox(ctx context.Context, in *pb.RequestPage, out *pb.ReplyEntityList) error {
+func (mine *EntityService) GetListByBox(ctx context.Context, in *pb.RequestPage, out *pb.ReplyEntityList) error {
 	path := "entity.getListByBox"
 	inLog(path, in)
 	out.Flag = in.Parent
-	array, err := cache.Context().GetEntitiesByBox(in.Parent)
+	array, err := cache.Context().GetEntitiesByBox(in.Parent, cache.EntityStatus(in.Status))
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -317,15 +318,15 @@ func (mine *EntityService)GetListByBox(ctx context.Context, in *pb.RequestPage, 
 	return nil
 }
 
-func (mine *EntityService)GetListByName(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityList) error {
+func (mine *EntityService) GetListByName(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityList) error {
 	path := "entity.getListByName"
 	inLog(path, in)
-	if len(in.List) < 1{
+	if len(in.List) < 1 {
 		out.List = make([]*pb.EntityInfo, 0, 1)
 		return nil
 	}
 	out.List = make([]*pb.EntityInfo, 0, len(in.List))
-	for i :=0 ;i < len(in.List);i += 1 {
+	for i := 0; i < len(in.List); i += 1 {
 		array, err := cache.Context().GetEntitiesByName(in.List[i])
 		if err == nil {
 			for _, info := range array {
@@ -340,11 +341,11 @@ func (mine *EntityService)GetListByName(ctx context.Context, in *pb.RequestList,
 	return nil
 }
 
-func (mine *EntityService)GetByList(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityList) error {
+func (mine *EntityService) GetByList(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityList) error {
 	path := "entity.getByList"
 	inLog(path, in)
 
-	array, err := cache.Context().GetEntitiesByList(in.List)
+	array, err := cache.Context().GetEntitiesByList(cache.EntityStatus(in.Status), in.List)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -360,14 +361,46 @@ func (mine *EntityService)GetByList(ctx context.Context, in *pb.RequestList, out
 	return nil
 }
 
-func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySearch, out *pb.ReplyEntityList) error {
+func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityPublic) error {
+	path := "entity.getPublishList"
+	inLog(path, in)
+
+	out.Systems = make([]*pb.EntityInfo, 0, len(in.List))
+	out.Users = make([]*pb.EntityInfo, 0, len(in.List))
+	array, err := cache.Context().GetEntitiesByList(cache.EntityStatusUsable, in.List)
+	rest := make([]string, 0, len(in.List))
+	for _, key := range in.List {
+		rest = append(rest, key)
+	}
+	if err == nil {
+		for _, value := range array {
+			out.Systems = append(out.Systems, switchEntity(value))
+			for i := 0; i < len(rest); i += 1 {
+				if rest[i] == value.UID {
+					rest = append(rest[:i], rest[i+1:]...)
+					break
+				}
+			}
+		}
+	}
+	list, err := cache.Context().GetCustomEntitiesByList(rest)
+	if err == nil {
+		for _, value := range list {
+			out.Users = append(out.Users, switchEntity(value))
+		}
+	}
+	out.Status = outLog(path, fmt.Sprintf("the system length = %d; user length = %d", len(out.Systems), len(out.Users)))
+	return nil
+}
+
+func (mine *EntityService) SearchPublic(ctx context.Context, in *pb.ReqEntitySearch, out *pb.ReplyEntityList) error {
 	path := "entity.searchPublic"
 	inLog(path, in)
 	out.Flag = ""
 	out.List = make([]*pb.EntityInfo, 0, 200)
 	list := cache.Context().GetArchivedList("")
 	for _, value := range list {
-		if value.IsSatisfy(in.Concept, in.Attribute, in.Tags){
+		if value.IsSatisfy(in.Concept, in.Attribute, in.Tags) {
 			out.List = append(out.List, switchEntity(value))
 		}
 	}
@@ -375,7 +408,7 @@ func (mine *EntityService)SearchPublic(ctx context.Context, in *pb.ReqEntitySear
 	return nil
 }
 
-func (mine *EntityService)SearchMatch(ctx context.Context, in *pb.ReqEntityMatch, out *pb.ReplyEntityList) error {
+func (mine *EntityService) SearchMatch(ctx context.Context, in *pb.ReqEntityMatch, out *pb.ReplyEntityList) error {
 	path := "entity.searchMatch"
 	inLog(path, in)
 	out.Flag = ""
@@ -391,7 +424,7 @@ func (mine *EntityService)SearchMatch(ctx context.Context, in *pb.ReqEntityMatch
 	return nil
 }
 
-func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityUpdate) error {
+func (mine *EntityService) UpdateTags(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityUpdate) error {
 	path := "entity.updateTags"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -400,7 +433,7 @@ func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.RequestList, ou
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateTags(in.List, in.Operator)
@@ -415,7 +448,7 @@ func (mine *EntityService)UpdateTags(ctx context.Context, in *pb.RequestList, ou
 	return nil
 }
 
-func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntityProperties, out *pb.ReplyEntityProperties) error {
+func (mine *EntityService) UpdateProperties(ctx context.Context, in *pb.ReqEntityProperties, out *pb.ReplyEntityProperties) error {
 	path := "entity.updateProps"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -424,7 +457,7 @@ func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntity
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	list := make([]*proxy.PropertyInfo, 0, len(in.Properties))
@@ -433,7 +466,7 @@ func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntity
 		prop.Key = value.Uid
 		prop.Words = make([]proxy.WordInfo, 0, len(value.Words))
 		for _, word := range value.Words {
-			prop.Words = append(prop.Words, proxy.WordInfo{UID:word.Uid, Name:word.Name})
+			prop.Words = append(prop.Words, proxy.WordInfo{UID: word.Uid, Name: word.Name})
 		}
 		list = append(list, prop)
 	}
@@ -453,20 +486,20 @@ func (mine *EntityService)UpdateProperties(ctx context.Context, in *pb.ReqEntity
 	return nil
 }
 
-func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, out *pb.ReplyInfo) error {
+func (mine *EntityService) UpdateBase(ctx context.Context, in *pb.ReqEntityBase, out *pb.ReplyInfo) error {
 	path := "entity.updateBase"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
 		out.Status = outError(path, "the entity uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	if in.Name != "" && cache.Context().HadEntityByName(in.Name, in.Add){
-		out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
-		return nil
-	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	if in.Name != "" && in.Name != info.Name && cache.Context().HadEntityByName(in.Name, in.Add) {
+		out.Status = outError(path, "the entity name is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
 	err := info.UpdateBase(in.Name, in.Desc, in.Add, in.Concept, in.Cover, in.Mark, in.Quote, in.Summary, in.Operator)
@@ -479,7 +512,7 @@ func (mine *EntityService)UpdateBase(ctx context.Context, in *pb.ReqEntityBase, 
 	return nil
 }
 
-func (mine *EntityService)UpdateCover(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+func (mine *EntityService) UpdateCover(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "entity.updateCover"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -488,7 +521,7 @@ func (mine *EntityService)UpdateCover(ctx context.Context, in *pb.RequestInfo, o
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateCover(in.Key, in.Operator)
@@ -502,7 +535,7 @@ func (mine *EntityService)UpdateCover(ctx context.Context, in *pb.RequestInfo, o
 	return nil
 }
 
-func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStatus, out *pb.ReplyEntityStatus) error {
+func (mine *EntityService) UpdateStatus(ctx context.Context, in *pb.ReqEntityStatus, out *pb.ReplyEntityStatus) error {
 	path := "entity.updateStatus"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -511,7 +544,7 @@ func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStat
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateStatus(cache.EntityStatus(in.Status), in.Operator)
@@ -526,7 +559,7 @@ func (mine *EntityService)UpdateStatus(ctx context.Context, in *pb.ReqEntityStat
 	return nil
 }
 
-func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityUpdate) error {
+func (mine *EntityService) UpdateSynonyms(ctx context.Context, in *pb.RequestList, out *pb.ReplyEntityUpdate) error {
 	path := "entity.updateSynonyms"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -535,7 +568,7 @@ func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.RequestList
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateSynonyms(in.List, in.Operator)
@@ -550,7 +583,7 @@ func (mine *EntityService)UpdateSynonyms(ctx context.Context, in *pb.RequestList
 	return nil
 }
 
-func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityProperty, out *pb.ReplyEntityProperties) error {
+func (mine *EntityService) AppendProperty(ctx context.Context, in *pb.ReqEntityProperty, out *pb.ReplyEntityProperties) error {
 	path := "entity.appendProp"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -559,7 +592,7 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	if info.HadProperty(in.Property.Uid) {
@@ -568,7 +601,7 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 	}
 	words := make([]proxy.WordInfo, 0, len(in.Property.Words))
 	for _, value := range in.Property.Words {
-		words = append(words, proxy.WordInfo{UID:value.Uid, Name:value.Name})
+		words = append(words, proxy.WordInfo{UID: value.Uid, Name: value.Name})
 	}
 	err := info.AddProperty(in.Property.Uid, words)
 	if err != nil {
@@ -584,7 +617,7 @@ func (mine *EntityService)AppendProperty(ctx context.Context, in *pb.ReqEntityPr
 	return nil
 }
 
-func (mine *EntityService)SubtractProperty(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityProperties) error {
+func (mine *EntityService) SubtractProperty(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEntityProperties) error {
 	path := "entity.subtractProp"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -593,7 +626,7 @@ func (mine *EntityService)SubtractProperty(ctx context.Context, in *pb.RequestIn
 	}
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
-		out.Status = outError(path,"not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.RemoveProperty(in.Key)
@@ -610,10 +643,10 @@ func (mine *EntityService)SubtractProperty(ctx context.Context, in *pb.RequestIn
 	return nil
 }
 
-func (mine *EntityService)GetByProperty(ctx context.Context, in *pb.ReqEntityByProp, out *pb.ReplyEntityList) error {
+func (mine *EntityService) GetByProperty(ctx context.Context, in *pb.ReqEntityByProp, out *pb.ReplyEntityList) error {
 	path := "entity.getByProperty"
 	inLog(path, in)
-	if len(in.Key) < 1 || len(in.Value) < 1{
+	if len(in.Key) < 1 || len(in.Value) < 1 {
 		out.Status = outError(path, "the key or value is empty", pb.ResultStatus_Empty)
 		return nil
 	}
@@ -627,7 +660,7 @@ func (mine *EntityService)GetByProperty(ctx context.Context, in *pb.ReqEntityByP
 	return nil
 }
 
-func (mine *EntityService)UpdateStatic(ctx context.Context, in *pb.ReqEntityStatic, out *pb.ReplyInfo) error {
+func (mine *EntityService) UpdateStatic(ctx context.Context, in *pb.ReqEntityStatic, out *pb.ReplyInfo) error {
 	path := "entity.updateStatic"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -640,8 +673,8 @@ func (mine *EntityService)UpdateStatic(ctx context.Context, in *pb.ReqEntityStat
 		return nil
 	}
 	if entity.Name != in.Name || entity.Add != in.Add {
-		if cache.Context().HadEntityByName(in.Name, in.Add){
-			out.Status = outError(path,"the entity name is repeated", pb.ResultStatus_Repeated)
+		if cache.Context().HadEntityByName(in.Name, in.Add) {
+			out.Status = outError(path, "the entity name is repeated", pb.ResultStatus_Repeated)
 			return nil
 		}
 	}
@@ -680,7 +713,7 @@ func (mine *EntityService)UpdateStatic(ctx context.Context, in *pb.ReqEntityStat
 	return nil
 }
 
-func (mine *EntityService)UpdateRelations(ctx context.Context, in *pb.ReqEntityRelations, out *pb.ReplyInfo) error {
+func (mine *EntityService) UpdateRelations(ctx context.Context, in *pb.ReqEntityRelations, out *pb.ReplyInfo) error {
 	path := "entity.updateStRelations"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
@@ -708,7 +741,7 @@ func (mine *EntityService)UpdateRelations(ctx context.Context, in *pb.ReqEntityR
 	return nil
 }
 
-func (mine *EntityService)UpdateEvents(ctx context.Context, in *pb.ReqEntityEvents, out *pb.ReplyInfo) error {
+func (mine *EntityService) UpdateEvents(ctx context.Context, in *pb.ReqEntityEvents, out *pb.ReplyInfo) error {
 	path := "entity.updateStEvents"
 	inLog(path, in)
 	if len(in.Uid) < 1 {

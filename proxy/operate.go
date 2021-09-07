@@ -14,9 +14,9 @@ func switchNode(info neo4j.Node) *Node {
 	}
 	node := new(Node)
 	props := info.Props()
-	node.Name,_ = props["name"].(string)
-	node.UID,_ = props["uid"].(string)
-	node.Labels =  info.Labels()
+	node.Name, _ = props["name"].(string)
+	node.UID, _ = props["uid"].(string)
+	node.Labels = info.Labels()
 	node.ID = info.Id()
 	return node
 }
@@ -37,20 +37,20 @@ func switchLink(info neo4j.Relationship) *Link {
 	return link
 }
 
-func CreateNode(name , label, uid string) (*Node,error) {
+func CreateNode(name, label, uid string) (*Node, error) {
 	if isNeo4j {
-		node,err := graph.CreateNode(name, label, uid)
+		node, err := graph.CreateNode(name, label, uid)
 		return switchNode(node), err
 	}
-	return nil,errors.New("not support db")
+	return nil, errors.New("not support db")
 }
 
-func CreateLink(from, to int64,kind, name, relation string, direction uint8) (*Link,error) {
+func CreateLink(from, to int64, kind, name, relation string, direction uint8) (*Link, error) {
 	if isNeo4j {
-		link,err := graph.CreateLink(from, to, kind, name, direction, relation)
-		return switchLink(link),err
+		link, err := graph.CreateLink(from, to, kind, name, direction, relation)
+		return switchLink(link), err
 	}
-	return nil,errors.New("not support db")
+	return nil, errors.New("not support db")
 }
 
 func RemoveNode(id int64, label string) error {
@@ -69,34 +69,34 @@ func RemoveLink(id int64) error {
 
 func GetNode(uid string) (*Node, error) {
 	if isNeo4j {
-		node,err := graph.GetNode(uid)
+		node, err := graph.GetNode(uid)
 		return switchNode(node), err
 	}
-	return nil,errors.New("not support db")
+	return nil, errors.New("not support db")
 }
 
 func GetNodeByID(id int64) (*Node, error) {
 	if isNeo4j {
-		node,err := graph.GetNodeByID(id)
+		node, err := graph.GetNodeByID(id)
 		return switchNode(node), err
 	}
-	return nil,errors.New("not support db")
+	return nil, errors.New("not support db")
 }
 
 func GetLink(from, to string) (*Link, error) {
 	if isNeo4j {
-		link,err := graph.GetLink(from, to)
-		return switchLink(link),err
+		link, err := graph.GetLink(from, to)
+		return switchLink(link), err
 	}
-	return nil,errors.New("not support db")
+	return nil, errors.New("not support db")
 }
 
 func GetLinkByID(id int64) (*Link, error) {
 	if isNeo4j {
-		link,err := graph.GetLinkByID(id)
-		return switchLink(link),err
+		link, err := graph.GetLinkByID(id)
+		return switchLink(link), err
 	}
-	return nil,errors.New("not support db")
+	return nil, errors.New("not support db")
 }
 
 func FindPath(from, to string) (*Graph, error) {
@@ -105,16 +105,16 @@ func FindPath(from, to string) (*Graph, error) {
 	tmp.Center = from
 	var err error
 	if isNeo4j {
-		nodes, links,err1 := graph.FindPath(from, to)
-		for i := 0;i < len(nodes);i += 1 {
+		nodes, links, err1 := graph.FindPath(from, to)
+		for i := 0; i < len(nodes); i += 1 {
 			tmp.AddNode(switchNode(nodes[i]))
 		}
-		for i := 0;i < len(links);i += 1 {
+		for i := 0; i < len(links); i += 1 {
 			tmp.AddLink(switchLink(links[i]))
 		}
 		err = err1
 	}
-	return tmp,err
+	return tmp, err
 }
 
 func FindGraph(uid, label string) (*Graph, error) {
@@ -123,14 +123,14 @@ func FindGraph(uid, label string) (*Graph, error) {
 	tmp.Center = uid
 	var err error
 	if isNeo4j {
-		nodes, links,err1 := graph.FindGraph(uid, label)
-		for i := 0;i < len(nodes);i += 1 {
+		nodes, links, err1 := graph.FindGraph(uid, label)
+		for i := 0; i < len(nodes); i += 1 {
 			tmp.AddNode(switchNode(nodes[i]))
 		}
-		for i := 0;i < len(links);i += 1 {
+		for i := 0; i < len(links); i += 1 {
 			tmp.AddLink(switchLink(links[i]))
 		}
 		err = err1
 	}
-	return tmp,err
+	return tmp, err
 }

@@ -11,16 +11,17 @@ import (
 type BoxInfo struct {
 	Type uint8
 	BaseInfo
-	Cover      string
-	Remark     string
-	Concept    string  // 针对的实体类型
-	Workflow   string
+	Cover    string
+	Remark   string
+	Concept  string // 针对的实体类型
+	Workflow string
 	Keywords []string
+	Users []string
 }
 
 //region Global Fun
 
-func (mine *cacheContext)GetBoxByName(name string) *BoxInfo {
+func (mine *cacheContext) GetBoxByName(name string) *BoxInfo {
 	for i := 0; i < len(mine.boxes); i += 1 {
 		if mine.boxes[i].Name == name {
 			return mine.boxes[i]
@@ -29,7 +30,7 @@ func (mine *cacheContext)GetBoxByName(name string) *BoxInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetBox(uid string) *BoxInfo {
+func (mine *cacheContext) GetBox(uid string) *BoxInfo {
 	for i := 0; i < len(mine.boxes); i += 1 {
 		if mine.boxes[i].UID == uid {
 			return mine.boxes[i]
@@ -38,7 +39,7 @@ func (mine *cacheContext)GetBox(uid string) *BoxInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetBoxes(kind uint8) []*BoxInfo {
+func (mine *cacheContext) GetBoxes(kind uint8) []*BoxInfo {
 	list := make([]*BoxInfo, 0, 10)
 	for _, box := range mine.boxes {
 		if box.Type == kind {
@@ -48,34 +49,49 @@ func (mine *cacheContext)GetBoxes(kind uint8) []*BoxInfo {
 	return list
 }
 
-func (mine *cacheContext)GetEntitiesByBox(uid string) ([]*EntityInfo,error) {
+func (mine *cacheContext) GetBoxesByUser(user string) []*BoxInfo {
+	list := make([]*BoxInfo, 0, 10)
+	for _, box := range mine.boxes {
+		if tool.HasItem(box.Users, user) {
+			list = append(list, box)
+		}
+	}
+	return list
+}
+
+func (mine *cacheContext) GetEntitiesByBox(uid string, st EntityStatus) ([]*EntityInfo, error) {
 	box := mine.GetBox(uid)
 	if box == nil {
-		return nil,errors.New("not found the box that uid = " + uid)
+		return nil, errors.New("not found the box that uid = " + uid)
 	}
-	if box.Type < 1 {
-		return nil, errors.New("the box type must 1")
-	}
+
 	if box.Keywords == nil || len(box.Keywords) < 1 {
 		return nil, errors.New("the box keywords is empty")
 	}
 	list := make([]*EntityInfo, 0, len(box.Keywords))
 	for _, item := range box.Keywords {
-		info := mine.GetEntity(item)
-		if info != nil {
-			list = append(list, info)
+		if st == EntityStatusUsable {
+			info := mine.GetArchivedByEntity(item)
+			if info != nil {
+				list = append(list, info.GetEntity())
+			}
+		} else {
+			info := mine.GetEntity(item)
+			if info != nil {
+				list = append(list, info)
+			}
 		}
 	}
-	return list,nil
+	return list, nil
 }
 
-func (mine *cacheContext)GetEntitiesByName(name string) ([]*EntityInfo,error) {
+func (mine *cacheContext) GetEntitiesByName(name string) ([]*EntityInfo, error) {
 	if len(name) < 1 {
-		return nil,errors.New("the name is empty")
+		return nil, errors.New("the name is empty")
 	}
-	array,err := nosql.GetEntitiesByName(DefaultEntityTable, name)
+	array, err := nosql.GetEntitiesByName(DefaultEntityTable, name)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	list := make([]*EntityInfo, 0, len(array))
 	for _, entity := range array {
@@ -83,7 +99,7 @@ func (mine *cacheContext)GetEntitiesByName(name string) ([]*EntityInfo,error) {
 		info.initInfo(entity)
 		list = append(list, info)
 	}
-	return list,nil
+	return list, nil
 }
 
 func (mine *cacheContext) CreateBox(info *BoxInfo) error {
@@ -99,6 +115,7 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db.Type = info.Type
 	db.Workflow = info.Workflow
 	db.Keywords = make([]string, 0, 5)
+	db.Users = make([]string, 0, 5)
 	err := nosql.CreateBox(db)
 	if err == nil {
 		info.initInfo(db)
@@ -107,7 +124,7 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	return err
 }
 
-func (mine *cacheContext)RemoveBox(uid, operator string) error {
+func (mine *cacheContext) RemoveBox(uid, operator string) error {
 	err := nosql.RemoveBox(uid, operator)
 	if err == nil {
 		for i := 0; i < len(mine.boxes); i += 1 {
@@ -120,7 +137,7 @@ func (mine *cacheContext)RemoveBox(uid, operator string) error {
 	return err
 }
 
-func (mine *cacheContext)HadBoxByName(name string) bool {
+func (mine *cacheContext) HadBoxByName(name string) bool {
 	for i := 0; i < len(mine.boxes); i += 1 {
 		if mine.boxes[i].Name == name {
 			return true
@@ -129,7 +146,7 @@ func (mine *cacheContext)HadBoxByName(name string) bool {
 	return false
 }
 
-func (mine *cacheContext)checkEntityFromBoxes(uid,name string)  {
+func (mine *cacheContext) checkEntityFromBoxes(uid, name string) {
 	for _, box := range mine.boxes {
 		if box.HadKeyword(uid) {
 			_ = box.RemoveKeyword(uid)
@@ -158,14 +175,15 @@ func (mine *BoxInfo) initInfo(db *nosql.Box) {
 	mine.Creator = db.Creator
 	mine.Workflow = db.Workflow
 	mine.Keywords = db.Keywords
+	mine.Users = db.Users
 }
 
-func (mine *BoxInfo)UpdateKeywords(list []string) error {
+func (mine *BoxInfo) UpdateKeywords(list []string, operator string) error {
 	if list == nil {
 		return errors.New("the list is nil when update")
 	}
 
-	err := nosql.UpdateBoxKeywords(mine.UID, list)
+	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
 	if err == nil {
 		mine.Keywords = list
 		mine.UpdateTime = time.Now()
@@ -173,15 +191,74 @@ func (mine *BoxInfo)UpdateKeywords(list []string) error {
 	return err
 }
 
-func (mine *BoxInfo)AppendKeywords(keys []string) error {
-	list := make([]string, 0, len(keys) +len(mine.Keywords))
-	list = append(list, mine.Keywords...)
-	for i := 0;i < len(keys);i += 1 {
-		if !mine.HadKeyword(keys[i]){
+func (mine *BoxInfo) UpdateUsers(list []string, operator string) error {
+	if list == nil {
+		return errors.New("the list is nil when update")
+	}
+
+	err := nosql.UpdateBoxUsers(mine.UID, operator, list)
+	if err == nil {
+		mine.Users = list
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *BoxInfo) HadUser(key string) bool {
+	if mine.Users == nil {
+		return false
+	}
+	for i := 0; i < len(mine.Users); i += 1 {
+		if mine.Users[i] == key {
+			return true
+		}
+	}
+	return false
+}
+
+func (mine *BoxInfo) AppendUsers(keys []string, operator string) error {
+	list := make([]string, 0, len(keys)+len(mine.Users))
+	list = append(list, mine.Users...)
+	for i := 0; i < len(keys); i += 1 {
+		if !mine.HadUser(keys[i]) {
 			list = append(list, keys[i])
 		}
 	}
-	err := nosql.UpdateBoxKeywords(mine.UID, list)
+	err := nosql.UpdateBoxUsers(mine.UID, operator, list)
+	if err == nil {
+		mine.Users = list
+		mine.UpdateTime = time.Now()
+		mine.Operator = operator
+	}
+	return err
+}
+
+func (mine *BoxInfo) RemoveUsers(keys []string, operator string) error {
+	list := make([]string, 0, len(mine.Users))
+	for _, keyword := range mine.Users {
+		if !tool.HasItem(keys, keyword) {
+			list = append(list, keyword)
+		}
+	}
+	err := nosql.UpdateBoxUsers(mine.UID, operator, list)
+	if err == nil {
+		mine.Users = list
+		mine.UpdateTime = time.Now()
+		mine.Operator = operator
+	}
+	return err
+}
+
+func (mine *BoxInfo) AppendKeywords(keys []string, operator string) error {
+	list := make([]string, 0, len(keys)+len(mine.Keywords))
+	list = append(list, mine.Keywords...)
+	for i := 0; i < len(keys); i += 1 {
+		if !mine.HadKeyword(keys[i]) {
+			list = append(list, keys[i])
+		}
+	}
+	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
 	if err == nil {
 		mine.Keywords = list
 		mine.UpdateTime = time.Now()
@@ -201,14 +278,14 @@ func (mine *BoxInfo) HadKeyword(key string) bool {
 	return false
 }
 
-func (mine *BoxInfo) RemoveKeywords(keys []string) error {
+func (mine *BoxInfo) RemoveKeywords(keys []string, operator string) error {
 	list := make([]string, 0, len(mine.Keywords))
 	for _, keyword := range mine.Keywords {
 		if !tool.HasItem(keys, keyword) {
 			list = append(list, keyword)
 		}
 	}
-	err := nosql.UpdateBoxKeywords(mine.UID, list)
+	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
 	if err == nil {
 		mine.Keywords = list
 		mine.UpdateTime = time.Now()
@@ -254,7 +331,7 @@ func (mine *BoxInfo) RemoveKeyword(key string) error {
 	return err
 }
 
-func (mine *BoxInfo) UpdateBase(name, remark,operator, concept string) error {
+func (mine *BoxInfo) UpdateBase(name, remark, operator, concept string) error {
 	if mine.Name != name || mine.Remark != remark || mine.Concept != concept {
 		err := nosql.UpdateBoxBase(mine.UID, name, remark, concept, operator)
 		if err == nil {
@@ -277,4 +354,5 @@ func (mine *BoxInfo) UpdateCover(cover string) error {
 	}
 	return err
 }
+
 //endregion

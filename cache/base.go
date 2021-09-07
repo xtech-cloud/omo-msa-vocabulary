@@ -13,13 +13,13 @@ import (
 )
 
 type BaseInfo struct {
-	ID         uint64 `json:"id"`
-	UID        string `json:"uid"`
-	Name       string `json:"name"`
+	ID         uint64    `json:"id"`
+	UID        string    `json:"uid"`
+	Name       string    `json:"name"`
 	CreateTime time.Time `json:"create_time"`
 	UpdateTime time.Time `json:"update_time"`
-	Creator string `json:"creator"`
-	Operator string `json:"operator"`
+	Creator    string    `json:"creator"`
+	Operator   string    `json:"operator"`
 }
 
 type WritingInfo struct {
@@ -28,7 +28,7 @@ type WritingInfo struct {
 }
 
 type PairInfo struct {
-	Key string `json:"key"`
+	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
@@ -47,29 +47,29 @@ type FileInfo struct {
 }
 
 type NodeTemp struct {
-	Entity string
-	Name string
-	Cover string
+	Entity  string
+	Name    string
+	Cover   string
 	Concept string
 }
 
 type LinkTemp struct {
-	UUID string
-	From string
-	To string
-	Kind LinkType
-	Relation string
-	Name string
+	UUID      string
+	From      string
+	To        string
+	Kind      LinkType
+	Relation  string
+	Name      string
 	Direction uint8
 }
 
 type CountMap struct {
-	Map sync.Map
+	Map   sync.Map
 	Count uint32
 }
 
 type cacheContext struct {
-	graph      *GraphInfo
+	graph *GraphInfo
 	//entities   []*EntityInfo
 	concepts   []*ConceptInfo
 	boxes      []*BoxInfo
@@ -102,7 +102,7 @@ func InitData() error {
 		return err1
 	}
 
-	attributes,_ := nosql.GetAllAttributes()
+	attributes, _ := nosql.GetAllAttributes()
 	for i := 0; i < len(attributes); i += 1 {
 		info := new(AttributeInfo)
 		info.initInfo(attributes[i])
@@ -110,14 +110,14 @@ func InitData() error {
 	}
 	logger.Infof("init attribute!!! number = %d", len(cacheCtx.attributes))
 
-	relations,_ := nosql.GetTopRelations()
+	relations, _ := nosql.GetTopRelations()
 	for i := 0; i < len(relations); i += 1 {
 		info := new(RelationshipInfo)
 		info.initInfo(relations[i])
 		cacheCtx.relations = append(cacheCtx.relations, info)
 	}
 	logger.Infof("init relation!!! number = %d", len(cacheCtx.relations))
-	concerts,_ := nosql.GetTopConcepts()
+	concerts, _ := nosql.GetTopConcepts()
 	for i := 0; i < len(concerts); i += 1 {
 		info := new(ConceptInfo)
 		info.initInfo(concerts[i])
@@ -125,7 +125,7 @@ func InitData() error {
 	}
 	logger.Infof("init concerts!!! number = %d", len(cacheCtx.concepts))
 
-	boxes,_ := nosql.GetBoxes()
+	boxes, _ := nosql.GetBoxes()
 	for i := 0; i < len(boxes); i += 1 {
 		info := new(BoxInfo)
 		info.initInfo(boxes[i])
@@ -159,39 +159,39 @@ func Context() *cacheContext {
 	return cacheCtx
 }
 
-func (mine *cacheContext)addSyncNode(uid, name, concept, cover string) {
+func (mine *cacheContext) addSyncNode(uid, name, concept, cover string) {
 	tmp := NodeTemp{
-		Entity: uid,
-		Name: name,
+		Entity:  uid,
+		Name:    name,
 		Concept: concept,
-		Cover: cover,
+		Cover:   cover,
 	}
 	mine.nodesMap.Map.Store(uid, &tmp)
 	mine.nodesMap.Count += 1
 }
 
-func (mine *cacheContext)addSyncLink(from, to, relation, name string, kind LinkType, dir uint8) {
+func (mine *cacheContext) addSyncLink(from, to, relation, name string, kind LinkType, dir uint8) {
 	tmp := LinkTemp{
-		UUID: from + "-" + to,
-		From: from,
-		To: to,
-		Relation: relation,
-		Kind: kind,
-		Name: name,
+		UUID:      from + "-" + to,
+		From:      from,
+		To:        to,
+		Relation:  relation,
+		Kind:      kind,
+		Name:      name,
 		Direction: dir,
 	}
 	mine.linkMap.Map.Store(tmp.UUID, &tmp)
 	mine.linkMap.Count += 1
 }
 
-func (mine *CountMap)deleteSyncNode(uid string)  {
+func (mine *CountMap) deleteSyncNode(uid string) {
 	mine.Map.Delete(uid)
 	if mine.Count > 0 {
 		mine.Count -= 1
 	}
 }
 
-func (mine *CountMap)getSyncNode(uid string) *NodeTemp {
+func (mine *CountMap) getSyncNode(uid string) *NodeTemp {
 	info, ok := mine.Map.Load(uid)
 	if ok {
 		return info.(*NodeTemp)
@@ -199,26 +199,26 @@ func (mine *CountMap)getSyncNode(uid string) *NodeTemp {
 	return nil
 }
 
-func (mine *cacheContext)CheckSyncNodes()  {
+func (mine *cacheContext) CheckSyncNodes() {
 	if mine.nodesMap.Count < 1 {
 		return
 	}
 	array := make([]string, 0, 20)
 	call := func(key interface{}, val interface{}) bool {
 		item := val.(*NodeTemp)
-		_,err := mine.graph.CreateNode(item.Name, item.Entity, item.Cover, item.Concept)
+		_, err := mine.graph.CreateNode(item.Name, item.Entity, item.Cover, item.Concept)
 		if err == nil {
 			array = append(array, item.Entity)
 		}
 		return true
 	}
 	mine.nodesMap.Map.Range(call)
-	for i := 0;i < len(array);i+=1 {
+	for i := 0; i < len(array); i += 1 {
 		mine.nodesMap.deleteSyncNode(array[i])
 	}
 }
 
-func (mine *cacheContext)CheckSyncLinks()  {
+func (mine *cacheContext) CheckSyncLinks() {
 	if mine.linkMap.Count < 1 {
 		return
 	}
@@ -232,12 +232,12 @@ func (mine *cacheContext)CheckSyncLinks()  {
 		return true
 	}
 	mine.linkMap.Map.Range(call)
-	for i := 0;i < len(array);i+=1 {
+	for i := 0; i < len(array); i += 1 {
 		mine.linkMap.deleteSyncNode(array[i])
 	}
 }
 
-func (mine *cacheContext)createLink(from, to string, kind LinkType, relationUID, name string, dire uint8) error {
+func (mine *cacheContext) createLink(from, to string, kind LinkType, relationUID, name string, dire uint8) error {
 	fromNode := mine.GetGraphNode(from)
 	toNode := mine.GetGraphNode(to)
 	_, err := mine.graph.CreateLink(fromNode, toNode, kind, name, relationUID, DirectionType(dire))
@@ -262,14 +262,14 @@ func stringToUint8(str string) uint8 {
 func convertExcelDays(days int64) (year uint16, month uint8) {
 	y := days / 366
 	rest := days - (y * 365) - (y / 4)
-	m := rest/30
+	m := rest / 30
 	year = uint16(y + 1900)
 	month = uint8(m) + 1
-	return year,month
+	return year, month
 }
 
 func parseDate(date string) (year uint16, month uint8) {
-	if strings.Contains(date,"年") {
+	if strings.Contains(date, "年") {
 		array := strings.Split(date, "年")
 		if array == nil {
 			return year, month
@@ -278,22 +278,22 @@ func parseDate(date string) (year uint16, month uint8) {
 			year = stringToUint16(array[0])
 		}
 		if len(array) > 1 {
-			if strings.Contains(array[1],"月") {
+			if strings.Contains(array[1], "月") {
 				array1 := strings.Split(array[1], "月")
 				if array1 != nil && len(array1) > 0 {
 					month = stringToUint8(array1[0])
 				}
-			}else{
+			} else {
 				month = stringToUint8(array[1])
 			}
 		}
-	} else{
-		days,err := strconv.ParseInt(date, 10, 32)
-		if err == nil{
+	} else {
+		days, err := strconv.ParseInt(date, 10, 32)
+		if err == nil {
 			return convertExcelDays(days)
 		}
 	}
-	return year,month
+	return year, month
 }
 
 func ImportDatabase(table string, file multipart.File) error {

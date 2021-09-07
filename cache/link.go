@@ -11,10 +11,10 @@ const (
 )
 
 const (
-	LinkTypeEmpty LinkType = "Other"
-	LinkTypePersons  LinkType = "Persons"
+	LinkTypeEmpty   LinkType = "Other"
+	LinkTypePersons LinkType = "Persons"
 	LinkTypeEvents  LinkType = "Events"
-	LinkTypeInhuman	  LinkType = "Inhuman"      //
+	LinkTypeInhuman LinkType = "Inhuman" //
 )
 
 type LinkType string
@@ -22,25 +22,25 @@ type DirectionType uint8
 
 type LinkInfo struct {
 	Direction DirectionType
-	ID int64
-	Name string
-	Label string
-	Relation string
-	From string
-	To   string
+	ID        int64
+	Name      string
+	Label     string
+	Relation  string
+	From      string
+	To        string
 }
 
 func RemoveLink(id int64) error {
 	var err error
 	var link *proxy.Link
-	link,err = proxy.GetLinkByID(id)
+	link, err = proxy.GetLinkByID(id)
 	if err == nil {
 		err = link.Delete()
 	}
 	return err
 }
 
-func (mine *LinkInfo)initInfo(db *proxy.Link, from, to string) bool {
+func (mine *LinkInfo) initInfo(db *proxy.Link, from, to string) bool {
 	if db == nil {
 		return false
 	}
@@ -54,17 +54,17 @@ func (mine *LinkInfo)initInfo(db *proxy.Link, from, to string) bool {
 	return true
 }
 
-func (mine *LinkInfo)HadNode(uid string) bool {
+func (mine *LinkInfo) HadNode(uid string) bool {
 	if mine.From == uid {
 		return true
-	}else if mine.To == uid {
+	} else if mine.To == uid {
 		return true
-	}else {
+	} else {
 		return false
 	}
 }
 
-func (mine *LinkInfo)HadAll(from, to string) bool {
+func (mine *LinkInfo) HadAll(from, to string) bool {
 	if (mine.From == from || mine.To == from) &&
 		(mine.From == to || mine.To == to) {
 		return true
@@ -72,12 +72,12 @@ func (mine *LinkInfo)HadAll(from, to string) bool {
 	return false
 }
 
-func (mine *LinkInfo)GetAnotherNode(uid string) string {
+func (mine *LinkInfo) GetAnotherNode(uid string) string {
 	if mine.From == uid {
 		return mine.To
-	}else if mine.To == uid {
+	} else if mine.To == uid {
 		return mine.From
-	}else {
+	} else {
 		return ""
 	}
 }

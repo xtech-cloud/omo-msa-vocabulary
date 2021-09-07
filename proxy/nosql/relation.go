@@ -13,14 +13,14 @@ type Relation struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
-	Creator     string                `json:"creator" bson:"creator"`
-	Operator    string                `json:"operator" bson:"operator"`
+	Creator     string             `json:"creator" bson:"creator"`
+	Operator    string             `json:"operator" bson:"operator"`
 
-	Name      string `json:"name" bson:"name"`
-	Remark    string `json:"remark" bson:"remark"`
-	Custom    bool `json:"custom" bson:"custom"`
-	Type      uint8 `json:"type" bson:"type"`
-	Parent    string `json:"parent" bson:"parent"`
+	Name   string `json:"name" bson:"name"`
+	Remark string `json:"remark" bson:"remark"`
+	Custom bool   `json:"custom" bson:"custom"`
+	Type   uint8  `json:"type" bson:"type"`
+	Parent string `json:"parent" bson:"parent"`
 }
 
 func CreateRelation(info *Relation) error {
@@ -95,7 +95,7 @@ func RemoveRelation(uid, operator string) error {
 }
 
 func UpdateRelationBase(uid, name, desc, operator string, custom bool, kind uint8) error {
-	msg := bson.M{"name": name, "remark": desc, "custom":custom, "type":kind,"operator":operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "remark": desc, "custom": custom, "type": kind, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableRelation, uid, msg)
 	return err
 }

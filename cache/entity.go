@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"github.com/micro/go-micro/v2/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
@@ -9,10 +10,10 @@ import (
 )
 
 const (
-	EntityStatusDraft    EntityStatus = 0
-	EntityStatusFirst EntityStatus = 1
+	EntityStatusDraft   EntityStatus = 0
+	EntityStatusFirst   EntityStatus = 1
 	EntityStatusPending EntityStatus = 2
-	EntityStatusSpecial  EntityStatus = 3
+	EntityStatusSpecial EntityStatus = 3
 	EntityStatusUsable  EntityStatus = 4 //审核通过
 	EntityStatusFailed  EntityStatus = 10
 )
@@ -25,18 +26,19 @@ type EntityInfo struct {
 	Status EntityStatus `json:"_"`
 	BaseInfo
 	Concept     string `json:"concept"`
-	Summary         string `json:"summary"`
-	Description     string `json:"description"`
-	Cover           string   `json:"cover"`
-	Add             string   `json:"add"` //消歧义
+	Summary     string `json:"summary"`
+	Description string `json:"description"`
+	Cover       string `json:"cover"`
+	Add         string `json:"add"` //消歧义
 	//Creator         string   `json:"creator"` //创建者
-	Owner           string   `json:"owner"` //所属单位
-	Mark            string   `json:"mark"` // 标记或者来源
-	Quote           string   `json:"quote"` // 引用
-	Synonyms        []string `json:"synonyms"` //同义词
-	Tags            []string `json:"tags"` //标签
-	Properties      []*proxy.PropertyInfo `json:"properties"`
-	StaticEvents    []*proxy.EventBrief `json:"events"`
+	Owner           string                    `json:"owner"`    //所属单位
+	Mark            string                    `json:"mark"`     // 标记或者来源
+	Quote           string                    `json:"quote"`    // 引用
+	Synonyms        []string                  `json:"synonyms"` //同义词
+	Tags            []string                  `json:"tags"`     //标签
+	Published       bool                      `json:"published"`
+	Properties      []*proxy.PropertyInfo     `json:"properties"`
+	StaticEvents    []*proxy.EventBrief       `json:"events"`
 	StaticRelations []*proxy.RelationCaseInfo `json:"relations"`
 	events          []*EventInfo
 }
@@ -54,7 +56,7 @@ func switchEntityLabel(concept string) string {
 	}
 }
 
-func (mine *cacheContext)CreateEntity(info *EntityInfo) error {
+func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
 	if info == nil {
 		return errors.New("the entity info is nil")
 	}
@@ -100,7 +102,7 @@ func (mine *cacheContext)CreateEntity(info *EntityInfo) error {
 	return err
 }
 
-func (mine *cacheContext)syncGraphNode(info *EntityInfo)  {
+func (mine *cacheContext) syncGraphNode(info *EntityInfo) {
 	var name = info.Name
 	if info.Add != "" {
 		name = info.Name + "-" + info.Add
@@ -108,8 +110,8 @@ func (mine *cacheContext)syncGraphNode(info *EntityInfo)  {
 	mine.addSyncNode(info.UID, name, info.Concept, info.Cover)
 }
 
-func (mine *cacheContext)AllEntities() []*EntityInfo {
-	array,err := nosql.GetEntities(DefaultEntityTable)
+func (mine *cacheContext) AllEntities() []*EntityInfo {
+	array, err := nosql.GetEntities(DefaultEntityTable)
 	if err != nil {
 		return make([]*EntityInfo, 0, 0)
 	}
@@ -135,8 +137,8 @@ func (mine *cacheContext)AllEntities() []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext)SearchEntities(key string) []*EntityInfo {
-	array,err := nosql.GetEntitiesByMatch(DefaultEntityTable, key)
+func (mine *cacheContext) SearchEntities(key string) []*EntityInfo {
+	array, err := nosql.GetEntitiesByMatch(DefaultEntityTable, key)
 	if err != nil {
 		return make([]*EntityInfo, 0, 0)
 	}
@@ -149,7 +151,7 @@ func (mine *cacheContext)SearchEntities(key string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext)HadEntityByName(name, add string) bool {
+func (mine *cacheContext) HadEntityByName(name, add string) bool {
 	if len(name) < 1 {
 		return true
 	}
@@ -157,11 +159,11 @@ func (mine *cacheContext)HadEntityByName(name, add string) bool {
 		info := mine.GetEntityByName(name, add)
 		if info != nil {
 			return true
-		}else{
+		} else {
 			return false
 		}
-	}else{
-		db,err := nosql.GetEntitiesByName(DefaultEntityTable, name)
+	} else {
+		db, err := nosql.GetEntitiesByName(DefaultEntityTable, name)
 		if err == nil && db != nil {
 			if len(db) > 0 {
 				return true
@@ -182,7 +184,7 @@ func (mine *cacheContext)HadEntityByName(name, add string) bool {
 	}
 }
 
-func (mine *cacheContext)HadEntityByMark(mark string) bool {
+func (mine *cacheContext) HadEntityByMark(mark string) bool {
 	info := mine.GetEntityByMark(mark)
 	if info != nil {
 		return true
@@ -190,11 +192,11 @@ func (mine *cacheContext)HadEntityByMark(mark string) bool {
 	return false
 }
 
-func (mine *cacheContext)GetEntityByName(name, add string) *EntityInfo {
+func (mine *cacheContext) GetEntityByName(name, add string) *EntityInfo {
 	if len(name) < 1 {
 		return nil
 	}
-	db,err := nosql.GetEntityByName(DefaultEntityTable, name, add)
+	db, err := nosql.GetEntityByName(DefaultEntityTable, name, add)
 	if err == nil && db != nil {
 		info := new(EntityInfo)
 		info.initInfo(db)
@@ -214,11 +216,11 @@ func (mine *cacheContext)GetEntityByName(name, add string) *EntityInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetEntityByMark(mark string) *EntityInfo {
+func (mine *cacheContext) GetEntityByMark(mark string) *EntityInfo {
 	if len(mark) < 1 {
 		return nil
 	}
-	db,err := nosql.GetEntityByMark(DefaultEntityTable, mark)
+	db, err := nosql.GetEntityByMark(DefaultEntityTable, mark)
 	if err == nil && db != nil {
 		info := new(EntityInfo)
 		info.initInfo(db)
@@ -228,9 +230,9 @@ func (mine *cacheContext)GetEntityByMark(mark string) *EntityInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetEntitiesByOwner(owner string) []*EntityInfo {
+func (mine *cacheContext) GetEntitiesByOwner(owner string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
-	array,err := nosql.GetEntitiesByOwner(DefaultEntityTable, owner)
+	array, err := nosql.GetEntitiesByOwner(DefaultEntityTable, owner)
 	if err != nil {
 		return list
 	}
@@ -261,9 +263,9 @@ func (mine *cacheContext)GetEntitiesByOwner(owner string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext)GetEntitiesByConcept(concept string) []*EntityInfo {
+func (mine *cacheContext) GetEntitiesByConcept(concept string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
-	array,err := nosql.GetEntitiesByConcept(DefaultEntityTable, concept)
+	array, err := nosql.GetEntitiesByConcept(DefaultEntityTable, concept)
 	if err != nil {
 		return list
 	}
@@ -277,12 +279,12 @@ func (mine *cacheContext)GetEntitiesByConcept(concept string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext)GetEntitiesByStatus(status EntityStatus, concept string) []*EntityInfo {
+func (mine *cacheContext) GetEntitiesByStatus(status EntityStatus, concept string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 100)
 	if status == EntityStatusUsable {
 		return mine.GetArchivedEntities("", concept)
-	}else{
-		array,err := nosql.GetEntitiesByStatus(DefaultEntityTable, uint8(status))
+	} else {
+		array, err := nosql.GetEntitiesByStatus(DefaultEntityTable, uint8(status))
 		if err != nil {
 			return list
 		}
@@ -309,12 +311,12 @@ func (mine *cacheContext)GetEntitiesByStatus(status EntityStatus, concept string
 	return list
 }
 
-func (mine *cacheContext)GetEntitiesByOwnerStatus(owner, concept string, status EntityStatus) []*EntityInfo {
+func (mine *cacheContext) GetEntitiesByOwnerStatus(owner, concept string, status EntityStatus) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 50)
 	if status == EntityStatusUsable {
 		return mine.GetArchivedEntities(owner, concept)
-	}else{
-		array,err := nosql.GetEntitiesByOwnerAndStatus(DefaultEntityTable, owner, uint8(status))
+	} else {
+		array, err := nosql.GetEntitiesByOwnerAndStatus(DefaultEntityTable, owner, uint8(status))
 		if err != nil {
 			return list
 		}
@@ -341,9 +343,9 @@ func (mine *cacheContext)GetEntitiesByOwnerStatus(owner, concept string, status 
 	return list
 }
 
-func (mine *cacheContext)GetEntitiesByProp(key, val string) []*EntityInfo {
+func (mine *cacheContext) GetEntitiesByProp(key, val string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
-	array,err := nosql.GetEntitiesByProp(DefaultEntityTable, key, val)
+	array, err := nosql.GetEntitiesByProp(DefaultEntityTable, key, val)
 	if err != nil {
 		return list
 	}
@@ -375,7 +377,7 @@ func (mine *cacheContext)GetEntitiesByProp(key, val string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext)GetEntity(uid string) *EntityInfo {
+func (mine *cacheContext) GetEntity(uid string) *EntityInfo {
 	if len(uid) < 1 {
 		return nil
 	}
@@ -394,21 +396,44 @@ func (mine *cacheContext)GetEntity(uid string) *EntityInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetEntitiesByList(array []string) ([]*EntityInfo,error) {
+func (mine *cacheContext) GetEntitiesByList(st EntityStatus, array []string) ([]*EntityInfo, error) {
 	if array == nil || len(array) < 1 {
-		return nil,errors.New("the list is empty")
+		return nil, errors.New("the list is empty")
 	}
+	if st == EntityStatusUsable {
+		return mine.GetArchivedByList(array)
+	} else {
 		list := make([]*EntityInfo, 0, len(array))
+		for _, item := range array {
+			info := mine.GetEntity(item)
+			if info != nil {
+				list = append(list, info)
+			}
+		}
+		return list, nil
+	}
+}
+
+func (mine *cacheContext) GetCustomEntitiesByList(array []string) ([]*EntityInfo, error) {
+	if array == nil || len(array) < 1 {
+		return nil, errors.New("the list is empty")
+	}
+	list := make([]*EntityInfo, 0, len(array))
 	for _, item := range array {
 		info := mine.GetEntity(item)
 		if info != nil {
 			list = append(list, info)
 		}
 	}
-	return list,nil
+	return list, nil
 }
 
-func (mine *cacheContext)getEntityFromDB(uid string) *nosql.Entity {
+func (mine *cacheContext) getEntityFromDB(uid string) *nosql.Entity {
+	db, err := nosql.GetEntity(DefaultEntityTable, uid)
+	if err == nil && db != nil {
+		return db
+	}
+	logger.Error("getEntityFromDB that error =" + err.Error())
 	for i := 0; i < len(mine.concepts); i += 1 {
 		tb := mine.concepts[i].Table
 		if len(tb) > 0 {
@@ -418,14 +443,10 @@ func (mine *cacheContext)getEntityFromDB(uid string) *nosql.Entity {
 			}
 		}
 	}
-	db, err := nosql.GetEntity(DefaultEntityTable, uid)
-	if err == nil && db != nil {
-		return db
-	}
 	return nil
 }
 
-func (mine *cacheContext)HadEntity(uid string) bool {
+func (mine *cacheContext) HadEntity(uid string) bool {
 	db := mine.getEntityFromDB(uid)
 	if db != nil {
 		return true
@@ -439,7 +460,7 @@ func (mine *cacheContext)HadEntity(uid string) bool {
 	//return false
 }
 
-func (mine *cacheContext)RemoveEntity(uid, operator string) error {
+func (mine *cacheContext) RemoveEntity(uid, operator string) error {
 	if len(uid) < 1 {
 		return errors.New("the entity uid is empty")
 	}
@@ -453,7 +474,7 @@ func (mine *cacheContext)RemoveEntity(uid, operator string) error {
 
 	err := nosql.RemoveEntity(tmp.table(), uid, operator)
 	if err == nil {
-		t,_ := nosql.GetArchivedByEntity(uid)
+		t, _ := nosql.GetArchivedByEntity(uid)
 		if t != nil {
 			_ = nosql.RemoveArchived(t.UID.Hex(), operator)
 			//return errors.New("the entity had published")
@@ -463,7 +484,7 @@ func (mine *cacheContext)RemoveEntity(uid, operator string) error {
 	return err
 }
 
-func (mine *cacheContext)HadOwnerOfAsset(owner string) bool {
+func (mine *cacheContext) HadOwnerOfAsset(owner string) bool {
 	info := mine.GetEntity(owner)
 	if info != nil {
 		return true
@@ -498,6 +519,12 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Mark = db.Mark
 	mine.Quote = db.Quote
 	mine.Summary = db.Summary
+	if cacheCtx.HadArchivedByEntity(mine.UID) {
+		mine.Published = true
+	} else {
+		mine.Published = false
+	}
+
 	mine.StaticEvents = db.Events
 	mine.StaticRelations = db.Relations
 	if mine.StaticRelations == nil {
@@ -535,15 +562,15 @@ func (mine *EntityInfo) table() string {
 	}
 }
 
-func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, mark, quote, sum, operator string) error {
+func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote, sum, operator string) error {
 	if mine.Status != EntityStatusDraft {
 		return errors.New("the entity is not draft so can not update")
 	}
 	if concept == "" {
 		concept = mine.Concept
 	}
-	if remark == "" {
-		remark = mine.Description
+	if desc == "" {
+		desc = mine.Description
 	}
 	if add == "" {
 		add = mine.Add
@@ -564,14 +591,23 @@ func (mine *EntityInfo) UpdateBase(name, remark, add, concept, cover, mark, quot
 	if len(cover) > 0 {
 		err = mine.UpdateCover(cover, operator)
 	}
-	if name != mine.Name || remark != mine.Description || add != mine.Add || concept != mine.Concept || quote != mine.Quote {
-		err = nosql.UpdateEntityBase(mine.table(), mine.UID, name, remark, add, concept, quote, operator)
+	if desc != mine.Description || sum != mine.Summary {
+		err = nosql.UpdateEntityRemark(mine.table(), mine.UID, desc, sum, operator)
+		if err == nil {
+			mine.Description = desc
+			mine.Summary = sum
+			mine.Operator = operator
+			mine.UpdateTime = time.Now()
+		}
+	}
+	if name != mine.Name || add != mine.Add || concept != mine.Concept || quote != mine.Quote {
+		err = nosql.UpdateEntityBase(mine.table(), mine.UID, name, add, concept, quote, mark, operator)
 		if err == nil {
 			mine.Name = name
-			mine.Description = remark
 			mine.Add = add
 			mine.Quote = quote
 			mine.Concept = concept
+			mine.Mark = mark
 			mine.Operator = operator
 			mine.UpdateTime = time.Now()
 		}
@@ -591,10 +627,10 @@ func (mine *EntityInfo) UpdateStatic(info *EntityInfo) error {
 		mine.UpdateTime = time.Now()
 	}
 	if len(info.StaticEvents) > 0 {
-		_ = mine.UpdateStaticEvents(info.Operator,info.StaticEvents)
+		_ = mine.UpdateStaticEvents(info.Operator, info.StaticEvents)
 	}
 	if len(info.StaticRelations) > 0 {
-		_ = mine.UpdateStaticRelations(info.Operator,info.StaticRelations)
+		_ = mine.UpdateStaticRelations(info.Operator, info.StaticRelations)
 	}
 	return err
 }
@@ -612,7 +648,7 @@ func (mine *EntityInfo) UpdateStaticEvents(operator string, events []*proxy.Even
 	return err
 }
 
-func (mine *EntityInfo) UpdateStaticRelations(operator string,list []*proxy.RelationCaseInfo) error {
+func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*proxy.RelationCaseInfo) error {
 	if mine.Status != EntityStatusDraft {
 		return errors.New("the entity is not draft so can not update")
 	}
@@ -685,7 +721,7 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator string) error
 				return err
 			}
 			cacheCtx.checkRelations(nil, mine)
-		}else{
+		} else {
 			old := tmp.GetEntity()
 			err = tmp.UpdateFile(mine, operator)
 			if err != nil {
@@ -700,7 +736,7 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator string) error
 }
 
 //region Event Fun
-func (mine *EntityInfo)initEvents()  {
+func (mine *EntityInfo) initEvents() {
 	if mine.events != nil {
 		return
 	}
@@ -723,7 +759,7 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 	return mine.events
 }
 
-func (mine *EntityInfo)GetEventsByType(tp uint8) []*EventInfo {
+func (mine *EntityInfo) GetEventsByType(tp uint8) []*EventInfo {
 	mine.initEvents()
 	list := make([]*EventInfo, 0, 10)
 	for _, event := range mine.events {
@@ -790,7 +826,7 @@ func (mine *EntityInfo) HadEvent(uid string) bool {
 	return false
 }
 
-func (mine *EntityInfo)HadEventBy(time, place string) bool {
+func (mine *EntityInfo) HadEventBy(time, place string) bool {
 	mine.initEvents()
 	for _, event := range mine.events {
 		if event.Date.Begin.String() == time && event.Place.Name == place {
@@ -800,7 +836,7 @@ func (mine *EntityInfo)HadEventBy(time, place string) bool {
 	return false
 }
 
-func (mine *EntityInfo)GetEventBy(time, place string) *EventInfo {
+func (mine *EntityInfo) GetEventBy(time, place string) *EventInfo {
 	mine.initEvents()
 	for _, event := range mine.events {
 		if event.Date.Begin.String() == time && event.Place.Name == place {
@@ -814,7 +850,7 @@ func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
 	if mine.Status == EntityStatusUsable {
 		return errors.New("the entity had published so can not update")
 	}
-    mine.initEvents()
+	mine.initEvents()
 	if !mine.HadEvent(uid) {
 		return errors.New("not found the event")
 	}
@@ -965,4 +1001,5 @@ func (mine *EntityInfo) IsSatisfy(concepts, attributes, tags []string) bool {
 
 	return false
 }
+
 //endregion

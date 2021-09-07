@@ -8,8 +8,8 @@ import (
 )
 
 type Neo4JContext struct {
-	driver   neo4j.Driver
-	session  neo4j.Session
+	driver  neo4j.Driver
+	session neo4j.Session
 }
 
 var neo4jCtx *Neo4JContext
@@ -17,10 +17,10 @@ var neo4jCtx *Neo4JContext
 func InitNeo4J(config *config.GraphConfig) error {
 	neo4jCtx = new(Neo4JContext)
 	// 创建neo4j驱动
-	url := "bolt://"+config.IP + ":"+config.Port
+	url := "bolt://" + config.IP + ":" + config.Port
 	var err error
 	configForNeo4j40 := func(conf *neo4j.Config) { conf.Encrypted = false }
-	neo4jCtx.driver, err = neo4j.NewDriver(url, neo4j.BasicAuth(config.User, config.Password, ""),configForNeo4j40)
+	neo4jCtx.driver, err = neo4j.NewDriver(url, neo4j.BasicAuth(config.User, config.Password, ""), configForNeo4j40)
 	if err != nil {
 		return err
 	}
@@ -33,28 +33,28 @@ func InitNeo4J(config *config.GraphConfig) error {
 	return nil
 }
 
-func CreateNode(name , label, uid string) (neo4j.Node,error) {
+func CreateNode(name, label, uid string) (neo4j.Node, error) {
 	if neo4jCtx.session == nil {
-		return nil,errors.New("the graph session is nil that init first")
+		return nil, errors.New("the graph session is nil that init first")
 	}
 	cypher := fmt.Sprintf("CREATE (n:%s{name:$name, uid: $uid}) RETURN n", label)
-	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{"name":name, "uid":uid})
+	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{"name": name, "uid": uid})
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	//fmt.Println("CreateNode..."+ cypher)
 	for result.Next() {
 		node, ok := result.Record().GetByIndex(0).(neo4j.Node)
 		if ok {
-			return node,nil
-		}else{
+			return node, nil
+		} else {
 			return nil, errors.New("node create failed by unknown error")
 		}
 	}
-	return nil,result.Err()
+	return nil, result.Err()
 }
 
-func CreateNodeLabel(id int64, label string) (neo4j.Node,error) {
+func CreateNodeLabel(id int64, label string) (neo4j.Node, error) {
 	if neo4jCtx.session == nil {
 		return nil, errors.New("the graph session is nil that init first")
 	}
@@ -67,15 +67,15 @@ func CreateNodeLabel(id int64, label string) (neo4j.Node,error) {
 	for result.Next() {
 		node, ok := result.Record().GetByIndex(0).(neo4j.Node)
 		if ok {
-			return node,nil
-		}else{
+			return node, nil
+		} else {
 			return nil, errors.New("node get failed by unknown error")
 		}
 	}
 	return nil, result.Err()
 }
 
-func GetNode(uid string) (neo4j.Node,error) {
+func GetNode(uid string) (neo4j.Node, error) {
 	if neo4jCtx.session == nil {
 		return nil, errors.New("the graph session is nil that init first")
 	}
@@ -88,15 +88,15 @@ func GetNode(uid string) (neo4j.Node,error) {
 	for result.Next() {
 		node, ok := result.Record().GetByIndex(0).(neo4j.Node)
 		if ok {
-			return node,nil
-		}else{
+			return node, nil
+		} else {
 			return nil, errors.New("node get failed by unknown error")
 		}
 	}
-	return nil,result.Err()
+	return nil, result.Err()
 }
 
-func GetNodeByID(id int64) (neo4j.Node,error) {
+func GetNodeByID(id int64) (neo4j.Node, error) {
 	if neo4jCtx.session == nil {
 		return nil, errors.New("the graph session is nil that init first")
 	}
@@ -109,37 +109,37 @@ func GetNodeByID(id int64) (neo4j.Node,error) {
 	for result.Next() {
 		node, ok := result.Record().GetByIndex(0).(neo4j.Node)
 		if ok {
-			return node,nil
-		}else{
+			return node, nil
+		} else {
 			return nil, errors.New("node get failed by unknown error")
 		}
 	}
-	return nil,result.Err()
+	return nil, result.Err()
 }
 
-func CreateLink(from, to int64,kind, name string, direction uint8, relation string) (neo4j.Relationship,error) {
+func CreateLink(from, to int64, kind, name string, direction uint8, relation string) (neo4j.Relationship, error) {
 	if neo4jCtx.session == nil {
-		return nil,errors.New("the graph session is nil that init first")
+		return nil, errors.New("the graph session is nil that init first")
 	}
 	if len(kind) < 1 {
 		return nil, errors.New("the kind is empty")
 	}
-	cypher := fmt.Sprintf("MATCH (a),(b) WHERE id(a)=%d AND id(b)=%d CREATE (a)-[r:%s{name:$name, " +
+	cypher := fmt.Sprintf("MATCH (a),(b) WHERE id(a)=%d AND id(b)=%d CREATE (a)-[r:%s{name:$name, "+
 		"direction:$direction, relation:$relation}]->(b) RETURN r", from, to, kind)
-	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{ "name":name, "direction":direction, "relation":relation })
+	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{"name": name, "direction": direction, "relation": relation})
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	//fmt.Println("CreateLink..."+ cypher)
 	for result.Next() {
 		link, ok := result.Record().GetByIndex(0).(neo4j.Relationship)
 		if ok {
-			return link,nil
-		}else{
+			return link, nil
+		} else {
 			return nil, errors.New("link create failed by unknown error")
 		}
 	}
-	return nil,result.Err()
+	return nil, result.Err()
 }
 
 func GetLinkByID(id int64) (neo4j.Relationship, error) {
@@ -155,15 +155,15 @@ func GetLinkByID(id int64) (neo4j.Relationship, error) {
 	for result.Next() {
 		link, ok := result.Record().GetByIndex(0).(neo4j.Relationship)
 		if ok {
-			return link,nil
-		}else{
+			return link, nil
+		} else {
 			return nil, errors.New("link create failed by unknown error")
 		}
 	}
-	return nil,result.Err()
+	return nil, result.Err()
 }
 
-func GetLink(from, to string) (neo4j.Relationship,error) {
+func GetLink(from, to string) (neo4j.Relationship, error) {
 	if neo4jCtx.session == nil {
 		return nil, errors.New("the graph session is nil that init first")
 	}
@@ -176,15 +176,15 @@ func GetLink(from, to string) (neo4j.Relationship,error) {
 	for result.Next() {
 		link, ok := result.Record().GetByIndex(0).(neo4j.Relationship)
 		if ok {
-			return link,nil
-		}else{
+			return link, nil
+		} else {
 			return nil, errors.New("link create failed by unknown error")
 		}
 	}
-	return nil,result.Err()
+	return nil, result.Err()
 }
 
-func GetLinks(from, to string) ([]neo4j.Relationship,error) {
+func GetLinks(from, to string) ([]neo4j.Relationship, error) {
 	if neo4jCtx.session == nil {
 		return nil, errors.New("the graph session is nil that init first")
 	}
@@ -193,7 +193,7 @@ func GetLinks(from, to string) ([]neo4j.Relationship,error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("GetLinks..."+ cypher)
+	fmt.Println("GetLinks..." + cypher)
 	array := make([]neo4j.Relationship, 0, 3)
 	for result.Next() {
 
@@ -203,7 +203,7 @@ func GetLinks(from, to string) ([]neo4j.Relationship,error) {
 			array = append(array, link)
 		}
 	}
-	return array,result.Err()
+	return array, result.Err()
 }
 
 func DeleteNode(id int64, label string) error {
@@ -238,12 +238,12 @@ func DeleteLink(id int64) error {
 
 func FindPath(from, to string) ([]neo4j.Node, []neo4j.Relationship, error) {
 	if neo4jCtx.session == nil {
-		return nil, nil,errors.New("the graph session is nil that init first")
+		return nil, nil, errors.New("the graph session is nil that init first")
 	}
 	cypher := fmt.Sprintf("MATCH p=shortestPath((a{uid:'%s'})-[*..6]-(b{uid:'%s'})) RETURN p", from, to)
 	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{})
 	if err != nil {
-		return nil, nil,err
+		return nil, nil, err
 	}
 	//fmt.Println("FindPath..."+cypher)
 	nodes := make([]neo4j.Node, 0, 5)
@@ -260,19 +260,19 @@ func FindPath(from, to string) ([]neo4j.Node, []neo4j.Relationship, error) {
 			}
 		}
 	}
-	return nodes, links,result.Err()
+	return nodes, links, result.Err()
 }
 
 func FindGraph(uid, label string) ([]neo4j.Node, []neo4j.Relationship, error) {
 	if neo4jCtx.session == nil {
-		return nil, nil,errors.New("the graph session is nil that init first")
+		return nil, nil, errors.New("the graph session is nil that init first")
 	}
-	cypher := fmt.Sprintf("MATCH (a:%s{uid:'%s'})-[r]-(b) RETURN a,r,b",label, uid)
+	cypher := fmt.Sprintf("MATCH (a:%s{uid:'%s'})-[r]-(b) RETURN a,r,b", label, uid)
 	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{})
 	if err != nil {
-		return nil, nil,err
+		return nil, nil, err
 	}
-	fmt.Println("FindGraph..."+cypher)
+	fmt.Println("FindGraph..." + cypher)
 	nodes := make([]neo4j.Node, 0, 5)
 	links := make([]neo4j.Relationship, 0, 5)
 	for result.Next() {
@@ -286,7 +286,5 @@ func FindGraph(uid, label string) ([]neo4j.Node, []neo4j.Relationship, error) {
 			links = append(links, link)
 		}
 	}
-	return nodes, links,result.Err()
+	return nodes, links, result.Err()
 }
-
-

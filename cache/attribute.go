@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	AttributeTypeString AttributeType = 0
+	AttributeTypeString  AttributeType = 0
 	AttributeTypeDate    AttributeType = 1
 	AttributeTypeNumber  AttributeType = 2
 	AttributeTypeEntity  AttributeType = 3
@@ -21,15 +21,15 @@ type AttributeType uint8
 type AttributeInfo struct {
 	BaseInfo
 
-	Kind  AttributeType
-	Key   string
-	Name  string
+	Kind   AttributeType
+	Key    string
+	Name   string
 	Remark string
-	Begin string
-	End   string
+	Begin  string
+	End    string
 }
 
-func (mine *cacheContext)CreateAttribute(info *AttributeInfo) error {
+func (mine *cacheContext) CreateAttribute(info *AttributeInfo) error {
 	if info == nil {
 		return errors.New("the attribute info is nil")
 	}
@@ -52,12 +52,12 @@ func (mine *cacheContext)CreateAttribute(info *AttributeInfo) error {
 	return err
 }
 
-func (mine *cacheContext)AllAttributes() []*AttributeInfo {
+func (mine *cacheContext) AllAttributes() []*AttributeInfo {
 	return mine.attributes
 }
 
-func (mine *cacheContext)HadAttributeByName(name string) bool {
-	for i := 0;i < len(mine.attributes);i += 1 {
+func (mine *cacheContext) HadAttributeByName(name string) bool {
+	for i := 0; i < len(mine.attributes); i += 1 {
 		if mine.attributes[i].Name == name {
 			return true
 		}
@@ -65,8 +65,8 @@ func (mine *cacheContext)HadAttributeByName(name string) bool {
 	return false
 }
 
-func (mine *cacheContext)HadAttributeByKey(key string) bool {
-	for i := 0;i < len(mine.attributes);i += 1 {
+func (mine *cacheContext) HadAttributeByKey(key string) bool {
+	for i := 0; i < len(mine.attributes); i += 1 {
 		if mine.attributes[i].Key == key {
 			return true
 		}
@@ -74,7 +74,7 @@ func (mine *cacheContext)HadAttributeByKey(key string) bool {
 	return false
 }
 
-func (mine *cacheContext)GetAttribute(uid string) *AttributeInfo {
+func (mine *cacheContext) GetAttribute(uid string) *AttributeInfo {
 	for _, value := range mine.attributes {
 		if value.UID == uid {
 			return value
@@ -83,7 +83,7 @@ func (mine *cacheContext)GetAttribute(uid string) *AttributeInfo {
 	return nil
 }
 
-func (mine *cacheContext)GetAttributeByKey(key string) *AttributeInfo {
+func (mine *cacheContext) GetAttributeByKey(key string) *AttributeInfo {
 	for _, value := range mine.attributes {
 		if value.Key == key {
 			return value
@@ -92,13 +92,13 @@ func (mine *cacheContext)GetAttributeByKey(key string) *AttributeInfo {
 	return nil
 }
 
-func (mine *cacheContext)RemoveAttribute(uid, operator string) error {
-	if len(uid) <  1 {
+func (mine *cacheContext) RemoveAttribute(uid, operator string) error {
+	if len(uid) < 1 {
 		return errors.New("the attribute uid is empty")
 	}
 	err := nosql.RemoveAttribute(uid, operator)
 	if err == nil {
-		for i := 0;i < len(mine.attributes);i +=1 {
+		for i := 0; i < len(mine.attributes); i += 1 {
 			if mine.attributes[i].UID == uid {
 				mine.attributes = append(mine.attributes[:i], mine.attributes[i+1:]...)
 				break
@@ -108,7 +108,7 @@ func (mine *cacheContext)RemoveAttribute(uid, operator string) error {
 	return err
 }
 
-func (mine *AttributeInfo)initInfo(db *nosql.Attribute)  {
+func (mine *AttributeInfo) initInfo(db *nosql.Attribute) {
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID
 	mine.Name = db.Name
@@ -121,7 +121,7 @@ func (mine *AttributeInfo)initInfo(db *nosql.Attribute)  {
 	mine.UpdateTime = db.UpdatedTime
 }
 
-func (mine *AttributeInfo)UpdateBase(name, remark, begin, end, operator string, kind uint8) error {
+func (mine *AttributeInfo) UpdateBase(name, remark, begin, end, operator string, kind uint8) error {
 	err := nosql.UpdateAttributeBase(mine.UID, name, remark, begin, end, operator, kind)
 	if err == nil {
 		mine.Name = name

@@ -10,28 +10,28 @@ import (
 )
 
 type Entity struct {
-	UID         primitive.ObjectID    `bson:"_id"`
-	ID          uint64                `json:"id" bson:"id"`
-	CreatedTime time.Time             `json:"createdAt" bson:"createdAt"`
-	UpdatedTime time.Time             `json:"updatedAt" bson:"updatedAt"`
-	DeleteTime  time.Time             `json:"deleteAt" bson:"deleteAt"`
-	Creator     string                `json:"creator" bson:"creator"`
-	Operator    string                `json:"operator" bson:"operator"`
+	UID         primitive.ObjectID `bson:"_id"`
+	ID          uint64             `json:"id" bson:"id"`
+	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
+	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
+	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Creator     string             `json:"creator" bson:"creator"`
+	Operator    string             `json:"operator" bson:"operator"`
 
-	Name        string                `json:"name" bson:"name"`
-	Description string                `json:"desc" bson:"desc"`
-	Summary     string                `json:"summary" bson:"summary"`
-	Cover       string                `json:"cover" bson:"cover"`
-	Concept     string                `json:"concept" bson:"concept"`
-	Status      uint8                 `json:"status" bson:"status"`
-	Scene       string                `json:"scene" bson:"scene"` // 所属场景
-	Add         string                `json:"add" bson:"add"`
-	Mark        string                `json:"mark" bson:"mark"`
-	Quote       string                `json:"quote" bson:"quote"`
-	Synonyms    []string              `json:"synonyms" bson:"synonyms"`
-	Tags        []string              `json:"tags" bson:"tags"`
-	Properties  []*proxy.PropertyInfo `json:"props" bson:"props"`
-	Events      []*proxy.EventBrief 	`json:"events" bson:"events"`
+	Name        string                    `json:"name" bson:"name"`
+	Description string                    `json:"desc" bson:"desc"`
+	Summary     string                    `json:"summary" bson:"summary"`
+	Cover       string                    `json:"cover" bson:"cover"`
+	Concept     string                    `json:"concept" bson:"concept"`
+	Status      uint8                     `json:"status" bson:"status"`
+	Scene       string                    `json:"scene" bson:"scene"` // 所属场景
+	Add         string                    `json:"add" bson:"add"`
+	Mark        string                    `json:"mark" bson:"mark"`
+	Quote       string                    `json:"quote" bson:"quote"`
+	Synonyms    []string                  `json:"synonyms" bson:"synonyms"`
+	Tags        []string                  `json:"tags" bson:"tags"`
+	Properties  []*proxy.PropertyInfo     `json:"props" bson:"props"`
+	Events      []*proxy.EventBrief       `json:"events" bson:"events"`
 	Relations   []*proxy.RelationCaseInfo `json:"relations" bson:"relations"`
 }
 
@@ -91,7 +91,7 @@ func GetEntity(table, uid string) (*Entity, error) {
 		return nil, err1
 	}
 	if model.DeleteTime.UnixNano() > 100 {
-		return nil,errors.New("the entity had deleted")
+		return nil, errors.New("the entity had deleted")
 	}
 	return model, nil
 }
@@ -111,7 +111,7 @@ func GetEntityByName(table, name, add string) (*Entity, error) {
 }
 
 func GetEntityByMark(table, mark string) (*Entity, error) {
-	msg := bson.M{"mark": mark}
+	msg := bson.M{"mark": mark, "deleteAt": new(time.Time)}
 	result, err := findOneBy(table, msg)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func GetEntityByMark(table, mark string) (*Entity, error) {
 }
 
 func GetEntitiesByProp(table, key, value string) ([]*Entity, error) {
-	msg := bson.M{"props": bson.M{"$elemMatch":bson.M{"key":key, "values": bson.M{"$elemMatch":bson.M{"name":value}}}}}
+	msg := bson.M{"props": bson.M{"$elemMatch": bson.M{"key": key, "values": bson.M{"$elemMatch": bson.M{"name": value}}}}}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -250,26 +250,32 @@ func GetEntitiesByStatus(table string, st uint8) ([]*Entity, error) {
 	return items, nil
 }
 
-func UpdateEntityBase(table, uid, name, remark, add, concept, quote, operator string) error {
-	msg := bson.M{"name": name, "desc": remark, "add": add, "quote": quote, "concept": concept, "operator": operator, "updatedAt": time.Now()}
+func UpdateEntityBase(table, uid, name, add, concept, quote, mark, operator string) error {
+	msg := bson.M{"name": name, "add": add, "quote": quote, "mark": mark, "concept": concept, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityRemark(table, uid, desc, summary, operator string) error {
+	msg := bson.M{"desc": desc, "summary": summary, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityStatic(table, uid, operator string, tags []string, props []*proxy.PropertyInfo) error {
-	msg := bson.M{"operator": operator, "updatedAt": time.Now(),"tags": tags, "props": props}
+	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "tags": tags, "props": props}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityEvents(table, uid, operator string, events []*proxy.EventBrief) error {
-	msg := bson.M{"operator": operator, "updatedAt": time.Now(),"events": events}
+	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "events": events}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityRelations(table, uid, operator string, relations []*proxy.RelationCaseInfo) error {
-	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "relations":relations}
+	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "relations": relations}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

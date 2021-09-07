@@ -13,17 +13,17 @@ type Concept struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
-	Creator     string                `json:"creator" bson:"creator"`
-	Operator    string                `json:"operator" bson:"operator"`
+	Creator     string             `json:"creator" bson:"creator"`
+	Operator    string             `json:"operator" bson:"operator"`
 
-	Type   uint8 				 `json:"type" bson:"type"`
-	Name   string                `json:"name" bson:"name"`
-	Cover  string                `json:"cover" bson:"cover"`
-	Remark string                `json:"remark" bson:"remark"`
-	Table  string                `json:"table" bson:"table"`
-	Parent string                `json:"parent" bson:"parent"`
-	Scene  uint8 				 `json:"scene" bson:"scene"`
-	Attributes  []string `json:"attributes" bson:"attributes"`
+	Type       uint8    `json:"type" bson:"type"`
+	Name       string   `json:"name" bson:"name"`
+	Cover      string   `json:"cover" bson:"cover"`
+	Remark     string   `json:"remark" bson:"remark"`
+	Table      string   `json:"table" bson:"table"`
+	Parent     string   `json:"parent" bson:"parent"`
+	Scene      uint8    `json:"scene" bson:"scene"`
+	Attributes []string `json:"attributes" bson:"attributes"`
 }
 
 func CreateConcept(info *Concept) error {
@@ -98,7 +98,7 @@ func HadConceptByName(name string) (bool, error) {
 }
 
 func UpdateConceptBase(uid, name, desc, operator string, kind, scene uint8) error {
-	msg := bson.M{"name": name, "remark": desc,"operator":operator,"type":kind, "scene":scene, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "remark": desc, "operator": operator, "type": kind, "scene": scene, "updatedAt": time.Now()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }
