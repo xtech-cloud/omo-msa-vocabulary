@@ -193,7 +193,7 @@ func (mine *BoxInfo) UpdateKeywords(list []string, operator string) error {
 
 func (mine *BoxInfo) UpdateUsers(list []string, operator string) error {
 	if list == nil {
-		return errors.New("the list is nil when update")
+		return errors.New("the list is nil when update users")
 	}
 
 	err := nosql.UpdateBoxUsers(mine.UID, operator, list)

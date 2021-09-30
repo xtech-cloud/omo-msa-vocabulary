@@ -77,10 +77,10 @@ func HadArchivedItem(entity string) bool {
 	return had
 }
 
-func GetArchivedItems(concept string) ([]*Archived, error) {
+func GetArchivedItems(name string) ([]*Archived, error) {
 	var items = make([]*Archived, 0, 20)
-	filter := bson.M{"concept": concept}
-	cursor, err1 := findMany(TableArchived, filter, 0)
+	msg := bson.M{"name": bson.M{"$regex": name}}
+	cursor, err1 := findMany(TableArchived, msg, 0)
 	if err1 != nil {
 		return nil, err1
 	}

@@ -22,6 +22,7 @@ func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp.Count = 0
 	tmp.Keywords = info.Keywords
 	tmp.Workflow = info.Workflow
+	tmp.Users = info.Users
 	//logger.Info(fmt.Sprintf("the keywords length = %d of name = %s", len(tmp.Keywords), tmp.Name))
 	return tmp
 }

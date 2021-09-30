@@ -2,7 +2,6 @@ package cache
 
 import (
 	"errors"
-	"github.com/micro/go-micro/v2/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
@@ -433,7 +432,7 @@ func (mine *cacheContext) getEntityFromDB(uid string) *nosql.Entity {
 	if err == nil && db != nil {
 		return db
 	}
-	logger.Error("getEntityFromDB that error =" + err.Error())
+	//logger.Error("getEntityFromDB in entities that error =" + err.Error())
 	for i := 0; i < len(mine.concepts); i += 1 {
 		tb := mine.concepts[i].Table
 		if len(tb) > 0 {
@@ -665,15 +664,16 @@ func (mine *EntityInfo) UpdateCover(cover, operator string) error {
 	if mine.Status == EntityStatusUsable {
 		return errors.New("the entity had published so can not update")
 	}
-	if cover == "" {
-		cover = mine.Cover
+
+	if cover == "" || cover == mine.Cover {
+		return nil
 	}
 	err := nosql.UpdateEntityCover(mine.table(), mine.UID, cover, operator)
 	if err == nil {
 		mine.Cover = cover
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
-		Context().graph.UpdateNodeCover(mine.UID, cover)
+		//go Context().graph.UpdateNodeCover(mine.UID, cover)
 	}
 	return err
 }

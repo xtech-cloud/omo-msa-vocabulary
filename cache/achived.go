@@ -77,11 +77,11 @@ func (mine *cacheContext) GetArchivedByList(list []string) ([]*EntityInfo, error
 	return arr, nil
 }
 
-func (mine *cacheContext) GetArchivedList(concept string) []*EntityInfo {
+func (mine *cacheContext) GetArchivedList(name string) []*EntityInfo {
 	var array []*nosql.Archived
 	var err error
-	if len(concept) > 1 {
-		array, err = nosql.GetArchivedItems(concept)
+	if len(name) > 1 {
+		array, err = nosql.GetArchivedItems(name)
 	} else {
 		array, err = nosql.GetAllArchived()
 	}

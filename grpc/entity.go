@@ -398,11 +398,12 @@ func (mine *EntityService) SearchPublic(ctx context.Context, in *pb.ReqEntitySea
 	inLog(path, in)
 	out.Flag = ""
 	out.List = make([]*pb.EntityInfo, 0, 200)
-	list := cache.Context().GetArchivedList("")
+	list := cache.Context().GetArchivedList(in.Name)
 	for _, value := range list {
-		if value.IsSatisfy(in.Concept, in.Attribute, in.Tags) {
-			out.List = append(out.List, switchEntity(value))
-		}
+		//if value.IsSatisfy(in.Concept, in.Attribute, in.Tags) {
+		//	out.List = append(out.List, switchEntity(value))
+		//}
+		out.List = append(out.List, switchEntity(value))
 	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
