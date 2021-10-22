@@ -127,6 +127,7 @@ func switchRelationBrief(info *pb.RelationBrief) *proxy.RelationCaseInfo {
 	tmp.Entity = info.Entity
 	tmp.Category = info.Type
 	tmp.Direction = uint8(info.Direction)
+	tmp.Weight = info.Weight
 	return tmp
 }
 
@@ -136,6 +137,7 @@ func switchRRelationBrief(info *proxy.RelationCaseInfo) *pb.RelationBrief {
 	tmp.Entity = info.Entity
 	tmp.Type = info.Category
 	tmp.Direction = uint32(info.Direction)
+	tmp.Weight = info.Weight
 	return tmp
 }
 

@@ -45,9 +45,9 @@ func CreateNode(name, label, uid string) (*Node, error) {
 	return nil, errors.New("not support db")
 }
 
-func CreateLink(from, to int64, kind, name, relation string, direction uint8) (*Link, error) {
+func CreateLink(from, to int64, kind, name, relation string, direction uint8, weight uint32) (*Link, error) {
 	if isNeo4j {
-		link, err := graph.CreateLink(from, to, kind, name, direction, relation)
+		link, err := graph.CreateLink(from, to, kind, name, relation, direction, weight)
 		return switchLink(link), err
 	}
 	return nil, errors.New("not support db")

@@ -20,6 +20,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Updated = info.UpdateTime.Unix()
 	tmp.Parent = info.Parent
 	tmp.Name = info.Name
+	tmp.Quote = info.Quote
 	tmp.Type = uint32(info.Type)
 	tmp.Description = info.Description
 	tmp.Date = &pb.DateInfo{Uid: info.Date.UID, Name: info.Date.Name, Begin: info.Date.Begin.String(), End: info.Date.End.String()}
@@ -77,7 +78,7 @@ func (mine *EventService) AddOne(ctx context.Context, in *pb.ReqEventAdd, out *p
 		relations = append(relations, proxy.RelationCaseInfo{UID: value.Uid, Direction: uint8(value.Direction),
 			Name: value.Name, Category: value.Category, Entity: value.Entity})
 	}
-	event, err := info.AddEvent(date, place, in.Name, in.Description, in.Cover, in.Operator, uint8(in.Type), relations, in.Tags, in.Assets)
+	event, err := info.AddEvent(date, place, in.Name, in.Description, in.Cover, in.Quote, in.Operator, uint8(in.Type), 0, relations, in.Tags, in.Assets)
 	if err == nil {
 		out.Info = switchEntityEvent(event)
 		out.Status = outLog(path, out)
@@ -121,19 +122,31 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 	path := "event.getList"
 	inLog(path, in)
 	info := cache.Context().GetEntity(in.Uid)
-	if info == nil {
-		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
-		return nil
-	}
 	out.List = make([]*pb.EventInfo, 0, 10)
-	if in.Id > 0 {
-		list := info.GetEventsByType(uint8(in.Id))
+	if info == nil {
+		//out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
+		//return nil
+		list := cache.Context().GetEventsByQuote(in.Key)
 		for _, value := range list {
 			out.List = append(out.List, switchEntityEvent(value))
 		}
-	} else {
-		for _, value := range info.AllEvents() {
-			out.List = append(out.List, switchEntityEvent(value))
+	}else{
+		if in.Id > 0 {
+			list := info.GetEventsByType(uint8(in.Id), in.Key)
+			for _, value := range list {
+				out.List = append(out.List, switchEntityEvent(value))
+			}
+		} else {
+			if len(in.Key) > 1 {
+				list := info.GetEventsByQuote(in.Key)
+				for _, value := range list {
+					out.List = append(out.List, switchEntityEvent(value))
+				}
+			} else {
+				for _, value := range info.AllEvents() {
+					out.List = append(out.List, switchEntityEvent(value))
+				}
+			}
 		}
 	}
 
@@ -167,7 +180,7 @@ func (mine *EventService) UpdateBase(ctx context.Context, in *pb.ReqEventUpdate,
 	return nil
 }
 
-func (mine *EventService) UpdateTags(ctx context.Context, in *pb.RequestList, out *pb.ReplyEventInfo) error {
+func (mine *EventService) UpdateTags(ctx context.Context, in *pb.RequestList, out *pb.ReplyInfo) error {
 	path := "event.update"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
@@ -180,13 +193,13 @@ func (mine *EventService) UpdateTags(ctx context.Context, in *pb.RequestList, ou
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
-	out.Info = switchEntityEvent(info)
+	out.Uid = in.Uid
 	out.Status = outLog(path, out)
 	return nil
 }
 
-func (mine *EventService) UpdateCover(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventInfo) error {
-	path := "event.update"
+func (mine *EventService) UpdateCover(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+	path := "event.cover"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
@@ -198,7 +211,43 @@ func (mine *EventService) UpdateCover(ctx context.Context, in *pb.RequestInfo, o
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
-	out.Info = switchEntityEvent(info)
+	out.Uid = info.UID
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EventService) UpdateQuote(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
+	path := "event.quote"
+	inLog(path, in)
+	info := cache.Context().GetEvent(in.Uid)
+	if info == nil {
+		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	err := info.UpdateQuote(in.Key, in.Operator)
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Uid = info.UID
+	out.Status = outLog(path, out)
+	return nil
+}
+
+func (mine *EventService) UpdateAccess(ctx context.Context, in *pb.ReqEventAccess, out *pb.ReplyInfo) error {
+	path := "event.access"
+	inLog(path, in)
+	info := cache.Context().GetEvent(in.Uid)
+	if info == nil {
+		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		return nil
+	}
+	err := info.UpdateAccess(in.Operator, uint8(in.Access))
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Uid = info.UID
 	out.Status = outLog(path, out)
 	return nil
 }

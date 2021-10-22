@@ -13,6 +13,7 @@ type Link struct {
 	Name      string
 	From      int64
 	To        int64
+	Weight    uint32
 }
 
 func (mine *Link) Delete() error {

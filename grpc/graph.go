@@ -71,7 +71,7 @@ func (mine *GraphService) AddLink(ctx context.Context, in *pb.ReqLinkAdd, out *p
 		return nil
 	}
 
-	link, err := cache.Context().CreateLink(from, to, in.Name, in.Relation, cache.DirectionType(in.Direction))
+	link, err := cache.Context().CreateLink(from, to, in.Name, in.Relation, cache.DirectionType(in.Direction), in.Weight)
 	if err == nil {
 		out.Info = switchLink(link)
 		out.Status = outLog(path, out)

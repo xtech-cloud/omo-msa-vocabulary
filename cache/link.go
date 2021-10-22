@@ -23,6 +23,7 @@ type DirectionType uint8
 type LinkInfo struct {
 	Direction DirectionType
 	ID        int64
+	Weight    uint32
 	Name      string
 	Label     string
 	Relation  string
@@ -51,6 +52,7 @@ func (mine *LinkInfo) initInfo(db *proxy.Link, from, to string) bool {
 	mine.Label = db.Label
 	mine.Relation = db.Relation
 	mine.Direction = DirectionType(db.Direction)
+	mine.Weight = db.Weight
 	return true
 }
 

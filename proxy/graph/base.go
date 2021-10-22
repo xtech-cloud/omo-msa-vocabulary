@@ -117,7 +117,7 @@ func GetNodeByID(id int64) (neo4j.Node, error) {
 	return nil, result.Err()
 }
 
-func CreateLink(from, to int64, kind, name string, direction uint8, relation string) (neo4j.Relationship, error) {
+func CreateLink(from, to int64, kind, name, relation string, direction uint8, weight uint32) (neo4j.Relationship, error) {
 	if neo4jCtx.session == nil {
 		return nil, errors.New("the graph session is nil that init first")
 	}
@@ -126,7 +126,7 @@ func CreateLink(from, to int64, kind, name string, direction uint8, relation str
 	}
 	cypher := fmt.Sprintf("MATCH (a),(b) WHERE id(a)=%d AND id(b)=%d CREATE (a)-[r:%s{name:$name, "+
 		"direction:$direction, relation:$relation}]->(b) RETURN r", from, to, kind)
-	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{"name": name, "direction": direction, "relation": relation})
+	result, err := neo4jCtx.session.Run(cypher, map[string]interface{}{"name": name, "direction": direction, "relation": relation, "weight": weight})
 	if err != nil {
 		return nil, err
 	}

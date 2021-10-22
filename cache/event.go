@@ -9,6 +9,7 @@ import (
 
 type EventInfo struct {
 	Type uint8
+	Access uint8 // 可访问对象
 	BaseInfo
 	Description string // 描述
 	Parent      string
@@ -32,6 +33,23 @@ func (mine *cacheContext) GetEvent(uid string) *EventInfo {
 	return nil
 }
 
+func (mine *cacheContext) GetEventsByQuote(quote string) []*EventInfo {
+	arr, err := nosql.GetEventsByQuote2(quote)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	}else{
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
 func (mine *cacheContext) RemoveEvent(uid, operator string) error {
 	return nosql.RemoveEvent(uid, operator)
 }
@@ -50,7 +68,9 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Date = db.Date
 	mine.Place = db.Place
 	mine.Cover = db.Cover
+	mine.Quote = db.Quote
 	mine.Assets = db.Assets
+	mine.Access = db.Access
 	mine.Tags = db.Tags
 	mine.Relations = db.Relations
 }
@@ -115,6 +135,38 @@ func (mine *EventInfo) UpdateTags(operator string, tags []string) error {
 	err := nosql.UpdateEventTags(mine.UID, operator, tags)
 	if err == nil {
 		mine.Tags = tags
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *EventInfo) UpdateAccess(operator string, access uint8) error {
+	if operator == "" {
+		operator = mine.Operator
+	}
+	if mine.Access == access {
+		return nil
+	}
+	err := nosql.UpdateEventAccess(mine.UID, operator, access)
+	if err == nil {
+		mine.Access = access
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *EventInfo) UpdateQuote(quote, operator string) error {
+	if operator == "" {
+		operator = mine.Operator
+	}
+	if mine.Quote == quote {
+		return nil
+	}
+	err := nosql.UpdateEventQuote(mine.UID, quote, operator)
+	if err == nil {
+		mine.Quote = quote
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
 	}

@@ -18,10 +18,12 @@ type Event struct {
 	Operator    string             `json:"operator" bson:"operator"`
 
 	Type        uint8                    `json:"type" bson:"type"`
+	Access  	uint8 					 `json:"access" bson:"access"`
 	Entity      string                   `json:"entity" bson:"entity"`
 	Name        string                   `json:"name" bson:"name"`
 	Description string                   `json:"desc" bson:"desc"`
 	Cover       string                   `json:"cover" bson:"cover"`
+	Quote       string `json:"quote" bson:"quote"`
 	Date        proxy.DateInfo           `json:"date" bson:"date"`
 	Place       proxy.PlaceInfo          `json:"place" bson:"place"`
 	Tags        []string                 `json:"tags" bson:"tags"`
@@ -80,6 +82,86 @@ func GetEventsByParent(parent string) ([]*Event, error) {
 	return items, nil
 }
 
+func GetEventsByQuote(entity, quote string) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"entity": entity, "quote":quote, "deleteAt": def}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsByQuote2(quote string) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"quote":quote, "deleteAt": def}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsByType(entity string, tp uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"entity": entity, "type":tp, "deleteAt": def}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsByTypeQuote(entity, quote string, tp uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"entity": entity, "quote":quote, "type":tp, "deleteAt": def}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func RemoveEvent(uid string, operator string) error {
 	_, err := removeOne(TableEvent, uid, operator)
 	return err
@@ -87,6 +169,18 @@ func RemoveEvent(uid string, operator string) error {
 
 func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
 	msg := bson.M{"name": name, "desc": desc, "assets": assets, "date": date, "place": place, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
+func UpdateEventAccess(uid, operator string, access uint8) error {
+	msg := bson.M{"access": access, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
+func UpdateEventQuote(uid, quote, operator string) error {
+	msg := bson.M{"quote": quote, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }

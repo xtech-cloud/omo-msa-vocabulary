@@ -64,7 +64,7 @@ func (mine *cacheContext) checkRelations(old, now *EntityInfo) {
 	}
 }
 
-func (mine *cacheContext) CreateLink(from, to *NodeInfo, name, relationUID string, direction DirectionType) (*LinkInfo, error) {
+func (mine *cacheContext) CreateLink(from, to *NodeInfo, name, relationUID string, direction DirectionType, weight uint32) (*LinkInfo, error) {
 	if len(name) > 0 {
 		pattern := `^[0-9]*$`
 		reg := regexp.MustCompile(pattern)
@@ -74,7 +74,7 @@ func (mine *cacheContext) CreateLink(from, to *NodeInfo, name, relationUID strin
 	}
 	tmp := mine.GetRelation(relationUID)
 	if tmp != nil {
-		return mine.graph.CreateLink(from, to, switchRelationToLink(tmp.Kind), name, relationUID, direction)
+		return mine.graph.CreateLink(from, to, switchRelationToLink(tmp.Kind), name, relationUID, direction, weight)
 	} else {
 		return nil, errors.New("not found the relation type by uid")
 	}
@@ -346,7 +346,7 @@ func (mine *GraphInfo) CreateNode(name, entity, cover, concept string) (*NodeInf
 	return info, nil
 }
 
-func (mine *GraphInfo) CreateLink(from, to *NodeInfo, kind LinkType, name, relation string, direction DirectionType) (*LinkInfo, error) {
+func (mine *GraphInfo) CreateLink(from, to *NodeInfo, kind LinkType, name, relation string, direction DirectionType, weight uint32) (*LinkInfo, error) {
 	if from == nil || to == nil {
 		return nil, errors.New("from or to node is nil")
 	}
@@ -357,7 +357,7 @@ func (mine *GraphInfo) CreateLink(from, to *NodeInfo, kind LinkType, name, relat
 	if kind == "" {
 		kind = LinkTypeEmpty
 	}
-	link, err := proxy.CreateLink(from.ID, to.ID, string(kind), name, relation, uint8(direction))
+	link, err := proxy.CreateLink(from.ID, to.ID, string(kind), name, relation, uint8(direction), weight)
 	if err != nil {
 		return nil, err
 	}

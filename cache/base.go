@@ -61,6 +61,7 @@ type LinkTemp struct {
 	Relation  string
 	Name      string
 	Direction uint8
+	Weight uint32
 }
 
 type CountMap struct {
@@ -199,6 +200,13 @@ func (mine *CountMap) getSyncNode(uid string) *NodeTemp {
 	return nil
 }
 
+func (mine *cacheContext)EntityTables() []string {
+	arr := make([]string, 0, 2)
+	arr = append(arr, DefaultEntityTable)
+	arr = append(arr, SchoolEntityTable)
+	return arr
+}
+
 func (mine *cacheContext) CheckSyncNodes() {
 	if mine.nodesMap.Count < 1 {
 		return
@@ -225,7 +233,7 @@ func (mine *cacheContext) CheckSyncLinks() {
 	array := make([]string, 0, 20)
 	call := func(key interface{}, val interface{}) bool {
 		item := val.(*LinkTemp)
-		err := mine.createLink(item.From, item.To, item.Kind, item.Relation, item.Name, item.Direction)
+		err := mine.createLink(item.From, item.To, item.Kind, item.Relation, item.Name, item.Direction, item.Weight)
 		if err == nil {
 			array = append(array, item.UUID)
 		}
@@ -237,10 +245,10 @@ func (mine *cacheContext) CheckSyncLinks() {
 	}
 }
 
-func (mine *cacheContext) createLink(from, to string, kind LinkType, relationUID, name string, dire uint8) error {
+func (mine *cacheContext) createLink(from, to string, kind LinkType, relationUID, name string, dire uint8, weight uint32) error {
 	fromNode := mine.GetGraphNode(from)
 	toNode := mine.GetGraphNode(to)
-	_, err := mine.graph.CreateLink(fromNode, toNode, kind, name, relationUID, DirectionType(dire))
+	_, err := mine.graph.CreateLink(fromNode, toNode, kind, name, relationUID, DirectionType(dire), weight)
 	return err
 }
 
