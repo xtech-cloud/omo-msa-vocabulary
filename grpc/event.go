@@ -6,6 +6,7 @@ import (
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
+	"strconv"
 )
 
 type EventService struct{}
@@ -28,6 +29,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Assets = info.Assets
 	tmp.Tags = info.Tags
 	tmp.Cover = info.Cover
+	tmp.Access = uint32(info.Access)
 	tmp.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
 	for i := 0; i < len(info.Relations); i += 1 {
 		tmp.Relations = append(tmp.Relations, switchRelationIns(&info.Relations[i]))
@@ -78,7 +80,7 @@ func (mine *EventService) AddOne(ctx context.Context, in *pb.ReqEventAdd, out *p
 		relations = append(relations, proxy.RelationCaseInfo{UID: value.Uid, Direction: uint8(value.Direction),
 			Name: value.Name, Category: value.Category, Entity: value.Entity})
 	}
-	event, err := info.AddEvent(date, place, in.Name, in.Description, in.Cover, in.Quote, in.Operator, uint8(in.Type), 0, relations, in.Tags, in.Assets)
+	event, err := info.AddEvent(date, place, in.Name, in.Description, in.Cover, in.Quote, in.Operator, uint8(in.Type), uint8(in.Access), relations, in.Tags, in.Assets)
 	if err == nil {
 		out.Info = switchEntityEvent(event)
 		out.Status = outLog(path, out)
@@ -131,12 +133,20 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 			out.List = append(out.List, switchEntityEvent(value))
 		}
 	}else{
-		if in.Id > 0 {
+		if in.Operator != "" {
+			acc,er := strconv.ParseUint(in.Operator, 10, 32)
+			if er == nil {
+				list := info.GetEventsByAccess(uint8(in.Id), uint8(acc))
+				for _, value := range list {
+					out.List = append(out.List, switchEntityEvent(value))
+				}
+			}
+		}else if in.Id > 0 {
 			list := info.GetEventsByType(uint8(in.Id), in.Key)
 			for _, value := range list {
 				out.List = append(out.List, switchEntityEvent(value))
 			}
-		} else {
+		}else {
 			if len(in.Key) > 1 {
 				list := info.GetEventsByQuote(in.Key)
 				for _, value := range list {
@@ -155,7 +165,7 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 }
 
 func (mine *EventService) UpdateBase(ctx context.Context, in *pb.ReqEventUpdate, out *pb.ReplyEventInfo) error {
-	path := "event.update"
+	path := "event.updateBase"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
@@ -170,18 +180,19 @@ func (mine *EventService) UpdateBase(ctx context.Context, in *pb.ReqEventUpdate,
 	}
 	date := proxy.DateInfo{UID: in.Date.Uid, Name: in.Date.Name, Begin: begin, End: end}
 	place := proxy.PlaceInfo{UID: in.Place.Uid, Name: in.Place.Name, Location: in.Place.Location}
-	err := info.UpdateBase(in.Name, in.Description, in.Operator, date, place, in.Assets)
+	err := info.UpdateBase(in.Name, in.Description, in.Operator, uint8(in.Access), date, place, in.Assets)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
+
 	out.Info = switchEntityEvent(info)
 	out.Status = outLog(path, out)
 	return nil
 }
 
 func (mine *EventService) UpdateTags(ctx context.Context, in *pb.RequestList, out *pb.ReplyInfo) error {
-	path := "event.update"
+	path := "event.updateTags"
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {

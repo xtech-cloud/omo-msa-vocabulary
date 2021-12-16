@@ -82,6 +82,46 @@ func GetEventsByParent(parent string) ([]*Event, error) {
 	return items, nil
 }
 
+func GetEventsByTypeAndAccess(entity string,tp, access uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"entity": entity, "type":tp, "access":access, "deleteAt": def}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsByAccess(entity string, access uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"entity": entity, "access":access, "deleteAt": def}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEventsByQuote(entity, quote string) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	def := new(time.Time)
@@ -167,8 +207,9 @@ func RemoveEvent(uid string, operator string) error {
 	return err
 }
 
-func UpdateEventBase(uid, name, desc, operator string, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
-	msg := bson.M{"name": name, "desc": desc, "assets": assets, "date": date, "place": place, "operator": operator, "updatedAt": time.Now()}
+func UpdateEventBase(uid, name, desc, operator string, access uint8, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
+	msg := bson.M{"name": name, "desc": desc, "assets": assets, "date": date, "access":access,
+		"place": place, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }

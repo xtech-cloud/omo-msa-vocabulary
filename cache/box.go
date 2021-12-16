@@ -331,10 +331,17 @@ func (mine *BoxInfo) RemoveKeyword(key string) error {
 	return err
 }
 
-func (mine *BoxInfo) UpdateBase(name, remark, operator, concept string) error {
+func (mine *BoxInfo) UpdateBase(name, remark, concept, operator string) error {
 	if mine.Name != name || mine.Remark != remark || mine.Concept != concept {
 		err := nosql.UpdateBoxBase(mine.UID, name, remark, concept, operator)
 		if err == nil {
+			if mine.Concept != concept {
+				for _, keyword := range mine.Keywords {
+					if !hadChinese(keyword) {
+						mine.updateEntity(keyword, concept, operator)
+					}
+				}
+			}
 			mine.Name = name
 			mine.Remark = remark
 			mine.Operator = operator
@@ -342,6 +349,14 @@ func (mine *BoxInfo) UpdateBase(name, remark, operator, concept string) error {
 			mine.UpdateTime = time.Now()
 		}
 		return err
+	}
+	return nil
+}
+
+func (mine *BoxInfo)updateEntity(uid, concept, operator string) error {
+	info := cacheCtx.GetEntity(uid)
+	if info != nil {
+		return info.updateConcept(concept, operator)
 	}
 	return nil
 }

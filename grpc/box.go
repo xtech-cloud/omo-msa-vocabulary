@@ -125,7 +125,7 @@ func (mine *BoxService) UpdateBase(ctx context.Context, in *pb.ReqBoxUpdate, out
 		out.Status = outError(path, "not found the box by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	err := info.UpdateBase(in.Name, in.Remark, in.Operator, in.Concept)
+	err := info.UpdateBase(in.Name, in.Remark, in.Concept, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 type BaseInfo struct {
@@ -306,4 +307,15 @@ func parseDate(date string) (year uint16, month uint8) {
 
 func ImportDatabase(table string, file multipart.File) error {
 	return nosql.ImportDatabase(table, file)
+}
+
+func hadChinese(str string) bool {
+	var count int
+	for _, v := range str {
+		if unicode.Is(unicode.Han, v) {
+			count++
+			break
+		}
+	}
+	return count > 0
 }

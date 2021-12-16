@@ -471,6 +471,22 @@ func (mine *EntityInfo) table() string {
 	}
 }
 
+func (mine *EntityInfo)updateConcept(concept, operator string) error {
+	if mine.Status != EntityStatusDraft {
+		return errors.New("the entity is not draft so can not update")
+	}
+	if mine.Concept != concept {
+		err := nosql.UpdateEntityConcept(mine.table(), mine.UID, concept, operator)
+		if err == nil {
+			mine.Concept = concept
+			mine.Operator = operator
+		}
+		return err
+	} else{
+		return nil
+	}
+}
+
 func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote, sum, operator string) error {
 	if mine.Status != EntityStatusDraft {
 		return errors.New("the entity is not draft so can not update")
@@ -694,6 +710,30 @@ func (mine *EntityInfo) GetEventsByType(tp uint8, quote string) []*EventInfo {
 
 func (mine *EntityInfo) GetEventsByQuote(quote string) []*EventInfo {
 	arr,err := nosql.GetEventsByQuote(mine.UID, quote)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	}else{
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
+func (mine *EntityInfo) GetEventsByAccess(tp, access uint8) []*EventInfo {
+	var arr []*nosql.Event
+	var err error
+	if tp > 0 {
+		arr,err = nosql.GetEventsByTypeAndAccess(mine.UID,tp, access)
+	}else{
+		arr,err = nosql.GetEventsByAccess(mine.UID, access)
+	}
+
 	var list []*EventInfo
 	if err == nil {
 		list = make([]*EventInfo, 0, len(arr))

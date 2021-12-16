@@ -75,7 +75,7 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Relations = db.Relations
 }
 
-func (mine *EventInfo) UpdateBase(name, remark, operator string, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
+func (mine *EventInfo) UpdateBase(name, remark, operator string,access uint8, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
 	if name == "" {
 		name = mine.Name
 	}
@@ -85,12 +85,13 @@ func (mine *EventInfo) UpdateBase(name, remark, operator string, date proxy.Date
 	if assets == nil {
 		assets = mine.Assets
 	}
-	err := nosql.UpdateEventBase(mine.UID, name, remark, operator, date, place, assets)
+	err := nosql.UpdateEventBase(mine.UID, name, remark, operator, access, date, place, assets)
 	if err == nil {
 		mine.Name = name
 		mine.Description = remark
 		mine.Date = date
 		mine.Place = place
+		mine.Access = access
 		mine.Assets = assets
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
