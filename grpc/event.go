@@ -7,6 +7,7 @@ import (
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
 	"strconv"
+	"strings"
 )
 
 type EventService struct{}
@@ -160,6 +161,23 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 		}
 	}
 
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
+func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyEventList) error {
+	path := "event.getByFilter"
+	inLog(path, in)
+	out.List = make([]*pb.EventInfo, 0, 200)
+	if in.Key == "entities_sys" {
+		arr := strings.Split(in.Value,";")
+		for _, uid := range arr {
+			events := cache.Context().GetEventsByEntity(uid, 1)
+			for _, event := range events {
+				out.List = append(out.List, switchEntityEvent(event))
+			}
+		}
+	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }

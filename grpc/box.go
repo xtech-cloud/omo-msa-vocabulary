@@ -117,6 +117,15 @@ func (mine *BoxService) GetListByUser(ctx context.Context, in *pb.RequestInfo, o
 	return nil
 }
 
+func (mine *BoxService) GetByFilter(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyBoxList) error {
+	path := "box.GetByFilter"
+	inLog(path, in)
+	out.List = make([]*pb.BoxInfo, 0, 200)
+
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
 func (mine *BoxService) UpdateBase(ctx context.Context, in *pb.ReqBoxUpdate, out *pb.ReplyBoxInfo) error {
 	path := "box.updateBase"
 	inLog(path, in)

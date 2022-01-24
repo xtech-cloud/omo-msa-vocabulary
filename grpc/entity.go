@@ -30,6 +30,12 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	return tmp
 }
 
+func switchUserEntity(info *cache.EntityInfo) *pb.EntityInfo {
+	tmp := new(pb.EntityInfo)
+	tmp.Brief = switchEntityBrief(info)
+	return tmp
+}
+
 func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	tmp := new(pb.EntityBrief)
 	tmp.Uid = info.UID
@@ -369,29 +375,56 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 
 	out.Systems = make([]*pb.EntityInfo, 0, len(in.List))
 	out.Users = make([]*pb.EntityInfo, 0, len(in.List))
-	array, err := cache.Context().GetEntitiesByList(cache.EntityStatusUsable, in.List)
-	rest := make([]string, 0, len(in.List))
-	for _, key := range in.List {
-		rest = append(rest, key)
-	}
-	if err == nil {
-		for _, value := range array {
-			out.Systems = append(out.Systems, switchEntity(value))
-			for i := 0; i < len(rest); i += 1 {
-				if rest[i] == value.UID {
-					rest = append(rest[:i], rest[i+1:]...)
-					break
+	if in.Status == 1 {
+		array, err := cache.Context().GetEntitiesByList(cache.EntityStatusUsable, in.List)
+		if err == nil {
+			for _, value := range array {
+				out.Systems = append(out.Systems, switchEntity(value))
+			}
+		}
+	}else if in.Status == 2 {
+		list, err := cache.Context().GetCustomEntitiesByList(in.List)
+		if err == nil {
+			for _, value := range list {
+				out.Users = append(out.Users, switchUserEntity(value))
+			}
+		}
+	}else{
+		array, err := cache.Context().GetEntitiesByList(cache.EntityStatusUsable, in.List)
+		rest := make([]string, 0, len(in.List))
+		for _, key := range in.List {
+			rest = append(rest, key)
+		}
+		if err == nil {
+			for _, value := range array {
+				out.Systems = append(out.Systems, switchEntity(value))
+				for i := 0; i < len(rest); i += 1 {
+					if rest[i] == value.UID {
+						rest = append(rest[:i], rest[i+1:]...)
+						break
+					}
 				}
 			}
 		}
-	}
-	list, err := cache.Context().GetCustomEntitiesByList(rest)
-	if err == nil {
-		for _, value := range list {
-			out.Users = append(out.Users, switchEntity(value))
+		list, err := cache.Context().GetCustomEntitiesByList(rest)
+		if err == nil {
+			for _, value := range list {
+				out.Users = append(out.Users, switchUserEntity(value))
+			}
 		}
 	}
+
 	out.Status = outLog(path, fmt.Sprintf("the system length = %d; user length = %d", len(out.Systems), len(out.Users)))
+	return nil
+}
+
+func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyEntityList) error {
+	path := "entity.getByFilter"
+	inLog(path, in)
+	out.Flag = ""
+	out.List = make([]*pb.EntityInfo, 0, 200)
+
+	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
 

@@ -50,6 +50,23 @@ func (mine *cacheContext) GetEventsByQuote(quote string) []*EventInfo {
 	return list
 }
 
+func (mine *cacheContext) GetEventsByEntity(entity string, tp uint8) []*EventInfo {
+	arr, err := nosql.GetEventsByType(entity, tp)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	}else{
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
 func (mine *cacheContext) RemoveEvent(uid, operator string) error {
 	return nosql.RemoveEvent(uid, operator)
 }

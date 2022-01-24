@@ -472,9 +472,9 @@ func (mine *EntityInfo) table() string {
 }
 
 func (mine *EntityInfo)updateConcept(concept, operator string) error {
-	if mine.Status != EntityStatusDraft {
-		return errors.New("the entity is not draft so can not update")
-	}
+	//if mine.Status != EntityStatusDraft {
+	//	return errors.New("the entity is not draft so can not update")
+	//}
 	if mine.Concept != concept {
 		err := nosql.UpdateEntityConcept(mine.table(), mine.UID, concept, operator)
 		if err == nil {
@@ -687,7 +687,7 @@ func (mine *EntityInfo) AllEvents() []*EventInfo {
 func (mine *EntityInfo) GetEventsByType(tp uint8, quote string) []*EventInfo {
 	var err error
 	var arr []*nosql.Event
-	if len(quote) > 0 {
+	if len(quote) > 1 {
 		arr,err = nosql.GetEventsByTypeQuote(mine.UID, quote, tp)
 	}else{
 		arr,err = nosql.GetEventsByType(mine.UID, tp)
