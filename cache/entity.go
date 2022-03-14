@@ -240,7 +240,13 @@ func (mine *cacheContext) GetEntitiesByStatus(status EntityStatus, concept strin
 			array, err := nosql.GetEntitiesByStatus(tb, uint8(status))
 			if err == nil {
 				for _, entity := range array {
-					if entity.Concept == concept {
+					if concept != "" {
+						if entity.Concept == concept {
+							info := new(EntityInfo)
+							info.initInfo(entity)
+							list = append(list, info)
+						}
+					}else{
 						info := new(EntityInfo)
 						info.initInfo(entity)
 						list = append(list, info)
@@ -261,7 +267,13 @@ func (mine *cacheContext) GetEntitiesByOwnerStatus(owner, concept string, status
 			array, err := nosql.GetEntitiesByOwnerAndStatus(tb, owner, uint8(status))
 			if err == nil {
 				for _, entity := range array {
-					if entity.Concept == concept {
+					if concept != "" {
+						if entity.Concept == concept {
+							info := new(EntityInfo)
+							info.initInfo(entity)
+							list = append(list, info)
+						}
+					}else{
 						info := new(EntityInfo)
 						info.initInfo(entity)
 						list = append(list, info)

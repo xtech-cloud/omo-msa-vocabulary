@@ -284,7 +284,7 @@ func (mine *EntityService) GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy
 	path := "entity.getByOwner"
 	inLog(path, in)
 	out.Flag = in.Owner
-	if len(in.Owner) > 0 {
+	if len(in.Owner) > 1 {
 		array := cache.Context().GetEntitiesByOwnerStatus(in.Owner, in.Concept, cache.EntityStatus(in.Status))
 		total, _, list := checkPage(in.Page, in.Number, array)
 		out.List = make([]*pb.EntityInfo, 0, in.Number)

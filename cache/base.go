@@ -6,6 +6,7 @@ import (
 	"omo.msa.vocabulary/config"
 	"omo.msa.vocabulary/proxy/graph"
 	"omo.msa.vocabulary/proxy/nosql"
+	"omo.msa.vocabulary/tool"
 	"strconv"
 	"strings"
 	"sync"
@@ -104,6 +105,8 @@ func InitData() error {
 		return err1
 	}
 
+	checkSequence()
+
 	attributes, _ := nosql.GetAllAttributes()
 	for i := 0; i < len(attributes); i += 1 {
 		info := new(AttributeInfo)
@@ -159,6 +162,43 @@ func InitData() error {
 
 func Context() *cacheContext {
 	return cacheCtx
+}
+
+func checkSequence()  {
+	arr := make([]string, 0, 6)
+	arr = append(arr, "voc_"+nosql.TableArchived)
+	arr = append(arr, "voc_"+nosql.TableAttribute)
+	arr = append(arr, "voc_"+nosql.TableBox)
+	arr = append(arr, "voc_"+nosql.TableConcept)
+	arr = append(arr, "voc_"+nosql.TableEvent)
+	arr = append(arr, "voc_"+nosql.TableRelation)
+	arr = append(arr, "voc_"+nosql.TableRelationCase)
+	all,_ := nosql.GetAllSequences()
+	for _, s := range all {
+		if tool.HasItem(arr, s.Name) {
+			k := strings.Replace(s.Name, "voc_", "", 1)
+			_ = nosql.UpdateSequenceName(s.UID.Hex(), k)
+		}
+	}
+
+	arr2 := make([]string, 0, 6)
+	arr2 = append(arr2, nosql.TableArchived)
+	arr2 = append(arr2, nosql.TableAttribute)
+	arr2 = append(arr2, nosql.TableBox)
+	arr2 = append(arr2, nosql.TableConcept)
+	arr2 = append(arr2, nosql.TableEvent)
+	arr2 = append(arr2, nosql.TableRelation)
+	arr2 = append(arr2, nosql.TableRelationCase)
+	arr2 = append(arr2, nosql.TableSequence)
+	arr2 = append(arr2, nosql.TableAddress)
+	arr2 = append(arr2, DefaultEntityTable)
+	arr2 = append(arr2, DefaultEntityTable+"_school")
+	all2,_ := nosql.GetAllSequences()
+	for _, s := range all2 {
+		if !tool.HasItem(arr2, s.Name) {
+			_ = nosql.DeleteSequence(s.UID.Hex())
+		}
+	}
 }
 
 func (mine *cacheContext) addSyncNode(uid, name, concept, cover string) {

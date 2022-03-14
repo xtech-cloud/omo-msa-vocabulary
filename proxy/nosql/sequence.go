@@ -1,6 +1,7 @@
 package nosql
 
 import (
+	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
@@ -54,4 +55,34 @@ func getSequenceCount(name string) (uint64, error) {
 		return 0, err1
 	}
 	return model.Count, nil
+}
+
+func GetAllSequences() ([]*Sequence, error) {
+	var items = make([]*Sequence, 0, 100)
+	cursor, err1 := findAll(TableSequence, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Sequence)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func UpdateSequenceName(uid, name string) error {
+	msg := bson.M{"name": name, "updatedAt": time.Now()}
+	_, err := updateOne(TableSequence, uid, msg)
+	return err
+}
+
+
+func DeleteSequence(uid string) error {
+	_,err := deleteOne(TableSequence, uid)
+	return err
 }
