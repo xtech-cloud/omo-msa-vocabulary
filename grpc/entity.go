@@ -15,7 +15,7 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	tmp.Brief = switchEntityBrief(info)
 	tmp.Events = make([]*pb.EventBrief, 0, len(info.StaticEvents))
 	for _, event := range info.StaticEvents {
-		tmp.Events = append(tmp.Events, switchREventBrief(event))
+		tmp.Events = append(tmp.Events, switchEventBriefToPB(event))
 	}
 	tmp.Relations = make([]*pb.RelationBrief, 0, len(info.StaticRelations))
 	for _, item := range info.StaticRelations {
@@ -24,15 +24,32 @@ func switchEntity(info *cache.EntityInfo) *pb.EntityInfo {
 	length := len(info.Properties)
 	tmp.Properties = make([]*pb.PropertyInfo, 0, length)
 	for _, value := range info.Properties {
-		tmp.Properties = append(tmp.Properties, switchEntityProperty(value))
+		tmp.Properties = append(tmp.Properties, switchPropertyToPB(value))
 	}
 
 	return tmp
 }
 
-func switchUserEntity(info *cache.EntityInfo) *pb.EntityInfo {
+func switchUserEntity(info *cache.EntityInfo, more bool) *pb.EntityInfo {
 	tmp := new(pb.EntityInfo)
 	tmp.Brief = switchEntityBrief(info)
+	if more {
+		events := cache.Context().GetEventsByEntity(info.UID, cache.EventCustom)
+		tmp.Events = make([]*pb.EventBrief, 0, len(events))
+		for _, event := range events {
+			if event.Access == cache.AccessPublic {
+				tmp.Events = append(tmp.Events, switchEntityEventBrief(event))
+			}
+		}
+		events2 := cache.Context().GetEventsByEntity(info.UID, cache.EventActivity)
+		for _, event := range events2 {
+			tmp.Events = append(tmp.Events, switchEntityEventBrief(event))
+		}
+	}
+	tmp.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties))
+	for _, value := range info.Properties {
+		tmp.Properties = append(tmp.Properties, switchPropertyToPB(value))
+	}
 	return tmp
 }
 
@@ -65,7 +82,7 @@ func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	return tmp
 }
 
-func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
+func switchPropertyToPB(info *proxy.PropertyInfo) *pb.PropertyInfo {
 	tmp := new(pb.PropertyInfo)
 	tmp.Uid = info.Key
 	tmp.Words = make([]*pb.WordInfo, 0, len(info.Words))
@@ -75,7 +92,7 @@ func switchEntityProperty(info *proxy.PropertyInfo) *pb.PropertyInfo {
 	return tmp
 }
 
-func switchEntityRProperty(info *pb.PropertyInfo) *proxy.PropertyInfo {
+func switchPropertyFromPB(info *pb.PropertyInfo) *proxy.PropertyInfo {
 	tmp := new(proxy.PropertyInfo)
 	tmp.Key = info.Uid
 	tmp.Words = make([]proxy.WordInfo, 0, len(info.Words))
@@ -85,7 +102,7 @@ func switchEntityRProperty(info *pb.PropertyInfo) *proxy.PropertyInfo {
 	return tmp
 }
 
-func switchEventBrief(info *pb.EventBrief) *proxy.EventBrief {
+func switchEventBriefFromPB(info *pb.EventBrief) *proxy.EventBrief {
 	tmp := new(proxy.EventBrief)
 	tmp.Name = info.Name
 	tmp.Quote = info.Quote
@@ -108,7 +125,7 @@ func switchEventBrief(info *pb.EventBrief) *proxy.EventBrief {
 	return tmp
 }
 
-func switchREventBrief(info *proxy.EventBrief) *pb.EventBrief {
+func switchEventBriefToPB(info *proxy.EventBrief) *pb.EventBrief {
 	tmp := new(pb.EventBrief)
 	tmp.Name = info.Name
 	tmp.Quote = info.Quote
@@ -178,7 +195,7 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 	info.Mark = in.Mark
 	info.StaticEvents = make([]*proxy.EventBrief, 0, len(in.Events))
 	for _, event := range in.Events {
-		info.StaticEvents = append(info.StaticEvents, switchEventBrief(event))
+		info.StaticEvents = append(info.StaticEvents, switchEventBriefFromPB(event))
 	}
 	info.StaticRelations = make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
 	for _, relation := range in.Relations {
@@ -186,7 +203,7 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 	}
 	info.Properties = make([]*proxy.PropertyInfo, 0, len(in.Relations))
 	for _, prop := range in.Properties {
-		info.Properties = append(info.Properties, switchEntityRProperty(prop))
+		info.Properties = append(info.Properties, switchPropertyFromPB(prop))
 	}
 
 	err := cache.Context().CreateEntity(info)
@@ -386,7 +403,7 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 		list, err := cache.Context().GetCustomEntitiesByList(in.List)
 		if err == nil {
 			for _, value := range list {
-				out.Users = append(out.Users, switchUserEntity(value))
+				out.Users = append(out.Users, switchUserEntity(value, true))
 			}
 		}
 	}else{
@@ -409,7 +426,7 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 		list, err := cache.Context().GetCustomEntitiesByList(rest)
 		if err == nil {
 			for _, value := range list {
-				out.Users = append(out.Users, switchUserEntity(value))
+				out.Users = append(out.Users, switchUserEntity(value, false))
 			}
 		}
 	}
@@ -514,7 +531,7 @@ func (mine *EntityService) UpdateProperties(ctx context.Context, in *pb.ReqEntit
 	out.Uid = info.UID
 	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties))
 	for _, value := range info.Properties {
-		tmp := switchEntityProperty(value)
+		tmp := switchPropertyToPB(value)
 		out.Properties = append(out.Properties, tmp)
 	}
 	out.Updated = uint64(info.UpdateTime.Unix())
@@ -646,7 +663,7 @@ func (mine *EntityService) AppendProperty(ctx context.Context, in *pb.ReqEntityP
 	}
 	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties))
 	for _, value := range info.Properties {
-		tmp := switchEntityProperty(value)
+		tmp := switchPropertyToPB(value)
 		out.Properties = append(out.Properties, tmp)
 	}
 	out.Status = outLog(path, out)
@@ -672,7 +689,7 @@ func (mine *EntityService) SubtractProperty(ctx context.Context, in *pb.RequestI
 	}
 	out.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties))
 	for _, value := range info.Properties {
-		tmp := switchEntityProperty(value)
+		tmp := switchPropertyToPB(value)
 		out.Properties = append(out.Properties, tmp)
 	}
 	out.Status = outLog(path, out)
@@ -729,7 +746,7 @@ func (mine *EntityService) UpdateStatic(ctx context.Context, in *pb.ReqEntitySta
 	info.Mark = in.Mark
 	info.StaticEvents = make([]*proxy.EventBrief, 0, len(in.Events))
 	for _, event := range in.Events {
-		info.StaticEvents = append(info.StaticEvents, switchEventBrief(event))
+		info.StaticEvents = append(info.StaticEvents, switchEventBriefFromPB(event))
 	}
 	info.StaticRelations = make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
 	for _, relation := range in.Relations {
@@ -737,7 +754,7 @@ func (mine *EntityService) UpdateStatic(ctx context.Context, in *pb.ReqEntitySta
 	}
 	info.Properties = make([]*proxy.PropertyInfo, 0, len(in.Properties))
 	for _, prop := range in.Properties {
-		info.Properties = append(info.Properties, switchEntityRProperty(prop))
+		info.Properties = append(info.Properties, switchPropertyFromPB(prop))
 	}
 	err := entity.UpdateStatic(info)
 	if err != nil {
@@ -791,7 +808,7 @@ func (mine *EntityService) UpdateEvents(ctx context.Context, in *pb.ReqEntityEve
 	}
 	events := make([]*proxy.EventBrief, 0, len(in.Events))
 	for _, event := range in.Events {
-		events = append(events, switchEventBrief(event))
+		events = append(events, switchEventBriefFromPB(event))
 	}
 
 	err := entity.UpdateStaticEvents(in.Operator, events)

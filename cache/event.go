@@ -7,6 +7,17 @@ import (
 	"time"
 )
 
+const (
+	EventCustom = 0
+	EventActivity = 1
+	EventHonor = 2
+)
+
+const (
+	AccessPublic = 0
+	AccessPrivate = 1
+)
+
 type EventInfo struct {
 	Type uint8
 	Access uint8 // 可访问对象
