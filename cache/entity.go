@@ -32,7 +32,6 @@ type EntityInfo struct {
 	Description string `json:"description"`
 	Cover       string `json:"cover"`
 	Add         string `json:"add"` //消歧义
-	//Creator         string   `json:"creator"` //创建者
 	Owner           string                    `json:"owner"`    //所属单位
 	Mark            string                    `json:"mark"`     // 标记或者来源
 	Quote           string                    `json:"quote"`    // 引用
@@ -459,6 +458,10 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	if db.Properties != nil {
 		mine.Properties = db.Properties
 	}
+	//if strings.Contains(mine.Cover,"http://rdp-down.suii.cn/") {
+	//	cover := strings.Replace(mine.Cover, "http://rdp-down.suii.cn/", "", 1)
+	//	_ = mine.setCover(cover, mine.Operator)
+	//}
 	return true
 }
 
@@ -612,6 +615,19 @@ func (mine *EntityInfo) UpdateCover(cover, operator string) error {
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
 		//go Context().graph.UpdateNodeCover(mine.UID, cover)
+	}
+	return err
+}
+
+func (mine *EntityInfo) setCover(cover, operator string) error {
+	if cover == "" || cover == mine.Cover {
+		return nil
+	}
+	err := nosql.UpdateEntityCover(mine.table(), mine.UID, cover, operator)
+	if err == nil {
+		mine.Cover = cover
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }

@@ -73,6 +73,7 @@ type CountMap struct {
 
 type cacheContext struct {
 	graph *GraphInfo
+	entityTables []string
 	//entities   []*EntityInfo
 	concepts   []*ConceptInfo
 	boxes      []*BoxInfo
@@ -91,6 +92,8 @@ func InitData() error {
 	cacheCtx.attributes = make([]*AttributeInfo, 0, 100)
 	cacheCtx.relations = make([]*RelationshipInfo, 0, 100)
 	cacheCtx.boxes = make([]*BoxInfo, 0, 50)
+	cacheCtx.entityTables = make([]string, 0, 5)
+	cacheCtx.entityTables = append(cacheCtx.entityTables, DefaultEntityTable)
 	cacheCtx.graph = new(GraphInfo)
 	cacheCtx.nodesMap = new(CountMap)
 	cacheCtx.linkMap = new(CountMap)
@@ -127,6 +130,9 @@ func InitData() error {
 		info := new(ConceptInfo)
 		info.initInfo(concerts[i])
 		cacheCtx.concepts = append(cacheCtx.concepts, info)
+		if len(info.Table) > 1 && !tool.HasItem(cacheCtx.entityTables, info.Table){
+			cacheCtx.entityTables = append(cacheCtx.entityTables, info.Table)
+		}
 	}
 	logger.Infof("init concerts!!! number = %d", len(cacheCtx.concepts))
 
@@ -242,10 +248,11 @@ func (mine *CountMap) getSyncNode(uid string) *NodeTemp {
 }
 
 func (mine *cacheContext)EntityTables() []string {
-	arr := make([]string, 0, 2)
-	arr = append(arr, DefaultEntityTable)
-	arr = append(arr, SchoolEntityTable)
-	return arr
+	//arr := make([]string, 0, 2)
+	//arr = append(arr, DefaultEntityTable)
+	//arr = append(arr, SchoolEntityTable)
+	//return arr
+	return mine.entityTables
 }
 
 func (mine *cacheContext) CheckSyncNodes() {

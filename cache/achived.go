@@ -143,7 +143,21 @@ func (mine *ArchivedInfo) initInfo(db *nosql.Archived) bool {
 	mine.File = db.File
 	mine.MD5 = db.MD5
 	mine.Scene = db.Scene
+	//if strings.Contains(mine.File,"http://rdp-down.suii.cn/") {
+	//	f := strings.Replace(mine.File, "http://rdp-down.suii.cn/", "", 1)
+	//	_ = mine.setFile(f)
+	//}
 	return true
+}
+
+func (mine *ArchivedInfo) setFile(file string) error {
+	md5 := tool.CalculateMD5([]byte(file))
+	err := nosql.UpdateArchivedFile(mine.UID, mine.Operator, file, md5)
+	if err == nil {
+		mine.File = file
+		mine.UpdateTime = time.Now()
+	}
+	return err
 }
 
 func (mine *ArchivedInfo) UpdateFile(info *EntityInfo, operator string) error {
