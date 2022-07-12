@@ -20,7 +20,7 @@ func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp.Cover = info.Cover
 	tmp.Type = uint32(info.Type)
 	tmp.Count = 0
-	
+	tmp.Owner = info.Owner
 	tmp.Keywords = info.Keywords
 	tmp.Workflow = info.Workflow
 	tmp.Users = info.Users
@@ -44,6 +44,7 @@ func (mine *BoxService) AddOne(ctx context.Context, in *pb.ReqBoxAdd, out *pb.Re
 	info.Concept = in.Concept
 	info.Creator = in.Operator
 	info.Workflow = in.Workflow
+	info.Owner = in.Owner
 	err := cache.Context().CreateBox(info)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)

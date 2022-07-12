@@ -73,7 +73,11 @@ func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	tmp.Mark = info.Mark
 	tmp.Quote = info.Quote
 	tmp.Published = info.Published
-
+	tmp.Records = make([]*pb.EntityRecord, 0, 10)
+	records,_ := info.GetRecords()
+	for _, record := range records {
+		tmp.Records = append(tmp.Records, &pb.EntityRecord{User: record.Creator, Option: uint32(record.Option), Remark: record.Remark})
+	}
 	//length := len(info.Properties)
 	//tmp.Properties = make([]*pb.PropertyInfo, 0, length)
 	//for _, value := range info.Properties {
