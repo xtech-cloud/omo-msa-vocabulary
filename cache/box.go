@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const DefaultOwner = "system"
+
 type BoxInfo struct {
 	Type uint8
 	BaseInfo
@@ -15,6 +17,7 @@ type BoxInfo struct {
 	Remark   string
 	Concept  string // 针对的实体类型
 	Workflow string
+	Owner string
 	Keywords []string
 	Users []string
 }
@@ -39,13 +42,25 @@ func (mine *cacheContext) GetBox(uid string) *BoxInfo {
 	return nil
 }
 
-func (mine *cacheContext) GetBoxes(kind uint8) []*BoxInfo {
+func (mine *cacheContext) GetBoxes(owner string, kind uint8) []*BoxInfo {
 	list := make([]*BoxInfo, 0, 10)
+	if len(owner) < 1 {
+		owner = DefaultOwner
+	}
 	for _, box := range mine.boxes {
-		if box.Type == kind {
+		if box.Owner == owner && box.Type == kind {
 			list = append(list, box)
 		}
 	}
+	//dbs,err := nosql.GetBoxesByType(owner, kind)
+	//if err == nil {
+	//	for _, box := range dbs {
+	//		info := new(BoxInfo)
+	//		info.initInfo(box)
+	//		list = append(list, info)
+	//	}
+	//}
+
 	return list
 }
 
@@ -113,6 +128,7 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db.Cover = info.Cover
 	db.Remark = info.Remark
 	db.Type = info.Type
+	db.Owner = info.Owner
 	db.Workflow = info.Workflow
 	db.Keywords = make([]string, 0, 5)
 	db.Users = make([]string, 0, 5)
@@ -173,9 +189,13 @@ func (mine *BoxInfo) initInfo(db *nosql.Box) {
 	mine.CreateTime = db.CreatedTime
 	mine.Operator = db.Operator
 	mine.Creator = db.Creator
+	mine.Owner = db.Owner
 	mine.Workflow = db.Workflow
 	mine.Keywords = db.Keywords
 	mine.Users = db.Users
+	if len(mine.Owner) < 1 {
+		_ = mine.updateOwner(DefaultOwner)
+	}
 }
 
 func (mine *BoxInfo) UpdateKeywords(list []string, operator string) error {
@@ -186,6 +206,15 @@ func (mine *BoxInfo) UpdateKeywords(list []string, operator string) error {
 	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
 	if err == nil {
 		mine.Keywords = list
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *BoxInfo) updateOwner(owner string) error {
+	err := nosql.UpdateBoxOwner(mine.UID, owner)
+	if err == nil {
+		mine.Owner = owner
 		mine.UpdateTime = time.Now()
 	}
 	return err

@@ -20,6 +20,7 @@ type Box struct {
 	Type     uint8    `json:"type" bson:"type"`
 	Cover    string   `json:"cover" bson:"cover"`
 	Remark   string   `json:"remark" bson:"remark"`
+	Owner    string   `json:"owner" bson:"owner"`
 	Concept  string   `json:"concept" bson:"concept"`
 	Workflow string   `json:"workflow" bson:"workflow"`
 	Keywords []string `json:"keywords" bson:"keywords"`
@@ -75,6 +76,26 @@ func HadBoxByName(name string) (bool, error) {
 	return hadOne(TableBox, msg)
 }
 
+func GetBoxesByType(owner string, tp uint8) ([]*Box, error) {
+	var items = make([]*Box, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"owner": owner, "type":tp, "deleteAt": def}
+	cursor, err1 := findMany(TableBox, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Box)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func UpdateBoxBase(uid, name, desc, concept, operator string) error {
 	msg := bson.M{"name": name, "remark": desc, "operator": operator, "concept": concept, "updatedAt": time.Now()}
 	_, err := updateOne(TableBox, uid, msg)
@@ -83,6 +104,12 @@ func UpdateBoxBase(uid, name, desc, concept, operator string) error {
 
 func UpdateBoxCover(uid string, icon string) error {
 	msg := bson.M{"cover": icon, "updatedAt": time.Now()}
+	_, err := updateOne(TableBox, uid, msg)
+	return err
+}
+
+func UpdateBoxOwner(uid, owner string) error {
+	msg := bson.M{"owner": owner, "updatedAt": time.Now()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }

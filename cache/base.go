@@ -74,7 +74,6 @@ type CountMap struct {
 type cacheContext struct {
 	graph *GraphInfo
 	entityTables []string
-	//entities   []*EntityInfo
 	concepts   []*ConceptInfo
 	boxes      []*BoxInfo
 	attributes []*AttributeInfo

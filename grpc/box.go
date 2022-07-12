@@ -20,6 +20,7 @@ func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp.Cover = info.Cover
 	tmp.Type = uint32(info.Type)
 	tmp.Count = 0
+	
 	tmp.Keywords = info.Keywords
 	tmp.Workflow = info.Workflow
 	tmp.Users = info.Users
@@ -96,7 +97,7 @@ func (mine *BoxService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out *
 func (mine *BoxService) GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyBoxList) error {
 	path := "box.getAll"
 	inLog(path, in)
-	all := cache.Context().GetBoxes(uint8(in.Id))
+	all := cache.Context().GetBoxes(in.Key, uint8(in.Id))
 	out.List = make([]*pb.BoxInfo, 0, len(all))
 	for _, value := range all {
 		out.List = append(out.List, switchBox(value))

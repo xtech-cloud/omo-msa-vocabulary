@@ -17,4 +17,5 @@ const (
 	TableRelationCase = "cases"
 	TableBox          = "boxes"
 	TableArchived     = "archived"
+	TableRecord       = "records"
 )

@@ -22,7 +22,14 @@ const (
 	SchoolEntityTable = "entities_school"
 )
 
+const (
+	OptionAgree OptionType = 1
+	OptionRefuse OptionType = 2
+
+)
 type EntityStatus uint8
+
+type OptionType uint8
 
 type EntityInfo struct {
 	Status EntityStatus `json:"_"`
@@ -632,6 +639,10 @@ func (mine *EntityInfo) setCover(cover, operator string) error {
 	return err
 }
 
+func (mine *EntityInfo)GetRecords() ([]*nosql.Record,error) {
+	return nosql.GetRecords(mine.UID)
+}
+
 func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
 	if mine.Status == EntityStatusUsable {
 		return errors.New("the entity had published so can not update")
@@ -658,7 +669,23 @@ func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
 	return err
 }
 
-func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator string) error {
+func (mine *EntityInfo)createRecord(operator, remark string, from, to EntityStatus)  {
+	db := new(nosql.Record)
+	db.UID = primitive.NewObjectID()
+	db.ID = nosql.GetRecordNextID()
+	db.Creator = operator
+	db.Entity = mine.UID
+	if to > from {
+		db.Option = uint8(OptionAgree)
+	}else{
+		db.Option = uint8(OptionRefuse)
+	}
+
+	db.Remark = remark
+	_ = nosql.CreateRecord(db)
+}
+
+func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator, remark string) error {
 	if mine.Status == status {
 		return nil
 	}
@@ -667,6 +694,7 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator string) error
 		return err
 	}
 	mine.Operator = operator
+	mine.createRecord(operator, remark, mine.Status, status)
 	if status == EntityStatusUsable {
 		tmp := Context().GetArchivedByEntity(mine.UID)
 		if tmp == nil {

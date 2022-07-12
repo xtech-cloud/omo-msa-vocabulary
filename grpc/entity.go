@@ -600,7 +600,7 @@ func (mine *EntityService) UpdateStatus(ctx context.Context, in *pb.ReqEntitySta
 		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	err := info.UpdateStatus(cache.EntityStatus(in.Status), in.Operator)
+	err := info.UpdateStatus(cache.EntityStatus(in.Status), in.Operator, in.Remark)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
