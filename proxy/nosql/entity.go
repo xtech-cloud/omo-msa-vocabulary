@@ -28,6 +28,7 @@ type Entity struct {
 	Add         string                    `json:"add" bson:"add"`
 	Mark        string                    `json:"mark" bson:"mark"`
 	Quote       string                    `json:"quote" bson:"quote"`
+	Pushed      int64 						`json:"pushed" bson:"pushed"`
 	Synonyms    []string                  `json:"synonyms" bson:"synonyms"`
 	Tags        []string                  `json:"tags" bson:"tags"`
 	Properties  []*proxy.PropertyInfo     `json:"props" bson:"props"`
@@ -288,6 +289,12 @@ func UpdateEntityRelations(table, uid, operator string, relations []*proxy.Relat
 
 func UpdateEntityStatus(table, uid string, state uint8, operator string) error {
 	msg := bson.M{"status": state, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityPushed(table, uid string, operator string) error {
+	msg := bson.M{"pushed": time.Now().Unix(), "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

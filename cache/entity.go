@@ -32,7 +32,8 @@ type EntityStatus uint8
 type OptionType uint8
 
 type EntityInfo struct {
-	Status EntityStatus `json:"_"`
+	Status EntityStatus `json:"-"`
+	Pushed int64 `json:"-"`
 	BaseInfo
 	Concept     string `json:"concept"`
 	Summary     string `json:"summary"`
@@ -85,6 +86,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
 	db.Concept = info.Concept
 	db.Status = uint8(info.Status)
 	db.Tags = info.Tags
+	db.Pushed = 0
 	db.Synonyms = info.Synonyms
 	db.Events = info.StaticEvents
 	db.Relations = info.StaticRelations
@@ -438,6 +440,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Tags = db.Tags
 	mine.Name = db.Name
 	mine.Add = db.Add
+	mine.Pushed = db.Pushed
 	mine.Description = db.Description
 	mine.Concept = db.Concept
 	mine.Status = EntityStatus(db.Status)
@@ -713,6 +716,17 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator, remark strin
 		}
 	}
 	mine.Status = status
+	mine.UpdateTime = time.Now()
+	return nil
+}
+
+func (mine *EntityInfo) UpdatePushTime(operator string) error {
+	err := nosql.UpdateEntityPushed(mine.table(), mine.UID, operator)
+	if err != nil {
+		return err
+	}
+	mine.Operator = operator
+	mine.Pushed = time.Now().Unix()
 	mine.UpdateTime = time.Now()
 	return nil
 }
