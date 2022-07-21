@@ -404,3 +404,28 @@ func (mine *EventService) SubtractRelation(ctx context.Context, in *pb.ReqEventR
 	out.Status = outLog(path, out)
 	return nil
 }
+
+func (mine *EventService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFilter, out *pb.ReplyInfo) error {
+	path := "event.updateByFilter"
+	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the uid is empty", pb.ResultStatus_Empty)
+		return nil
+	}
+	entity := cache.Context().GetEntity(in.Uid)
+	if entity == nil {
+		out.Status = outError(path, "not found the entity", pb.ResultStatus_Empty)
+		return nil
+	}
+	var err error
+	if in.Key == "pushed" {
+		err = entity.UpdatePushTime(in.Operator)
+	}
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
+	}
+	out.Updated = uint64(entity.UpdateTime.Unix())
+	out.Status = outLog(path, out)
+	return nil
+}
