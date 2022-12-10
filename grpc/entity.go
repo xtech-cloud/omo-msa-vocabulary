@@ -75,9 +75,10 @@ func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	tmp.Published = info.Published
 	tmp.Pushed = info.Pushed
 	tmp.Records = make([]*pb.EntityRecord, 0, 10)
-	records,_ := info.GetRecords()
+	records, _ := info.GetRecords()
 	for _, record := range records {
-		tmp.Records = append(tmp.Records, &pb.EntityRecord{User: record.Creator, Option: uint32(record.Option), Remark: record.Remark})
+		tmp.Records = append(tmp.Records, &pb.EntityRecord{User: record.Creator,
+			Option: uint32(record.Option), From: uint32(record.From), To: uint32(record.To), Remark: record.Remark})
 	}
 	//length := len(info.Properties)
 	//tmp.Properties = make([]*pb.PropertyInfo, 0, length)
@@ -404,14 +405,14 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 				out.Systems = append(out.Systems, switchEntity(value))
 			}
 		}
-	}else if in.Status == 2 {
+	} else if in.Status == 2 {
 		list, err := cache.Context().GetCustomEntitiesByList(in.List)
 		if err == nil {
 			for _, value := range list {
 				out.Users = append(out.Users, switchUserEntity(value, true))
 			}
 		}
-	}else{
+	} else {
 		array, err := cache.Context().GetEntitiesByList(cache.EntityStatusUsable, in.List)
 		rest := make([]string, 0, len(in.List))
 		for _, key := range in.List {

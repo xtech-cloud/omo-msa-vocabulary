@@ -19,27 +19,27 @@ const (
 
 const (
 	DefaultEntityTable = "entities"
-	SchoolEntityTable = "entities_school"
+	SchoolEntityTable  = "entities_school"
 )
 
 const (
-	OptionAgree OptionType = 1
+	OptionAgree  OptionType = 1
 	OptionRefuse OptionType = 2
-
 )
+
 type EntityStatus uint8
 
 type OptionType uint8
 
 type EntityInfo struct {
 	Status EntityStatus `json:"-"`
-	Pushed int64 `json:"-"`
+	Pushed int64        `json:"-"`
 	BaseInfo
-	Concept     string `json:"concept"`
-	Summary     string `json:"summary"`
-	Description string `json:"description"`
-	Cover       string `json:"cover"`
-	Add         string `json:"add"` //消歧义
+	Concept         string                    `json:"concept"`
+	Summary         string                    `json:"summary"`
+	Description     string                    `json:"description"`
+	Cover           string                    `json:"cover"`
+	Add             string                    `json:"add"`      //消歧义
 	Owner           string                    `json:"owner"`    //所属单位
 	Mark            string                    `json:"mark"`     // 标记或者来源
 	Quote           string                    `json:"quote"`    // 引用
@@ -254,7 +254,7 @@ func (mine *cacheContext) GetEntitiesByStatus(status EntityStatus, concept strin
 							info.initInfo(entity)
 							list = append(list, info)
 						}
-					}else{
+					} else {
 						info := new(EntityInfo)
 						info.initInfo(entity)
 						list = append(list, info)
@@ -281,7 +281,7 @@ func (mine *cacheContext) GetEntitiesByOwnerStatus(owner, concept string, status
 							info.initInfo(entity)
 							list = append(list, info)
 						}
-					}else{
+					} else {
 						info := new(EntityInfo)
 						info.initInfo(entity)
 						list = append(list, info)
@@ -496,7 +496,7 @@ func (mine *EntityInfo) table() string {
 	}
 }
 
-func (mine *EntityInfo)updateConcept(concept, operator string) error {
+func (mine *EntityInfo) updateConcept(concept, operator string) error {
 	//if mine.Status != EntityStatusDraft {
 	//	return errors.New("the entity is not draft so can not update")
 	//}
@@ -507,7 +507,7 @@ func (mine *EntityInfo)updateConcept(concept, operator string) error {
 			mine.Operator = operator
 		}
 		return err
-	} else{
+	} else {
 		return nil
 	}
 }
@@ -642,7 +642,7 @@ func (mine *EntityInfo) setCover(cover, operator string) error {
 	return err
 }
 
-func (mine *EntityInfo)GetRecords() ([]*nosql.Record,error) {
+func (mine *EntityInfo) GetRecords() ([]*nosql.Record, error) {
 	return nosql.GetRecords(mine.UID)
 }
 
@@ -672,15 +672,17 @@ func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
 	return err
 }
 
-func (mine *EntityInfo)createRecord(operator, remark string, from, to EntityStatus)  {
+func (mine *EntityInfo) createRecord(operator, remark string, from, to EntityStatus) {
 	db := new(nosql.Record)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetRecordNextID()
 	db.Creator = operator
 	db.Entity = mine.UID
+	db.From = uint8(from)
+	db.To = uint8(to)
 	if to > from {
 		db.Option = uint8(OptionAgree)
-	}else{
+	} else {
 		db.Option = uint8(OptionRefuse)
 	}
 
@@ -758,9 +760,9 @@ func (mine *EntityInfo) GetEventsByType(tp uint8, quote string) []*EventInfo {
 	var err error
 	var arr []*nosql.Event
 	if len(quote) > 1 {
-		arr,err = nosql.GetEventsByTypeQuote(mine.UID, quote, tp)
-	}else{
-		arr,err = nosql.GetEventsByType(mine.UID, tp)
+		arr, err = nosql.GetEventsByTypeQuote(mine.UID, quote, tp)
+	} else {
+		arr, err = nosql.GetEventsByType(mine.UID, tp)
 	}
 
 	var list []*EventInfo
@@ -771,7 +773,7 @@ func (mine *EntityInfo) GetEventsByType(tp uint8, quote string) []*EventInfo {
 			info.initInfo(db)
 			list = append(list, info)
 		}
-	}else{
+	} else {
 		list = make([]*EventInfo, 0, 1)
 	}
 
@@ -779,7 +781,7 @@ func (mine *EntityInfo) GetEventsByType(tp uint8, quote string) []*EventInfo {
 }
 
 func (mine *EntityInfo) GetEventsByQuote(quote string) []*EventInfo {
-	arr,err := nosql.GetEventsByQuote(mine.UID, quote)
+	arr, err := nosql.GetEventsByQuote(mine.UID, quote)
 	var list []*EventInfo
 	if err == nil {
 		list = make([]*EventInfo, 0, len(arr))
@@ -788,7 +790,7 @@ func (mine *EntityInfo) GetEventsByQuote(quote string) []*EventInfo {
 			info.initInfo(db)
 			list = append(list, info)
 		}
-	}else{
+	} else {
 		list = make([]*EventInfo, 0, 1)
 	}
 
@@ -799,9 +801,9 @@ func (mine *EntityInfo) GetEventsByAccess(tp, access uint8) []*EventInfo {
 	var arr []*nosql.Event
 	var err error
 	if tp > 0 {
-		arr,err = nosql.GetEventsByTypeAndAccess(mine.UID,tp, access)
-	}else{
-		arr,err = nosql.GetEventsByAccess(mine.UID, access)
+		arr, err = nosql.GetEventsByTypeAndAccess(mine.UID, tp, access)
+	} else {
+		arr, err = nosql.GetEventsByAccess(mine.UID, access)
 	}
 
 	var list []*EventInfo
@@ -812,7 +814,7 @@ func (mine *EntityInfo) GetEventsByAccess(tp, access uint8) []*EventInfo {
 			info.initInfo(db)
 			list = append(list, info)
 		}
-	}else{
+	} else {
 		list = make([]*EventInfo, 0, 1)
 	}
 

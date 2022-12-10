@@ -16,7 +16,9 @@ type Record struct {
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
-	Option uint8 `json:"option" bson:"option"`
+	Option uint8  `json:"option" bson:"option"`
+	From   uint8  `json:"from" json:"from"`
+	To     uint8  `json:"to" bson:"to"`
 	Entity string `json:"entity" bson:"entity"`
 	Remark string `json:"remark" bson:"remark"`
 }
