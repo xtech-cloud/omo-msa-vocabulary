@@ -74,6 +74,7 @@ func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	tmp.Quote = info.Quote
 	tmp.Published = info.Published
 	tmp.Pushed = info.Pushed
+	tmp.Relates = info.Relates
 	tmp.Records = make([]*pb.EntityRecord, 0, 10)
 	records, _ := info.GetRecords()
 	for _, record := range records {
@@ -199,6 +200,7 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 	info.Summary = in.Summary
 	info.Status = cache.EntityStatus(in.Status)
 	info.Mark = in.Mark
+	info.Relates = in.Relates
 	info.StaticEvents = make([]*proxy.EventBrief, 0, len(in.Events))
 	for _, event := range in.Events {
 		info.StaticEvents = append(info.StaticEvents, switchEventBriefFromPB(event))
@@ -836,12 +838,14 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 	}
 	entity := cache.Context().GetEntity(in.Uid)
 	if entity == nil {
-		out.Status = outError(path, "not found the entity", pb.ResultStatus_Empty)
+		out.Status = outError(path, "not found the entity", pb.ResultStatus_NotExisted)
 		return nil
 	}
 	var err error
 	if in.Key == "pushed" {
 		err = entity.UpdatePushTime(in.Operator)
+	} else if in.Key == "relates" {
+		err = entity.UpdateRelates(in.Operator, in.Values)
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)

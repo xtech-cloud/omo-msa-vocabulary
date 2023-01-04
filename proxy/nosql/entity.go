@@ -28,9 +28,10 @@ type Entity struct {
 	Add         string                    `json:"add" bson:"add"`
 	Mark        string                    `json:"mark" bson:"mark"`
 	Quote       string                    `json:"quote" bson:"quote"`
-	Pushed      int64 						`json:"pushed" bson:"pushed"`
+	Pushed      int64                     `json:"pushed" bson:"pushed"`
 	Synonyms    []string                  `json:"synonyms" bson:"synonyms"`
 	Tags        []string                  `json:"tags" bson:"tags"`
+	Relates     []string                  `json:"relates" bson:"relates"`
 	Properties  []*proxy.PropertyInfo     `json:"props" bson:"props"`
 	Events      []*proxy.EventBrief       `json:"events" bson:"events"`
 	Relations   []*proxy.RelationCaseInfo `json:"relations" bson:"relations"`
@@ -259,6 +260,12 @@ func UpdateEntityBase(table, uid, name, add, concept, quote, mark, operator stri
 
 func UpdateEntityConcept(table, uid, concept, operator string) error {
 	msg := bson.M{"concept": concept, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityRelates(table, uid, operator string, list []string) error {
+	msg := bson.M{"relates": list, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

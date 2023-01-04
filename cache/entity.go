@@ -45,6 +45,7 @@ type EntityInfo struct {
 	Quote           string                    `json:"quote"`    // 引用
 	Synonyms        []string                  `json:"synonyms"` //同义词
 	Tags            []string                  `json:"tags"`     //标签
+	Relates         []string                  `json:"relates"`  //关联的一些数据，可以是社区，场景等
 	Published       bool                      `json:"published"`
 	Properties      []*proxy.PropertyInfo     `json:"properties"`
 	StaticEvents    []*proxy.EventBrief       `json:"events"`
@@ -90,6 +91,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
 	db.Synonyms = info.Synonyms
 	db.Events = info.StaticEvents
 	db.Relations = info.StaticRelations
+	db.Relates = info.Relates
 	info.events = make([]*EventInfo, 0, 1)
 	if info.Properties == nil {
 		info.Properties = make([]*proxy.PropertyInfo, 0, 1)
@@ -449,6 +451,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Mark = db.Mark
 	mine.Quote = db.Quote
 	mine.Summary = db.Summary
+	mine.Relates = db.Relates
 	if cacheCtx.HadArchivedByEntity(mine.UID) {
 		mine.Published = true
 	} else {
@@ -729,6 +732,17 @@ func (mine *EntityInfo) UpdatePushTime(operator string) error {
 	}
 	mine.Operator = operator
 	mine.Pushed = time.Now().Unix()
+	mine.UpdateTime = time.Now()
+	return nil
+}
+
+func (mine *EntityInfo) UpdateRelates(operator string, list []string) error {
+	err := nosql.UpdateEntityRelates(mine.table(), mine.UID, operator, list)
+	if err != nil {
+		return err
+	}
+	mine.Operator = operator
+	mine.Relates = list
 	mine.UpdateTime = time.Now()
 	return nil
 }
