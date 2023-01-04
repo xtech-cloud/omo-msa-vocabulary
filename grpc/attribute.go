@@ -79,6 +79,13 @@ func (mine *AttributeService) GetOne(ctx context.Context, in *pb.RequestInfo, ou
 	return nil
 }
 
+func (mine *AttributeService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
+	path := "attribute.getStatistic"
+	inLog(path, in)
+	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	return nil
+}
+
 func (mine *AttributeService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "attribute.removeOne"
 	inLog(path, in)
@@ -92,8 +99,8 @@ func (mine *AttributeService) RemoveOne(ctx context.Context, in *pb.RequestInfo,
 	return nil
 }
 
-func (mine *AttributeService) All(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeList) error {
-	path := "attribute.all"
+func (mine *AttributeService) GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeList) error {
+	path := "attribute.getAll"
 	inLog(path, in)
 	out.List = make([]*pb.AttributeInfo, 0, 10)
 	for _, value := range cache.Context().AllAttributes() {

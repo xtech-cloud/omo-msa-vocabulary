@@ -147,6 +147,13 @@ func (mine *ConceptService) GetAll(ctx context.Context, in *pb.RequestInfo, out 
 	return nil
 }
 
+func (mine *ConceptService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
+	path := "concept.getStatistic"
+	inLog(path, in)
+	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	return nil
+}
+
 func (mine *ConceptService) Update(ctx context.Context, in *pb.ReqConceptUpdate, out *pb.ReplyConceptInfo) error {
 	path := "concept.update"
 	inLog(path, in)

@@ -117,6 +117,13 @@ func (mine *RelationService) GetAll(ctx context.Context, in *pb.RequestInfo, out
 	return nil
 }
 
+func (mine *RelationService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
+	path := "relation.getStatistic"
+	inLog(path, in)
+	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	return nil
+}
+
 func (mine *RelationService) UpdateInfo(ctx context.Context, in *pb.ReqRelationUpdate, out *pb.ReplyRelationInfo) error {
 	path := "relation.updateInfo"
 	inLog(path, in)

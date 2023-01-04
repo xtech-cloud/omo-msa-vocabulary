@@ -567,6 +567,8 @@ github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xtech-cloud/omo-msp-vocabulary v1.6.9 h1:Ev33gBfMWCXCe+4yni4VR01uJUAKy+Gva4jF6v8ek2o=
 github.com/xtech-cloud/omo-msp-vocabulary v1.6.9/go.mod h1:yAFAnRrxczZbHFm/WDtKuOa18LC3hGvCaddt57s7bsA=
+github.com/xtech-cloud/omo-msp-vocabulary v1.7.0 h1:E+/ieqOFk5c36OaaJ0/Df6vTQ695LgJuQjTk1tumCQg=
+github.com/xtech-cloud/omo-msp-vocabulary v1.7.0/go.mod h1:yAFAnRrxczZbHFm/WDtKuOa18LC3hGvCaddt57s7bsA=
 go.etcd.io/bbolt v1.3.4 h1:hi1bXHMVrlQh6WwxAy+qZCV/SYIlqo+Ushwdpa4tAKg=
 go.etcd.io/bbolt v1.3.4/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
 go.mongodb.org/mongo-driver v1.4.6 h1:rh7GdYmDrb8AQSkF8yteAus8qYOgOASWDOv1BWqBXkU=

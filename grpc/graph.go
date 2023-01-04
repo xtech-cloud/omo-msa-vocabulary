@@ -121,6 +121,13 @@ func (mine *GraphService) GetLink(ctx context.Context, in *pb.RequestInfo, out *
 	return nil
 }
 
+func (mine *GraphService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
+	path := "graph.getStatistic"
+	inLog(path, in)
+	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	return nil
+}
+
 func (mine *GraphService) RemoveNode(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "graph.removeNode"
 	inLog(path, in)

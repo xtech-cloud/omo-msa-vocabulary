@@ -17,8 +17,8 @@ type Record struct {
 	Operator    string             `json:"operator" bson:"operator"`
 
 	Option uint8  `json:"option" bson:"option"`
-	From   uint8  `json:"from" json:"from"`
-	To     uint8  `json:"to" bson:"to"`
+	From   string `json:"from" json:"from"`
+	To     string `json:"to" bson:"to"`
 	Entity string `json:"entity" bson:"entity"`
 	Remark string `json:"remark" bson:"remark"`
 }
@@ -52,6 +52,44 @@ func GetRecord(uid string) (*Record, error) {
 func GetRecords(entity string) ([]*Record, error) {
 	var items = make([]*Record, 0, 20)
 	filter := bson.M{"entity": entity}
+	cursor, err1 := findMany(TableRecord, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Record)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetRecordsBy(entity, to string, tp uint8) ([]*Record, error) {
+	var items = make([]*Record, 0, 20)
+	filter := bson.M{"entity": entity, "option": tp, "to": to}
+	cursor, err1 := findMany(TableRecord, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Record)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetRecordsByRelate(to string, tp uint8) ([]*Record, error) {
+	var items = make([]*Record, 0, 20)
+	filter := bson.M{"option": tp, "to": to}
 	cursor, err1 := findMany(TableRecord, filter, 0)
 	if err1 != nil {
 		return nil, err1

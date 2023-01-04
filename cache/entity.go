@@ -5,6 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
+	"omo.msa.vocabulary/tool"
 	"time"
 )
 
@@ -23,8 +24,9 @@ const (
 )
 
 const (
-	OptionAgree  OptionType = 1
-	OptionRefuse OptionType = 2
+	OptionAgree  OptionType = 1 //审核同意
+	OptionRefuse OptionType = 2 //审核拒绝
+	OptionSwitch OptionType = 3 //切换关联
 )
 
 type EntityStatus uint8
@@ -64,363 +66,6 @@ func switchEntityLabel(concept string) string {
 			return DefaultEntityTable
 		}
 	}
-}
-
-func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
-	if info == nil {
-		return errors.New("the entity info is nil")
-	}
-	db := new(nosql.Entity)
-	db.UID = primitive.NewObjectID()
-	db.CreatedTime = time.Now()
-	db.ID = nosql.GetEntityNextID(info.table())
-	db.Name = info.Name
-	db.Description = info.Description
-	db.Scene = info.Owner
-	db.Creator = info.Creator
-	db.Operator = info.Operator
-	db.Add = info.Add
-	db.Cover = info.Cover
-	db.Summary = info.Summary
-	db.Quote = info.Quote
-	db.Mark = info.Mark
-	db.Concept = info.Concept
-	db.Status = uint8(info.Status)
-	db.Tags = info.Tags
-	db.Pushed = 0
-	db.Synonyms = info.Synonyms
-	db.Events = info.StaticEvents
-	db.Relations = info.StaticRelations
-	db.Relates = info.Relates
-	info.events = make([]*EventInfo, 0, 1)
-	if info.Properties == nil {
-		info.Properties = make([]*proxy.PropertyInfo, 0, 1)
-	}
-
-	db.Properties = info.Properties
-	if db.Tags == nil {
-		db.Tags = make([]string, 0, 1)
-	}
-	if db.Synonyms == nil {
-		db.Synonyms = make([]string, 0, 1)
-	}
-	var err error
-	err = nosql.CreateEntity(db, info.table())
-	if err == nil {
-		info.initInfo(db)
-		//mine.entities = append(mine.entities, info)
-		mine.syncGraphNode(info)
-	}
-	return err
-}
-
-func (mine *cacheContext) syncGraphNode(info *EntityInfo) {
-	var name = info.Name
-	if info.Add != "" {
-		name = info.Name + "-" + info.Add
-	}
-	mine.addSyncNode(info.UID, name, info.Concept, info.Cover)
-}
-
-func (mine *cacheContext) AllEntities() []*EntityInfo {
-	list := make([]*EntityInfo, 0, 200)
-	for _, tb := range mine.EntityTables() {
-		array, err := nosql.GetEntities(tb)
-		if err == nil {
-			for _, entity := range array {
-				info := new(EntityInfo)
-				info.initInfo(entity)
-				list = append(list, info)
-			}
-		}
-	}
-	return list
-}
-
-func (mine *cacheContext) SearchEntities(key string) []*EntityInfo {
-	array, err := nosql.GetEntitiesByMatch(DefaultEntityTable, key)
-	if err != nil {
-		return make([]*EntityInfo, 0, 0)
-	}
-	list := make([]*EntityInfo, 0, len(array))
-	for _, entity := range array {
-		info := new(EntityInfo)
-		info.initInfo(entity)
-		list = append(list, info)
-	}
-	return list
-}
-
-func (mine *cacheContext) HadEntityByName(name, add string) bool {
-	if len(name) < 1 {
-		return true
-	}
-	if len(add) > 0 {
-		info := mine.GetEntityByName(name, add)
-		if info != nil {
-			return true
-		} else {
-			return false
-		}
-	} else {
-		db, err := nosql.GetEntitiesByName(DefaultEntityTable, name)
-		if err == nil && db != nil {
-			if len(db) > 0 {
-				return true
-			}
-		}
-		return false
-	}
-}
-
-func (mine *cacheContext) HadEntityByMark(mark string) bool {
-	info := mine.GetEntityByMark(mark)
-	if info != nil {
-		return true
-	}
-	return false
-}
-
-func (mine *cacheContext) GetEntityByName(name, add string) *EntityInfo {
-	if len(name) < 1 {
-		return nil
-	}
-
-	for _, tb := range mine.EntityTables() {
-		db, err := nosql.GetEntityByName(tb, name, add)
-		if err == nil && db != nil {
-			info := new(EntityInfo)
-			info.initInfo(db)
-			return info
-		}
-	}
-	return nil
-}
-
-func (mine *cacheContext) GetEntityByMark(mark string) *EntityInfo {
-	if len(mark) < 1 {
-		return nil
-	}
-	db, err := nosql.GetEntityByMark(DefaultEntityTable, mark)
-	if err == nil && db != nil {
-		info := new(EntityInfo)
-		info.initInfo(db)
-		return info
-	}
-
-	return nil
-}
-
-func (mine *cacheContext) GetEntitiesByOwner(owner string) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 30)
-	for _, tb := range mine.EntityTables() {
-		array, err := nosql.GetEntitiesByOwner(tb, owner)
-		if err == nil {
-			for _, entity := range array {
-				info := new(EntityInfo)
-				info.initInfo(entity)
-				list = append(list, info)
-			}
-		}
-	}
-	return list
-}
-
-func (mine *cacheContext) GetEntitiesByConcept(concept string) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 10)
-	array, err := nosql.GetEntitiesByConcept(DefaultEntityTable, concept)
-	if err != nil {
-		return list
-	}
-	for _, entity := range array {
-		info := new(EntityInfo)
-		info.initInfo(entity)
-		list = append(list, info)
-	}
-
-	return list
-}
-
-func (mine *cacheContext) GetEntitiesByStatus(status EntityStatus, concept string) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 100)
-	if status == EntityStatusUsable {
-		return mine.GetArchivedEntities("", concept)
-	} else {
-		for _, tb := range mine.EntityTables() {
-			array, err := nosql.GetEntitiesByStatus(tb, uint8(status))
-			if err == nil {
-				for _, entity := range array {
-					if concept != "" {
-						if entity.Concept == concept {
-							info := new(EntityInfo)
-							info.initInfo(entity)
-							list = append(list, info)
-						}
-					} else {
-						info := new(EntityInfo)
-						info.initInfo(entity)
-						list = append(list, info)
-					}
-				}
-			}
-		}
-	}
-	return list
-}
-
-func (mine *cacheContext) GetEntitiesByOwnerStatus(owner, concept string, status EntityStatus) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 50)
-	if status == EntityStatusUsable {
-		return mine.GetArchivedEntities(owner, concept)
-	} else {
-		for _, tb := range mine.EntityTables() {
-			array, err := nosql.GetEntitiesByOwnerAndStatus(tb, owner, uint8(status))
-			if err == nil {
-				for _, entity := range array {
-					if concept != "" {
-						if entity.Concept == concept {
-							info := new(EntityInfo)
-							info.initInfo(entity)
-							list = append(list, info)
-						}
-					} else {
-						info := new(EntityInfo)
-						info.initInfo(entity)
-						list = append(list, info)
-					}
-				}
-			}
-		}
-	}
-	return list
-}
-
-func (mine *cacheContext) GetEntitiesByProp(key, val string) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 10)
-	for _, tb := range mine.EntityTables() {
-		array, err := nosql.GetEntitiesByProp(tb, key, val)
-		if err == nil {
-			for _, entity := range array {
-				info := new(EntityInfo)
-				info.initInfo(entity)
-				list = append(list, info)
-			}
-		}
-	}
-	return list
-}
-
-func (mine *cacheContext) GetEntity(uid string) *EntityInfo {
-	if len(uid) < 1 {
-		return nil
-	}
-	//for i := 0; i < len(mine.entities); i++ {
-	//	if mine.entities[i].UID == uid {
-	//		return mine.entities[i]
-	//	}
-	//}
-	db := mine.getEntityFromDB(uid)
-	if db != nil {
-		info := new(EntityInfo)
-		info.initInfo(db)
-		//mine.entities = append(mine.entities, info)
-		return info
-	}
-	return nil
-}
-
-func (mine *cacheContext) GetEntitiesByList(st EntityStatus, array []string) ([]*EntityInfo, error) {
-	if array == nil || len(array) < 1 {
-		return nil, errors.New("the list is empty")
-	}
-	if st == EntityStatusUsable {
-		return mine.GetArchivedByList(array)
-	} else {
-		list := make([]*EntityInfo, 0, len(array))
-		for _, item := range array {
-			info := mine.GetEntity(item)
-			if info != nil {
-				list = append(list, info)
-			}
-		}
-		return list, nil
-	}
-}
-
-func (mine *cacheContext) GetCustomEntitiesByList(array []string) ([]*EntityInfo, error) {
-	if array == nil || len(array) < 1 {
-		return nil, errors.New("the list is empty")
-	}
-	list := make([]*EntityInfo, 0, len(array))
-	for _, item := range array {
-		info := mine.GetEntity(item)
-		if info != nil {
-			list = append(list, info)
-		}
-	}
-	return list, nil
-}
-
-func (mine *cacheContext) getEntityFromDB(uid string) *nosql.Entity {
-	//db, err := nosql.GetEntity(DefaultEntityTable, uid)
-	//if err == nil && db != nil {
-	//	return db
-	//}
-	//logger.Error("getEntityFromDB in entities that error =" + err.Error())
-	for _, tb := range mine.EntityTables() {
-		db1, er := nosql.GetEntity(tb, uid)
-		if er == nil && db1 != nil {
-			return db1
-		}
-	}
-
-	return nil
-}
-
-func (mine *cacheContext) HadEntity(uid string) bool {
-	db := mine.getEntityFromDB(uid)
-	if db != nil {
-		return true
-	}
-	return false
-	//for i := 0; i < len(mine.entities); i += 1 {
-	//	if mine.entities[i].UID == uid {
-	//		return true
-	//	}
-	//}
-	//return false
-}
-
-func (mine *cacheContext) RemoveEntity(uid, operator string) error {
-	if len(uid) < 1 {
-		return errors.New("the entity uid is empty")
-	}
-	tmp := mine.GetEntity(uid)
-	if tmp == nil {
-		return nil
-	}
-	if tmp.Status != EntityStatusDraft {
-		return errors.New("the entity status not equal 0 ")
-	}
-
-	err := nosql.RemoveEntity(tmp.table(), uid, operator)
-	if err == nil {
-		t, _ := nosql.GetArchivedByEntity(uid)
-		if t != nil {
-			_ = nosql.RemoveArchived(t.UID.Hex(), operator)
-			//return errors.New("the entity had published")
-		}
-		mine.checkEntityFromBoxes(uid, tmp.Name)
-	}
-	return err
-}
-
-func (mine *cacheContext) HadOwnerOfAsset(owner string) bool {
-	info := mine.GetEntity(owner)
-	if info != nil {
-		return true
-	}
-	return false
 }
 
 func (mine *EntityInfo) Construct() {
@@ -646,7 +291,17 @@ func (mine *EntityInfo) setCover(cover, operator string) error {
 }
 
 func (mine *EntityInfo) GetRecords() ([]*nosql.Record, error) {
-	return nosql.GetRecords(mine.UID)
+	dbs, err := nosql.GetRecords(mine.UID)
+	if err != nil {
+		return nil, err
+	}
+	list := make([]*nosql.Record, 0, len(dbs))
+	for _, db := range dbs {
+		if db.Option == uint8(OptionAgree) || db.Option == uint8(OptionRefuse) {
+			list = append(list, db)
+		}
+	}
+	return list, nil
 }
 
 func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
@@ -676,21 +331,40 @@ func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
 }
 
 func (mine *EntityInfo) createRecord(operator, remark string, from, to EntityStatus) {
+	opt := OptionAgree
+	if to > from {
+		opt = OptionAgree
+	} else {
+		opt = OptionRefuse
+	}
+
+	_ = mine.insertRecord(operator, remark, string(from), string(to), opt)
+}
+
+func (mine *EntityInfo) insertRecord(operator, remark, from, to string, opt OptionType) error {
 	db := new(nosql.Record)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetRecordNextID()
 	db.Creator = operator
+	db.CreatedTime = time.Now()
 	db.Entity = mine.UID
-	db.From = uint8(from)
-	db.To = uint8(to)
-	if to > from {
-		db.Option = uint8(OptionAgree)
-	} else {
-		db.Option = uint8(OptionRefuse)
-	}
-
+	db.From = from
+	db.To = to
+	db.Option = uint8(opt)
 	db.Remark = remark
-	_ = nosql.CreateRecord(db)
+	return nosql.CreateRecord(db)
+}
+
+func (mine *EntityInfo) HadRecord(to string) bool {
+	dbs, err := nosql.GetRecordsBy(mine.UID, to, uint8(OptionSwitch))
+	if err != nil {
+		return false
+	}
+	if len(dbs) > 0 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator, remark string) error {
@@ -741,6 +415,10 @@ func (mine *EntityInfo) UpdateRelates(operator string, list []string) error {
 	if err != nil {
 		return err
 	}
+	from, to := tool.DifferenceStrings(mine.Relates, list)
+	if len(to) > 2 && from != to {
+		_ = mine.insertRecord(operator, "", from, to, OptionSwitch)
+	}
 	mine.Operator = operator
 	mine.Relates = list
 	mine.UpdateTime = time.Now()
@@ -752,7 +430,7 @@ func (mine *EntityInfo) initEvents() {
 	if mine.events != nil {
 		return
 	}
-	events, err := nosql.GetEventsByParent(mine.UID)
+	events, err := nosql.GetEventsByEntity(mine.UID)
 	if err == nil {
 		mine.events = make([]*EventInfo, 0, len(events))
 		for _, event := range events {
@@ -851,6 +529,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	db.Place = place
 	db.Type = tp
 	db.Entity = mine.UID
+	db.Parent = ""
 	db.Quote = quote
 	db.Description = desc
 	db.Relations = links
@@ -950,6 +629,7 @@ func (mine *EntityInfo) GetEvent(uid string) *EventInfo {
 //endregion
 
 //region Property Fun
+
 func (mine *EntityInfo) addProp(key string, words []proxy.WordInfo) {
 	if mine.Properties == nil {
 		return

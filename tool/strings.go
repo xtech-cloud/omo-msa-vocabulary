@@ -30,3 +30,29 @@ func CreateUUID() string {
 	fmt.Printf("Successfully parsed: %s", u3)*/
 	return u2.String()
 }
+
+func DifferenceStrings(source, dest []string) (string, string) {
+	from := ""
+	to := ""
+	if len(source) == 1 {
+		from = source[0]
+	} else {
+		for _, s := range source {
+			if !HasItem(dest, s) {
+				from = s
+				break
+			}
+		}
+	}
+	if len(dest) == 1 {
+		to = dest[0]
+	} else {
+		for _, s := range dest {
+			if !HasItem(source, s) {
+				to = s
+				break
+			}
+		}
+	}
+	return from, to
+}

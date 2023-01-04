@@ -8,78 +8,30 @@ import (
 )
 
 const (
-	EventCustom = 0
+	EventCustom   = 0
 	EventActivity = 1
-	EventHonor = 2
+	EventHonor    = 2
 )
 
 const (
-	AccessPublic = 0
+	AccessPublic  = 0
 	AccessPrivate = 1
 )
 
 type EventInfo struct {
-	Type uint8
+	Type   uint8
 	Access uint8 // 可访问对象
 	BaseInfo
 	Description string // 描述
-	Parent      string
-	Cover       string
-	Quote       string // 引用或者备注
+	Entity      string //实体对象
+	Parent      string //父级事件
+	Cover       string //封面
+	Quote       string // 引用或者备注，活动，超链接
 	Date        proxy.DateInfo
 	Place       proxy.PlaceInfo
 	Tags        []string
 	Assets      []string
 	Relations   []proxy.RelationCaseInfo
-}
-
-func (mine *cacheContext) GetEvent(uid string) *EventInfo {
-	event, err := nosql.GetEvent(uid)
-	if err == nil && event != nil {
-		info := new(EventInfo)
-		info.initInfo(event)
-		return info
-	}
-
-	return nil
-}
-
-func (mine *cacheContext) GetEventsByQuote(quote string) []*EventInfo {
-	arr, err := nosql.GetEventsByQuote2(quote)
-	var list []*EventInfo
-	if err == nil {
-		list = make([]*EventInfo, 0, len(arr))
-		for _, db := range arr {
-			info := new(EventInfo)
-			info.initInfo(db)
-			list = append(list, info)
-		}
-	}else{
-		list = make([]*EventInfo, 0, 1)
-	}
-
-	return list
-}
-
-func (mine *cacheContext) GetEventsByEntity(entity string, tp uint8) []*EventInfo {
-	arr, err := nosql.GetEventsByType(entity, tp)
-	var list []*EventInfo
-	if err == nil {
-		list = make([]*EventInfo, 0, len(arr))
-		for _, db := range arr {
-			info := new(EventInfo)
-			info.initInfo(db)
-			list = append(list, info)
-		}
-	}else{
-		list = make([]*EventInfo, 0, 1)
-	}
-
-	return list
-}
-
-func (mine *cacheContext) RemoveEvent(uid, operator string) error {
-	return nosql.RemoveEvent(uid, operator)
 }
 
 func (mine *EventInfo) initInfo(db *nosql.Event) {
@@ -91,7 +43,8 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Operator = db.Operator
 	mine.Creator = db.Creator
 	mine.Name = db.Name
-	mine.Parent = db.Entity
+	mine.Entity = db.Entity
+	mine.Parent = db.Parent
 	mine.Description = db.Description
 	mine.Date = db.Date
 	mine.Place = db.Place
@@ -103,7 +56,7 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Relations = db.Relations
 }
 
-func (mine *EventInfo) UpdateBase(name, remark, operator string,access uint8, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
+func (mine *EventInfo) UpdateBase(name, remark, operator string, access uint8, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
 	if name == "" {
 		name = mine.Name
 	}
@@ -264,7 +217,7 @@ func (mine *EventInfo) AppendRelation(relation *proxy.RelationCaseInfo) error {
 		mine.UpdateTime = time.Now()
 		tmp := Context().GetRelation(relation.Category)
 		if tmp != nil {
-			Context().addSyncLink(mine.Parent, relation.Entity, tmp.UID, relation.Name, switchRelationToLink(tmp.Kind), relation.Direction)
+			Context().addSyncLink(mine.Entity, relation.Entity, tmp.UID, relation.Name, switchRelationToLink(tmp.Kind), relation.Direction)
 		}
 	}
 	return err

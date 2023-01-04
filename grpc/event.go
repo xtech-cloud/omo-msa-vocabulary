@@ -2,12 +2,12 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
 	"strconv"
-	"strings"
 )
 
 type EventService struct{}
@@ -20,7 +20,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Creator = info.Creator
 	tmp.Created = info.CreateTime.Unix()
 	tmp.Updated = info.UpdateTime.Unix()
-	tmp.Parent = info.Parent
+	tmp.Parent = info.Entity
 	tmp.Name = info.Name
 	tmp.Quote = info.Quote
 	tmp.Type = uint32(info.Type)
@@ -154,21 +154,21 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 		for _, value := range list {
 			out.List = append(out.List, switchEntityEvent(value))
 		}
-	}else{
+	} else {
 		if in.Operator != "" {
-			acc,er := strconv.ParseUint(in.Operator, 10, 32)
+			acc, er := strconv.ParseUint(in.Operator, 10, 32)
 			if er == nil {
 				list := info.GetEventsByAccess(uint8(in.Id), uint8(acc))
 				for _, value := range list {
 					out.List = append(out.List, switchEntityEvent(value))
 				}
 			}
-		}else if in.Id > 0 {
+		} else if in.Id > 0 {
 			list := info.GetEventsByType(uint8(in.Id), in.Key)
 			for _, value := range list {
 				out.List = append(out.List, switchEntityEvent(value))
 			}
-		}else {
+		} else {
 			if len(in.Key) > 1 {
 				list := info.GetEventsByQuote(in.Key)
 				for _, value := range list {
@@ -189,17 +189,35 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyEventList) error {
 	path := "event.getByFilter"
 	inLog(path, in)
+	var err error
 	out.List = make([]*pb.EventInfo, 0, 200)
 	if in.Key == "entities_sys" {
-		arr := strings.Split(in.Value,";")
-		for _, uid := range arr {
+		for _, uid := range in.Values {
 			events := cache.Context().GetEventsByEntity(uid, 1)
 			for _, event := range events {
 				out.List = append(out.List, switchEntityEvent(event))
 			}
 		}
+	} else if in.Key == "relate" {
+		arr := cache.Context().GetEventsByRelate(in.Parent, in.Value)
+		for _, event := range arr {
+			out.List = append(out.List, switchEntityEvent(event))
+		}
+	} else {
+		err = errors.New("not define the key")
+	}
+	if err != nil {
+		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		return nil
 	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
+	return nil
+}
+
+func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
+	path := "event.getStatistic"
+	inLog(path, in)
+	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
 	return nil
 }
 
