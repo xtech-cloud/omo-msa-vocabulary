@@ -63,6 +63,16 @@ func GetEvent(uid string) (*Event, error) {
 	return model, nil
 }
 
+func GetEventCountByEntity(entity string) uint32 {
+	def := new(time.Time)
+	filter := bson.M{"entity": entity, "deleteAt": def}
+	count, err := getCountBy(TableEvent, filter)
+	if err != nil {
+		return 0
+	}
+	return uint32(count)
+}
+
 func GetEventsByEntity(parent string) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	def := new(time.Time)

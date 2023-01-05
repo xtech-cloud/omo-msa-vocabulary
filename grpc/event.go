@@ -217,6 +217,11 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
 	path := "event.getStatistic"
 	inLog(path, in)
+	if in.Key == "count" {
+		out.Count = cache.Context().GetEventsCountByEntity(in.Parent)
+	}
+	out.Owner = in.Value
+	out.Key = in.Key
 	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
 	return nil
 }

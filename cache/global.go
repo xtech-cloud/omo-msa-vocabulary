@@ -6,6 +6,7 @@ import (
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
+	"strings"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
 	if info.Properties == nil {
 		info.Properties = make([]*proxy.PropertyInfo, 0, 1)
 	}
-
+	db.FirstLetter = firstLetter(info.Name)
 	db.Properties = info.Properties
 	if db.Tags == nil {
 		db.Tags = make([]string, 0, 1)
@@ -401,6 +402,36 @@ func (mine *cacheContext) GetEntityCountByRelate(relate string) uint32 {
 	return uint32(len(arr))
 }
 
+func (mine *cacheContext) GetUserEntityByLetter(relate, first string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 10)
+	dbs, err := nosql.GetEntityByFirstLetter(UserEntityTable, relate, strings.ToUpper(first))
+	if err == nil {
+		for _, db := range dbs {
+			info := new(EntityInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	}
+	return list
+}
+
+func (mine *cacheContext) GetEntityCountByScene(scene string) uint32 {
+	if len(scene) < 2 {
+		return 0
+	}
+	count := nosql.GetEntityCountByScene(DefaultEntityTable, scene)
+	count1 := nosql.GetEntityCountByScene(UserEntityTable, scene)
+	count2 := nosql.GetEntityCountByScene(MuseumEntityTable, scene)
+	return count + count1 + count2
+}
+
+func (mine *cacheContext) GetEntityCount() uint32 {
+	count := nosql.GetEntityCount(DefaultEntityTable)
+	count1 := nosql.GetEntityCount(UserEntityTable)
+	count2 := nosql.GetEntityCount(MuseumEntityTable)
+	return count + count1 + count2
+}
+
 //endregion
 
 //region Global Events
@@ -448,6 +479,13 @@ func (mine *cacheContext) GetEventsByEntity(entity string, tp uint8) []*EventInf
 	}
 
 	return list
+}
+
+func (mine *cacheContext) GetEventsCountByEntity(entity string) uint32 {
+	if len(entity) < 2 {
+		return 0
+	}
+	return nosql.GetEventCountByEntity(entity)
 }
 
 func (mine *cacheContext) GetEvents(entity string) []*EventInfo {

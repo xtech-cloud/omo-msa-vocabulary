@@ -2,6 +2,7 @@ package cache
 
 import (
 	"github.com/micro/go-micro/v2/logger"
+	"github.com/mozillazg/go-pinyin"
 	"mime/multipart"
 	"omo.msa.vocabulary/config"
 	"omo.msa.vocabulary/proxy/graph"
@@ -63,7 +64,7 @@ type LinkTemp struct {
 	Relation  string
 	Name      string
 	Direction uint8
-	Weight uint32
+	Weight    uint32
 }
 
 type CountMap struct {
@@ -72,14 +73,14 @@ type CountMap struct {
 }
 
 type cacheContext struct {
-	graph *GraphInfo
+	graph        *GraphInfo
 	entityTables []string
-	concepts   []*ConceptInfo
-	boxes      []*BoxInfo
-	attributes []*AttributeInfo
-	relations  []*RelationshipInfo
-	nodesMap   *CountMap
-	linkMap    *CountMap
+	concepts     []*ConceptInfo
+	boxes        []*BoxInfo
+	attributes   []*AttributeInfo
+	relations    []*RelationshipInfo
+	nodesMap     *CountMap
+	linkMap      *CountMap
 }
 
 var cacheCtx *cacheContext
@@ -129,7 +130,7 @@ func InitData() error {
 		info := new(ConceptInfo)
 		info.initInfo(concerts[i])
 		cacheCtx.concepts = append(cacheCtx.concepts, info)
-		if len(info.Table) > 1 && !tool.HasItem(cacheCtx.entityTables, info.Table){
+		if len(info.Table) > 1 && !tool.HasItem(cacheCtx.entityTables, info.Table) {
 			cacheCtx.entityTables = append(cacheCtx.entityTables, info.Table)
 		}
 	}
@@ -169,7 +170,7 @@ func Context() *cacheContext {
 	return cacheCtx
 }
 
-func checkSequence()  {
+func checkSequence() {
 	arr := make([]string, 0, 6)
 	arr = append(arr, "voc_"+nosql.TableArchived)
 	arr = append(arr, "voc_"+nosql.TableAttribute)
@@ -178,7 +179,7 @@ func checkSequence()  {
 	arr = append(arr, "voc_"+nosql.TableEvent)
 	arr = append(arr, "voc_"+nosql.TableRelation)
 	arr = append(arr, "voc_"+nosql.TableRelationCase)
-	all,_ := nosql.GetAllSequences()
+	all, _ := nosql.GetAllSequences()
 	for _, s := range all {
 		if tool.HasItem(arr, s.Name) {
 			k := strings.Replace(s.Name, "voc_", "", 1)
@@ -198,7 +199,7 @@ func checkSequence()  {
 	arr2 = append(arr2, nosql.TableAddress)
 	arr2 = append(arr2, DefaultEntityTable)
 	arr2 = append(arr2, DefaultEntityTable+"_school")
-	all2,_ := nosql.GetAllSequences()
+	all2, _ := nosql.GetAllSequences()
 	for _, s := range all2 {
 		if !tool.HasItem(arr2, s.Name) {
 			_ = nosql.DeleteSequence(s.UID.Hex())
@@ -246,11 +247,7 @@ func (mine *CountMap) getSyncNode(uid string) *NodeTemp {
 	return nil
 }
 
-func (mine *cacheContext)EntityTables() []string {
-	//arr := make([]string, 0, 2)
-	//arr = append(arr, DefaultEntityTable)
-	//arr = append(arr, SchoolEntityTable)
-	//return arr
+func (mine *cacheContext) EntityTables() []string {
 	return mine.entityTables
 }
 
@@ -353,6 +350,21 @@ func parseDate(date string) (year uint16, month uint8) {
 
 func ImportDatabase(table string, file multipart.File) error {
 	return nosql.ImportDatabase(table, file)
+}
+
+func firstLetter(name string) string {
+	if len(name) < 1 {
+		return ""
+	}
+	first := string([]rune(name)[:1])
+	a := pinyin.NewArgs()
+	a.Style = pinyin.FirstLetter
+	arr := pinyin.Pinyin(first, a)
+	if len(arr) > 0 && len(arr[0]) > 0 {
+		return strings.ToUpper(arr[0][0])
+	} else {
+		return first
+	}
 }
 
 func hadChinese(str string) bool {

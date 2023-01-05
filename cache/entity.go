@@ -20,7 +20,8 @@ const (
 
 const (
 	DefaultEntityTable = "entities"
-	SchoolEntityTable  = "entities_school"
+	UserEntityTable    = "entities_school"
+	MuseumEntityTable  = "entities_museum"
 )
 
 const (
@@ -37,6 +38,7 @@ type EntityInfo struct {
 	Status EntityStatus `json:"-"`
 	Pushed int64        `json:"-"`
 	BaseInfo
+	FirstLetter     string                    `json:"letter"` //名称首字母
 	Concept         string                    `json:"concept"`
 	Summary         string                    `json:"summary"`
 	Description     string                    `json:"description"`
@@ -97,6 +99,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Quote = db.Quote
 	mine.Summary = db.Summary
 	mine.Relates = db.Relates
+	mine.FirstLetter = db.FirstLetter
 	if cacheCtx.HadArchivedByEntity(mine.UID) {
 		mine.Published = true
 	} else {

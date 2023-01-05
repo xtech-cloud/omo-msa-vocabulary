@@ -447,6 +447,8 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 	var list []*cache.EntityInfo
 	if in.Key == "relate" {
 		list = cache.Context().GetEntitiesByRelate(in.Value)
+	} else if in.Key == "letter" {
+		list = cache.Context().GetUserEntityByLetter(in.Parent, in.Key)
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -467,8 +469,12 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 func (mine *EntityService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
 	path := "entity.getStatistic"
 	inLog(path, in)
-	if in.Key == "relate" {
+	if in.Key == "scene" {
+		out.Count = cache.Context().GetEntityCountByScene(in.Value)
+	} else if in.Key == "relate" {
 		out.Count = cache.Context().GetEntityCountByRelate(in.Value)
+	} else if in.Key == "count" {
+		out.Count = cache.Context().GetEntityCount()
 	}
 	out.Owner = in.Value
 	out.Key = in.Key

@@ -19,6 +19,7 @@ type Entity struct {
 	Operator    string             `json:"operator" bson:"operator"`
 
 	Name        string                    `json:"name" bson:"name"`
+	FirstLetter string                    `json:"letter" bson:"letter"`
 	Description string                    `json:"desc" bson:"desc"`
 	Summary     string                    `json:"summary" bson:"summary"`
 	Cover       string                    `json:"cover" bson:"cover"`
@@ -98,6 +99,24 @@ func GetEntity(table, uid string) (*Entity, error) {
 	return model, nil
 }
 
+func GetEntityCount(table string) uint32 {
+	count, err := getCount(table)
+	if err != nil {
+		return 0
+	}
+	return uint32(count)
+}
+
+func GetEntityCountByScene(table, scene string) uint32 {
+	def := new(time.Time)
+	filter := bson.M{"scene": scene, "deleteAt": def}
+	count, err := getCountBy(table, filter)
+	if err != nil {
+		return 0
+	}
+	return uint32(count)
+}
+
 func GetEntityByName(table, name, add string) (*Entity, error) {
 	msg := bson.M{"name": name, "add": add, "deleteAt": new(time.Time)}
 	result, err := findOneBy(table, msg)
@@ -110,6 +129,24 @@ func GetEntityByName(table, name, add string) (*Entity, error) {
 		return nil, err1
 	}
 	return model, nil
+}
+
+func GetEntityByFirstLetter(table, relate, letter string) ([]*Entity, error) {
+	msg := bson.M{"letter": letter, "relates": relate, "deleteAt": new(time.Time)}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
 }
 
 func GetEntityByMark(table, mark string) (*Entity, error) {
