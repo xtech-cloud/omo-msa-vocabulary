@@ -313,6 +313,12 @@ func UpdateEntityRemark(table, uid, desc, summary, operator string) error {
 	return err
 }
 
+func UpdateEntityLetter(table, uid, letter string) error {
+	msg := bson.M{"letter": letter}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
 func UpdateEntityStatic(table, uid, operator string, tags []string, props []*proxy.PropertyInfo) error {
 	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "tags": tags, "props": props}
 	_, err := updateOne(table, uid, msg)

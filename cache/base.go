@@ -110,6 +110,8 @@ func InitData() error {
 
 	checkSequence()
 
+	checkEntityLetters()
+
 	attributes, _ := nosql.GetAllAttributes()
 	for i := 0; i < len(attributes); i += 1 {
 		info := new(AttributeInfo)
@@ -168,6 +170,20 @@ func InitData() error {
 
 func Context() *cacheContext {
 	return cacheCtx
+}
+
+func checkEntityLetters() {
+	for _, table := range cacheCtx.entityTables {
+		all, er := nosql.GetEntities(table)
+		if er == nil {
+			for _, entity := range all {
+				if len(entity.FirstLetter) < 1 {
+					letter := firstLetter(entity.Name)
+					_ = nosql.UpdateEntityLetter(table, entity.UID.Hex(), letter)
+				}
+			}
+		}
+	}
 }
 
 func checkSequence() {
@@ -363,7 +379,7 @@ func firstLetter(name string) string {
 	if len(arr) > 0 && len(arr[0]) > 0 {
 		return strings.ToUpper(arr[0][0])
 	} else {
-		return first
+		return strings.ToUpper(first)
 	}
 }
 

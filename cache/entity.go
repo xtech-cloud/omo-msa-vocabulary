@@ -88,6 +88,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Operator = db.Operator
 	mine.Tags = db.Tags
 	mine.Name = db.Name
+	mine.FirstLetter = db.FirstLetter
 	mine.Add = db.Add
 	mine.Pushed = db.Pushed
 	mine.Description = db.Description
@@ -99,7 +100,6 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Quote = db.Quote
 	mine.Summary = db.Summary
 	mine.Relates = db.Relates
-	mine.FirstLetter = db.FirstLetter
 	if cacheCtx.HadArchivedByEntity(mine.UID) {
 		mine.Published = true
 	} else {
