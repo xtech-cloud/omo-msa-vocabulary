@@ -75,6 +75,16 @@ func (mine *cacheContext) GetBoxesByUser(user string) []*BoxInfo {
 	return list
 }
 
+func (mine *cacheContext) GetBoxesByReviewer(user string) []*BoxInfo {
+	list := make([]*BoxInfo, 0, 10)
+	for _, box := range mine.boxes {
+		if tool.HasItem(box.Reviewers, user) {
+			list = append(list, box)
+		}
+	}
+	return list
+}
+
 func (mine *cacheContext) GetEntitiesByBox(uid string, st EntityStatus) ([]*EntityInfo, error) {
 	box := mine.GetBox(uid)
 	if box == nil {

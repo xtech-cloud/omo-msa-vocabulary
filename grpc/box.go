@@ -112,7 +112,13 @@ func (mine *BoxService) GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.
 func (mine *BoxService) GetListByUser(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyBoxList) error {
 	path := "box.getListByUser"
 	inLog(path, in)
-	list := cache.Context().GetBoxesByUser(in.Uid)
+	var list []*cache.BoxInfo
+	if in.Id < 1 {
+		list = cache.Context().GetBoxesByUser(in.Uid)
+	} else {
+		list = cache.Context().GetBoxesByReviewer(in.Uid)
+	}
+
 	out.List = make([]*pb.BoxInfo, 0, len(list))
 	for _, value := range list {
 		out.List = append(out.List, switchBox(value))
