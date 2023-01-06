@@ -13,13 +13,14 @@ const DefaultOwner = "system"
 type BoxInfo struct {
 	Type uint8
 	BaseInfo
-	Cover    string
-	Remark   string
-	Concept  string // 针对的实体类型
-	Workflow string
-	Owner string
-	Keywords []string
-	Users []string
+	Cover     string
+	Remark    string
+	Concept   string // 针对的实体类型
+	Workflow  string
+	Owner     string
+	Keywords  []string
+	Users     []string //采集人
+	Reviewers []string //审核人
 }
 
 //region Global Fun
@@ -220,14 +221,23 @@ func (mine *BoxInfo) updateOwner(owner string) error {
 	return err
 }
 
-func (mine *BoxInfo) UpdateUsers(list []string, operator string) error {
+func (mine *BoxInfo) UpdateUsers(list []string, operator string, reviewer bool) error {
 	if list == nil {
 		return errors.New("the list is nil when update users")
 	}
+	var err error
+	if reviewer {
+		err = nosql.UpdateBoxReviewers(mine.UID, operator, list)
+	} else {
+		err = nosql.UpdateBoxUsers(mine.UID, operator, list)
+	}
 
-	err := nosql.UpdateBoxUsers(mine.UID, operator, list)
 	if err == nil {
-		mine.Users = list
+		if reviewer {
+			mine.Reviewers = list
+		} else {
+			mine.Users = list
+		}
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
 	}
@@ -246,37 +256,51 @@ func (mine *BoxInfo) HadUser(key string) bool {
 	return false
 }
 
-func (mine *BoxInfo) AppendUsers(keys []string, operator string) error {
-	list := make([]string, 0, len(keys)+len(mine.Users))
-	list = append(list, mine.Users...)
+func (mine *BoxInfo) HadReviewer(key string) bool {
+	if mine.Reviewers == nil {
+		return false
+	}
+	for i := 0; i < len(mine.Reviewers); i += 1 {
+		if mine.Reviewers[i] == key {
+			return true
+		}
+	}
+	return false
+}
+
+func (mine *BoxInfo) AppendUsers(keys []string, operator string, review bool) error {
+	var list []string
+	var arr []string
+	if review {
+		arr = mine.Reviewers
+	} else {
+		arr = mine.Users
+	}
+	list = make([]string, 0, len(keys)+len(arr))
+	list = append(list, arr...)
 	for i := 0; i < len(keys); i += 1 {
 		if !mine.HadUser(keys[i]) {
 			list = append(list, keys[i])
 		}
 	}
-	err := nosql.UpdateBoxUsers(mine.UID, operator, list)
-	if err == nil {
-		mine.Users = list
-		mine.UpdateTime = time.Now()
-		mine.Operator = operator
-	}
-	return err
+	return mine.UpdateUsers(list, operator, review)
 }
 
-func (mine *BoxInfo) RemoveUsers(keys []string, operator string) error {
-	list := make([]string, 0, len(mine.Users))
-	for _, keyword := range mine.Users {
+func (mine *BoxInfo) RemoveUsers(keys []string, operator string, review bool) error {
+	var list []string
+	var arr []string
+	if review {
+		arr = mine.Reviewers
+	} else {
+		arr = mine.Users
+	}
+	list = make([]string, 0, len(arr))
+	for _, keyword := range arr {
 		if !tool.HasItem(keys, keyword) {
 			list = append(list, keyword)
 		}
 	}
-	err := nosql.UpdateBoxUsers(mine.UID, operator, list)
-	if err == nil {
-		mine.Users = list
-		mine.UpdateTime = time.Now()
-		mine.Operator = operator
-	}
-	return err
+	return mine.UpdateUsers(list, operator, review)
 }
 
 func (mine *BoxInfo) AppendKeywords(keys []string, operator string) error {
@@ -382,7 +406,7 @@ func (mine *BoxInfo) UpdateBase(name, remark, concept, operator string) error {
 	return nil
 }
 
-func (mine *BoxInfo)updateEntity(uid, concept, operator string) error {
+func (mine *BoxInfo) updateEntity(uid, concept, operator string) error {
 	info := cacheCtx.GetEntity(uid)
 	if info != nil {
 		return info.updateConcept(concept, operator)

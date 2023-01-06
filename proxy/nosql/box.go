@@ -16,15 +16,16 @@ type Box struct {
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
-	Name     string   `json:"name" bson:"name"`
-	Type     uint8    `json:"type" bson:"type"`
-	Cover    string   `json:"cover" bson:"cover"`
-	Remark   string   `json:"remark" bson:"remark"`
-	Owner    string   `json:"owner" bson:"owner"`
-	Concept  string   `json:"concept" bson:"concept"`
-	Workflow string   `json:"workflow" bson:"workflow"`
-	Keywords []string `json:"keywords" bson:"keywords"`
-	Users    []string `json:"users" bson:"users"`
+	Name      string   `json:"name" bson:"name"`
+	Type      uint8    `json:"type" bson:"type"`
+	Cover     string   `json:"cover" bson:"cover"`
+	Remark    string   `json:"remark" bson:"remark"`
+	Owner     string   `json:"owner" bson:"owner"`
+	Concept   string   `json:"concept" bson:"concept"`
+	Workflow  string   `json:"workflow" bson:"workflow"`
+	Keywords  []string `json:"keywords" bson:"keywords"`
+	Users     []string `json:"users" bson:"users"`
+	Reviewers []string `json:"reviewers" bson:"reviewers"`
 }
 
 func CreateBox(info *Box) error {
@@ -79,7 +80,7 @@ func HadBoxByName(name string) (bool, error) {
 func GetBoxesByType(owner string, tp uint8) ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
 	def := new(time.Time)
-	filter := bson.M{"owner": owner, "type":tp, "deleteAt": def}
+	filter := bson.M{"owner": owner, "type": tp, "deleteAt": def}
 	cursor, err1 := findMany(TableBox, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -127,6 +128,12 @@ func RemoveBox(uid, operator string) error {
 
 func UpdateBoxUsers(uid, operator string, list []string) error {
 	msg := bson.M{"users": list, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableBox, uid, msg)
+	return err
+}
+
+func UpdateBoxReviewers(uid, operator string, list []string) error {
+	msg := bson.M{"reviewers": list, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }

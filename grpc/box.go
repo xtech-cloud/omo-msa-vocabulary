@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
@@ -24,6 +25,7 @@ func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp.Keywords = info.Keywords
 	tmp.Workflow = info.Workflow
 	tmp.Users = info.Users
+	tmp.Reviewers = info.Reviewers
 	//logger.Info(fmt.Sprintf("the keywords length = %d of name = %s", len(tmp.Keywords), tmp.Name))
 	return tmp
 }
@@ -207,7 +209,7 @@ func (mine *BoxService) AppendUsers(ctx context.Context, in *pb.ReqBoxKeywords, 
 		return nil
 	}
 
-	err := info.AppendUsers(in.Keywords, in.Operator)
+	err := info.AppendUsers(in.Keywords, in.Operator, in.Reviewer)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -226,7 +228,7 @@ func (mine *BoxService) SubtractUsers(ctx context.Context, in *pb.ReqBoxKeywords
 		return nil
 	}
 
-	err := info.RemoveUsers(in.Keywords, in.Operator)
+	err := info.RemoveUsers(in.Keywords, in.Operator, in.Reviewer)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -245,7 +247,7 @@ func (mine *BoxService) UpdateUsers(ctx context.Context, in *pb.ReqBoxKeywords, 
 		return nil
 	}
 
-	err := info.UpdateUsers(in.Keywords, in.Operator)
+	err := info.UpdateUsers(in.Keywords, in.Operator, in.Reviewer)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
@@ -259,23 +261,25 @@ func (mine *BoxService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFilt
 	path := "box.updateByFilter"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.Status = outError(path, "the uid is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the box uid is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	entity := cache.Context().GetEntity(in.Uid)
-	if entity == nil {
-		out.Status = outError(path, "not found the entity", pb.ResultStatus_Empty)
+	box := cache.Context().GetBox(in.Uid)
+	if box == nil {
+		out.Status = outError(path, "not found the box", pb.ResultStatus_Empty)
 		return nil
 	}
 	var err error
-	if in.Key == "pushed" {
-		err = entity.UpdatePushTime(in.Operator)
+	if in.Key == "reviewers" {
+		err = box.UpdateUsers(in.Values, in.Operator, true)
+	} else {
+		err = errors.New("not defined the key")
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(entity.UpdateTime.Unix())
+	out.Updated = uint64(box.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }
