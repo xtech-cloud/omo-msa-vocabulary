@@ -385,6 +385,16 @@ func (mine *cacheContext) GetEntitiesByRelate(relate string) []*EntityInfo {
 			}
 		}
 	}
+
+	//dbs, err := nosql.GetEntitiesByRelate(UserEntityTable, relate)
+	//if err != nil {
+	//	return list
+	//}
+	//for _, db := range dbs {
+	//	info := new(EntityInfo)
+	//	info.initInfo(db)
+	//	list = append(list, info)
+	//}
 	return list
 }
 
@@ -402,7 +412,7 @@ func (mine *cacheContext) GetEntityCountByRelate(relate string) uint32 {
 	return uint32(len(arr))
 }
 
-func (mine *cacheContext) GetUserEntityByLetter(relate, first string) []*EntityInfo {
+func (mine *cacheContext) GetUserEntitiesByLetter(relate, first string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
 	dbs, err := nosql.GetEntityByFirstLetter(UserEntityTable, relate, strings.ToUpper(first))
 	if err == nil {
@@ -410,6 +420,21 @@ func (mine *cacheContext) GetUserEntityByLetter(relate, first string) []*EntityI
 			info := new(EntityInfo)
 			info.initInfo(db)
 			list = append(list, info)
+		}
+	}
+	return list
+}
+
+func (mine *cacheContext) GetUserEntitiesByLetters(relate, letters string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 30)
+	for _, letter := range letters {
+		dbs, err := nosql.GetEntityByFirstLetter(UserEntityTable, relate, strings.ToUpper(string(letter)))
+		if err == nil {
+			for _, db := range dbs {
+				info := new(EntityInfo)
+				info.initInfo(db)
+				list = append(list, info)
+			}
 		}
 	}
 	return list

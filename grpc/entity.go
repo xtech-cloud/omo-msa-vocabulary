@@ -448,7 +448,9 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 	if in.Key == "relate" {
 		list = cache.Context().GetEntitiesByRelate(in.Value)
 	} else if in.Key == "letter" {
-		list = cache.Context().GetUserEntityByLetter(in.Parent, in.Key)
+		list = cache.Context().GetUserEntitiesByLetter(in.Parent, in.Key)
+	} else if in.Key == "letters" {
+		list = cache.Context().GetUserEntitiesByLetters(in.Parent, in.Key)
 	} else {
 		err = errors.New("not define the key")
 	}
