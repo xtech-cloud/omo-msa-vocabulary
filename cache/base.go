@@ -94,6 +94,8 @@ func InitData() error {
 	cacheCtx.boxes = make([]*BoxInfo, 0, 50)
 	cacheCtx.entityTables = make([]string, 0, 5)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, DefaultEntityTable)
+	cacheCtx.entityTables = append(cacheCtx.entityTables, UserEntityTable)
+	cacheCtx.entityTables = append(cacheCtx.entityTables, MuseumEntityTable)
 	cacheCtx.graph = new(GraphInfo)
 	cacheCtx.nodesMap = new(CountMap)
 	cacheCtx.linkMap = new(CountMap)
@@ -132,9 +134,9 @@ func InitData() error {
 		info := new(ConceptInfo)
 		info.initInfo(concerts[i])
 		cacheCtx.concepts = append(cacheCtx.concepts, info)
-		if len(info.Table) > 1 && !tool.HasItem(cacheCtx.entityTables, info.Table) {
-			cacheCtx.entityTables = append(cacheCtx.entityTables, info.Table)
-		}
+		//if len(info.Table) > 1 && !tool.HasItem(cacheCtx.entityTables, info.Table) {
+		//	cacheCtx.entityTables = append(cacheCtx.entityTables, info.Table)
+		//}
 	}
 	logger.Infof("init concerts!!! number = %d", len(cacheCtx.concepts))
 
