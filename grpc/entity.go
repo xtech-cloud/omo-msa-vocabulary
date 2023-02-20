@@ -480,7 +480,7 @@ func (mine *EntityService) GetStatistic(ctx context.Context, in *pb.RequestFilte
 	}
 	out.Owner = in.Value
 	out.Key = in.Key
-	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	out.Status = outLog(path, out)
 	return nil
 }
 
