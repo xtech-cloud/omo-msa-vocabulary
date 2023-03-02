@@ -18,24 +18,24 @@ type Entity struct {
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
-	Name        string                    `json:"name" bson:"name"`
-	FirstLetter string                    `json:"letter" bson:"letter"`
-	Description string                    `json:"desc" bson:"desc"`
-	Summary     string                    `json:"summary" bson:"summary"`
-	Cover       string                    `json:"cover" bson:"cover"`
-	Concept     string                    `json:"concept" bson:"concept"`
-	Status      uint8                     `json:"status" bson:"status"`
-	Scene       string                    `json:"scene" bson:"scene"` // 所属场景
-	Add         string                    `json:"add" bson:"add"`
-	Mark        string                    `json:"mark" bson:"mark"`
-	Quote       string                    `json:"quote" bson:"quote"`
-	Pushed      int64                     `json:"pushed" bson:"pushed"`
-	Synonyms    []string                  `json:"synonyms" bson:"synonyms"`
-	Tags        []string                  `json:"tags" bson:"tags"`
-	Relates     []string                  `json:"relates" bson:"relates"`
-	Properties  []*proxy.PropertyInfo     `json:"props" bson:"props"`
-	Events      []*proxy.EventBrief       `json:"events" bson:"events"`
-	Relations   []*proxy.RelationCaseInfo `json:"relations" bson:"relations"`
+	Name         string                    `json:"name" bson:"name"`
+	FirstLetters string                    `json:"letters" bson:"letters"`
+	Description  string                    `json:"desc" bson:"desc"`
+	Summary      string                    `json:"summary" bson:"summary"`
+	Cover        string                    `json:"cover" bson:"cover"`
+	Concept      string                    `json:"concept" bson:"concept"`
+	Status       uint8                     `json:"status" bson:"status"`
+	Scene        string                    `json:"scene" bson:"scene"` // 所属场景
+	Add          string                    `json:"add" bson:"add"`
+	Mark         string                    `json:"mark" bson:"mark"`
+	Quote        string                    `json:"quote" bson:"quote"`
+	Pushed       int64                     `json:"pushed" bson:"pushed"`
+	Synonyms     []string                  `json:"synonyms" bson:"synonyms"`
+	Tags         []string                  `json:"tags" bson:"tags"`
+	Relates      []string                  `json:"relates" bson:"relates"`
+	Properties   []*proxy.PropertyInfo     `json:"props" bson:"props"`
+	Events       []*proxy.EventBrief       `json:"events" bson:"events"`
+	Relations    []*proxy.RelationCaseInfo `json:"relations" bson:"relations"`
 }
 
 func CreateEntity(info interface{}, table string) error {
@@ -132,7 +132,7 @@ func GetEntityByName(table, name, add string) (*Entity, error) {
 }
 
 func GetEntityByFirstLetter(table, relate, letter string) ([]*Entity, error) {
-	msg := bson.M{"letter": letter, "relates": relate, "deleteAt": new(time.Time)}
+	msg := bson.M{"letters": letter, "relates": relate, "deleteAt": new(time.Time)}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -332,7 +332,7 @@ func UpdateEntityRemark(table, uid, desc, summary, operator string) error {
 }
 
 func UpdateEntityLetter(table, uid, letter string) error {
-	msg := bson.M{"letter": letter}
+	msg := bson.M{"letters": letter}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

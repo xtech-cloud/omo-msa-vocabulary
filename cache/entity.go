@@ -38,7 +38,7 @@ type EntityInfo struct {
 	Status EntityStatus `json:"-"`
 	Pushed int64        `json:"-"`
 	BaseInfo
-	FirstLetter     string                    `json:"letter"` //名称首字母
+	FirstLetters    string                    `json:"letter"` //名称首字母
 	Concept         string                    `json:"concept"`
 	Summary         string                    `json:"summary"`
 	Description     string                    `json:"description"`
@@ -88,7 +88,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Operator = db.Operator
 	mine.Tags = db.Tags
 	mine.Name = db.Name
-	mine.FirstLetter = db.FirstLetter
+	mine.FirstLetters = db.FirstLetters
 	mine.Add = db.Add
 	mine.Pushed = db.Pushed
 	mine.Description = db.Description

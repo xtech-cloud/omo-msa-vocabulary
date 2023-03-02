@@ -42,7 +42,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
 	if info.Properties == nil {
 		info.Properties = make([]*proxy.PropertyInfo, 0, 1)
 	}
-	db.FirstLetter = firstLetter(info.Name)
+	db.FirstLetters = firstLetter(info.Name)
 	db.Properties = info.Properties
 	if db.Tags == nil {
 		db.Tags = make([]string, 0, 1)
@@ -427,14 +427,12 @@ func (mine *cacheContext) GetUserEntitiesByLetter(relate, first string) []*Entit
 
 func (mine *cacheContext) GetUserEntitiesByLetters(relate, letters string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 30)
-	for _, letter := range letters {
-		dbs, err := nosql.GetEntityByFirstLetter(UserEntityTable, relate, strings.ToUpper(string(letter)))
-		if err == nil {
-			for _, db := range dbs {
-				info := new(EntityInfo)
-				info.initInfo(db)
-				list = append(list, info)
-			}
+	dbs, err := nosql.GetEntityByFirstLetter(UserEntityTable, relate, strings.ToUpper(letters))
+	if err == nil {
+		for _, db := range dbs {
+			info := new(EntityInfo)
+			info.initInfo(db)
+			list = append(list, info)
 		}
 	}
 	return list

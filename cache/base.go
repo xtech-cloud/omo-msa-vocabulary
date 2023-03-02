@@ -179,7 +179,7 @@ func checkEntityLetters() {
 		all, er := nosql.GetEntities(table)
 		if er == nil {
 			for _, entity := range all {
-				if len(entity.FirstLetter) < 1 {
+				if len(entity.FirstLetters) < 2 {
 					letter := firstLetter(entity.Name)
 					_ = nosql.UpdateEntityLetter(table, entity.UID.Hex(), letter)
 				}
@@ -374,15 +374,15 @@ func firstLetter(name string) string {
 	if len(name) < 1 {
 		return ""
 	}
-	first := string([]rune(name)[:1])
+	//first := string([]rune(name)[:1])
 	a := pinyin.NewArgs()
 	a.Style = pinyin.FirstLetter
-	arr := pinyin.Pinyin(first, a)
-	if len(arr) > 0 && len(arr[0]) > 0 {
-		return strings.ToUpper(arr[0][0])
-	} else {
-		return strings.ToUpper(first)
+	arr := pinyin.Pinyin(name, a)
+	var letter = ""
+	for i, _ := range arr {
+		letter = letter + arr[i][0]
 	}
+	return strings.ToUpper(letter)
 }
 
 func hadChinese(str string) bool {
