@@ -18,8 +18,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/tidwall/gjson v1.6.1
 	github.com/xtech-cloud/omo-msp-vocabulary v1.7.2
-	github.com/xtech-cloud/omo-msp-status v1.0.2
-	go.mongodb.org/mongo-driver v1.4.6
+	go.mongodb.org/mongo-driver v1.5.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
@@ -79,8 +78,10 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.0.1 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
-	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
-	github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc // indirect
+	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
+	github.com/xdg-go/scram v1.0.2 // indirect
+	github.com/xdg-go/stringprep v1.0.2 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.uber.org/atomic v1.5.0 // indirect
 	go.uber.org/multierr v1.3.0 // indirect
 	go.uber.org/tools v0.0.0-20190618225709-2cfd321de3ee // indirect
@@ -90,7 +91,7 @@ require (
 	golang.org/x/net v0.0.0-20200520182314-0ba52f642ac2 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/tools v0.0.0-20191216173652-a0e659d51361 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/grpc v1.27.0 // indirect
