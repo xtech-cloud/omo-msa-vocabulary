@@ -230,7 +230,7 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 	}
 	out.Owner = in.Value
 	out.Key = in.Key
-	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	out.Status = outLog(path, out)
 	return nil
 }
 
