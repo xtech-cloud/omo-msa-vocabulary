@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"time"
@@ -32,6 +33,29 @@ type EventInfo struct {
 	Tags        []string
 	Assets      []string
 	Relations   []proxy.RelationCaseInfo
+}
+
+func (mine *cacheContext) GetActivityCountBy(arr []string, date time.Time) []*pb.StatisticInfo {
+	list := make([]*pb.StatisticInfo, 0, len(arr))
+	for _, item := range arr {
+		num := mine.GetActivityCountByDate(item, date)
+		list = append(list, &pb.StatisticInfo{Key: item, Count: uint32(num)})
+	}
+	return list
+}
+
+func (mine *cacheContext) GetActivityCountByDate(entity string, date time.Time) int {
+	count := 0
+	dbs, err := nosql.GetEventsByType(entity, EventActivity)
+	if err != nil {
+		return count
+	}
+	for _, db := range dbs {
+		if db.CreatedTime.Month() == date.Month() {
+			count += 1
+		}
+	}
+	return count
 }
 
 func (mine *EventInfo) initInfo(db *nosql.Event) {

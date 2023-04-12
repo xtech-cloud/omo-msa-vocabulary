@@ -73,6 +73,16 @@ func GetEventCountByEntity(entity string) uint32 {
 	return uint32(count)
 }
 
+func GetEventCountByType(entity string, tp uint8) uint32 {
+	def := new(time.Time)
+	filter := bson.M{"entity": entity, "type": tp, "deleteAt": def}
+	count, err := getCountBy(TableEvent, filter)
+	if err != nil {
+		return 0
+	}
+	return uint32(count)
+}
+
 func GetEventsByEntity(parent string) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	def := new(time.Time)

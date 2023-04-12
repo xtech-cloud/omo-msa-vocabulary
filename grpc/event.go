@@ -8,6 +8,7 @@ import (
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
 	"strconv"
+	"time"
 )
 
 type EventService struct{}
@@ -219,6 +220,13 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 	inLog(path, in)
 	if in.Key == "count" {
 		out.Count = cache.Context().GetEventsCountByEntity(in.Parent)
+	} else if in.Key == "date" {
+		date, err := time.Parse("2006-01-02", in.Value)
+		if err != nil {
+			out.Status = outError(path, err.Error(), pb.ResultStatus_Empty)
+			return nil
+		}
+		out.List = cache.Context().GetActivityCountBy(in.Values, date)
 	}
 	out.Owner = in.Value
 	out.Key = in.Key
