@@ -16,9 +16,8 @@ require (
 	github.com/robfig/cron v1.2.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/tidwall/gjson v1.6.1
+	github.com/tidwall/gjson v1.9.3
 	github.com/xtech-cloud/omo-msp-vocabulary v1.7.2
-	github.com/xtech-cloud/omo-msp-status v1.0.2
 	go.mongodb.org/mongo-driver v1.4.6
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
@@ -74,8 +73,8 @@ require (
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/tidwall/match v1.0.1 // indirect
-	github.com/tidwall/pretty v1.0.2 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.0.1 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
