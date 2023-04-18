@@ -22,6 +22,7 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	tmp.Parent = info.Parent
 	tmp.Scene = uint32(info.Scene)
 	tmp.Attributes = info.Attributes()
+	tmp.Privates = info.Privates()
 	length := len(info.Children)
 	if length > 0 {
 		tmp.Children = make([]*pb.ConceptInfo, 0, length)
