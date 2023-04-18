@@ -24,6 +24,7 @@ type Concept struct {
 	Parent     string   `json:"parent" bson:"parent"`
 	Scene      uint8    `json:"scene" bson:"scene"`
 	Attributes []string `json:"attributes" bson:"attributes"`
+	Privates   []string `json:"privates" bson:"privates"`
 }
 
 func CreateConcept(info *Concept) error {
@@ -116,6 +117,12 @@ func RemoveConcept(uid, operator string) error {
 
 func UpdateConceptAttributes(uid string, attrs []string) error {
 	msg := bson.M{"attributes": attrs, "updatedAt": time.Now()}
+	_, err := updateOne(TableConcept, uid, msg)
+	return err
+}
+
+func UpdateConceptPrivates(uid string, attrs []string) error {
+	msg := bson.M{"privates": attrs, "updatedAt": time.Now()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }

@@ -180,13 +180,22 @@ func (mine *ConceptService) UpdateAttributes(ctx context.Context, in *pb.Request
 		out.Status = outError(path, "not found the concept by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-
-	err := info.UpdateAttributes(in.List)
-	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
-		return nil
+	if in.Status == 1 {
+		err := info.UpdatePrivates(in.List)
+		if err != nil {
+			out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+			return nil
+		}
+		out.Attributes = info.Privates()
+	} else {
+		err := info.UpdateAttributes(in.List)
+		if err != nil {
+			out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+			return nil
+		}
+		out.Attributes = info.Attributes()
 	}
-	out.Attributes = info.Attributes()
+
 	out.Status = outLog(path, out)
 	return nil
 }

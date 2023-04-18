@@ -30,8 +30,9 @@ type ConceptInfo struct {
 	Remark     string
 	Table      string
 	Parent     string
-	Scene      uint8 // 针对的场景类型
-	attributes []string
+	Scene      uint8    //针对的场景类型
+	attributes []string //所有支持的属性
+	privates   []string //隐藏属性
 	Children   []*ConceptInfo
 }
 
@@ -87,6 +88,7 @@ func (mine *cacheContext) CreateTopConcept(info *ConceptInfo) error {
 	db.Scene = info.Scene
 	db.Type = info.Type
 	db.Attributes = make([]string, 0, 5)
+	db.Attributes = make([]string, 0, 1)
 	err := nosql.CreateConcept(db)
 	if err == nil {
 		info.initInfo(db)
@@ -167,6 +169,7 @@ func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
 	mine.Parent = db.Parent
 	mine.attributes = db.Attributes
 	mine.Scene = db.Scene
+	mine.privates = db.Privates
 
 	array, err := nosql.GetConceptsByParent(mine.UID)
 	num := len(array)
@@ -193,6 +196,7 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 	db.Parent = mine.UID
 	db.Scene = info.Scene
 	db.Attributes = make([]string, 0, 5)
+	db.Privates = make([]string, 0, 1)
 	err := nosql.CreateConcept(db)
 	if err == nil {
 		info.initInfo(db)
@@ -298,6 +302,10 @@ func (mine *ConceptInfo) Attributes() []string {
 	return mine.attributes
 }
 
+func (mine *ConceptInfo) Privates() []string {
+	return mine.privates
+}
+
 func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string, kind AttributeType) error {
 	if mine.attributes == nil {
 		return errors.New("must call construct fist")
@@ -331,6 +339,19 @@ func (mine *ConceptInfo) UpdateAttributes(attributes []string) error {
 	err := nosql.UpdateConceptAttributes(mine.UID, attributes)
 	if err == nil {
 		mine.attributes = attributes
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *ConceptInfo) UpdatePrivates(attributes []string) error {
+	if attributes == nil {
+		return errors.New("the attributes is nil when update")
+	}
+
+	err := nosql.UpdateConceptPrivates(mine.UID, attributes)
+	if err == nil {
+		mine.privates = attributes
 		mine.UpdateTime = time.Now()
 	}
 	return err
