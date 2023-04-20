@@ -38,6 +38,9 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
 	db.Events = info.StaticEvents
 	db.Relations = info.StaticRelations
 	db.Relates = info.Relates
+	if db.Relates == nil {
+		db.Relates = make([]string, 0, 1)
+	}
 	info.events = make([]*EventInfo, 0, 1)
 	if info.Properties == nil {
 		info.Properties = make([]*proxy.PropertyInfo, 0, 1)

@@ -100,6 +100,9 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Quote = db.Quote
 	mine.Summary = db.Summary
 	mine.Relates = db.Relates
+	if mine.Relates == nil {
+		mine.Relates = make([]string, 0, 1)
+	}
 	if cacheCtx.HadArchivedByEntity(mine.UID) {
 		mine.Published = true
 	} else {
@@ -414,6 +417,9 @@ func (mine *EntityInfo) UpdatePushTime(operator string) error {
 }
 
 func (mine *EntityInfo) UpdateRelates(operator string, list []string) error {
+	if list == nil {
+		list = make([]string, 0, 1)
+	}
 	err := nosql.UpdateEntityRelates(mine.table(), mine.UID, operator, list)
 	if err != nil {
 		return err
