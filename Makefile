@@ -5,6 +5,7 @@ COMMIT_SHA1     := $(shell git rev-parse HEAD )
 
 .PHONY: build
 build:
+	export GOPROXY=https://goproxy.cn
 	go build -ldflags \
 		"\
 		-X 'main.BuildVersion=${BUILD_VERSION}' \

@@ -16,8 +16,8 @@ func switchStaticEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
 	tmp.Brief = switchEntityBrief(info)
 	if all {
 		tmp.Events = make([]*pb.EventBrief, 0, len(info.StaticEvents))
-		for _, event := range info.StaticEvents {
-			tmp.Events = append(tmp.Events, switchEventBriefToPB(event))
+		for i, event := range info.StaticEvents {
+			tmp.Events = append(tmp.Events, switchEventBriefToPB(fmt.Sprintf("%s-%d", info.UID, i), event))
 		}
 		tmp.Relations = make([]*pb.RelationBrief, 0, len(info.StaticRelations))
 		for _, item := range info.StaticRelations {
@@ -129,8 +129,9 @@ func switchEventBriefFromPB(info *pb.EventBrief) *proxy.EventBrief {
 	return tmp
 }
 
-func switchEventBriefToPB(info *proxy.EventBrief) *pb.EventBrief {
+func switchEventBriefToPB(uid string, info *proxy.EventBrief) *pb.EventBrief {
 	tmp := new(pb.EventBrief)
+	tmp.Uid = uid
 	tmp.Name = info.Name
 	tmp.Quote = info.Quote
 	tmp.Desc = info.Description

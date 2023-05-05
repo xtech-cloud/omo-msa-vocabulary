@@ -33,7 +33,7 @@ type RelationCaseInfo struct {
 	Name      string `json:"relation" bson:"relation"` // 如果是定制则是显示定制名称，否则显示类型名称
 	Category  string `json:"category" bson:"category"` //关系类型UID
 	Entity    string `json:"entity" bson:"entity"`     //对应实体UID
-	Weight    uint32 `json:"weight" bson:"weight"` //亲密度或者权重
+	Weight    uint32 `json:"weight" bson:"weight"`     //亲密度或者权重
 }
 
 type EventBrief struct {
@@ -103,12 +103,13 @@ func (mine *Date) Parse(msg string) error {
 	if len(msg) < 1 {
 		return errors.New("the date is empty")
 	}
+	mine.Name = msg
 	if strings.Contains(msg, "-") {
 		mine.Type = 0
+		msg = strings.TrimLeft(msg, "-")
 	} else {
 		mine.Type = 1
 	}
-	mine.Name = msg
 	array := strings.Split(msg, "/")
 	if array != nil && len(array) > 2 {
 		year, _ := strconv.ParseUint(array[0], 10, 32)

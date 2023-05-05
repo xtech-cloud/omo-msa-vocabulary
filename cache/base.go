@@ -338,6 +338,10 @@ func convertExcelDays(days int64) (year uint16, month uint8) {
 	return year, month
 }
 
+func checkRepeatProperties() {
+
+}
+
 func parseDate(date string) (year uint16, month uint8) {
 	if strings.Contains(date, "年") {
 		array := strings.Split(date, "年")
