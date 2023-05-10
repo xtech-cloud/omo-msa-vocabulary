@@ -30,9 +30,11 @@ type Entity struct {
 	Mark         string                    `json:"mark" bson:"mark"`
 	Quote        string                    `json:"quote" bson:"quote"`
 	Pushed       int64                     `json:"pushed" bson:"pushed"`
+	Access       uint32                    `json:"access" bson:"access"`
 	Synonyms     []string                  `json:"synonyms" bson:"synonyms"`
 	Tags         []string                  `json:"tags" bson:"tags"`
 	Relates      []string                  `json:"relates" bson:"relates"`
+	Links        []string                  `json:"links" bson:"links"` //
 	Properties   []*proxy.PropertyInfo     `json:"props" bson:"props"`
 	Events       []*proxy.EventBrief       `json:"events" bson:"events"`
 	Relations    []*proxy.RelationCaseInfo `json:"relations" bson:"relations"`
@@ -321,6 +323,18 @@ func UpdateEntityConcept(table, uid, concept, operator string) error {
 
 func UpdateEntityRelates(table, uid, operator string, list []string) error {
 	msg := bson.M{"relates": list, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityLinks(table, uid, operator string, list []string) error {
+	msg := bson.M{"links": list, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityAccess(table, uid, operator string, acc uint32) error {
+	msg := bson.M{"access": acc, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

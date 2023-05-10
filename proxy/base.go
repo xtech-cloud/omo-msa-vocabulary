@@ -23,6 +23,7 @@ type WordInfo struct {
 }
 
 type PairInfo struct {
+	UID   string `json:"uid" bson:"uid"`
 	Key   string `json:"key" bson:"key"`
 	Value string `json:"value" bson:"value"`
 }

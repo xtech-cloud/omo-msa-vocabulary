@@ -38,19 +38,22 @@ type EntityInfo struct {
 	Status EntityStatus `json:"-"`
 	Pushed int64        `json:"-"`
 	BaseInfo
-	FirstLetters    string                    `json:"letter"` //名称首字母
-	Concept         string                    `json:"concept"`
-	Summary         string                    `json:"summary"`
-	Description     string                    `json:"description"`
-	Cover           string                    `json:"cover"`
-	Add             string                    `json:"add"`      //消歧义
-	Owner           string                    `json:"owner"`    //所属单位
-	Mark            string                    `json:"mark"`     // 标记或者来源
-	Quote           string                    `json:"quote"`    // 引用
-	Synonyms        []string                  `json:"synonyms"` //同义词
-	Tags            []string                  `json:"tags"`     //标签
-	Relates         []string                  `json:"relates"`  //关联的一些数据，可以是社区，场景等
-	Published       bool                      `json:"published"`
+	FirstLetters string   `json:"letters"` //名称首字母
+	Concept      string   `json:"concept"`
+	Summary      string   `json:"summary"`
+	Description  string   `json:"description"`
+	Cover        string   `json:"cover"`
+	Add          string   `json:"add"`   //消歧义
+	Owner        string   `json:"owner"` //所属单位
+	Mark         string   `json:"mark"`  // 标记或者来源
+	Quote        string   `json:"quote"` // 引用
+	Published    bool     `json:"published"`
+	Access       uint32   //是否可被第三方访问，默认0是可以被访问的
+	Links        []string `json:"links" bson:"links"` //可与其他实体链接
+	Synonyms     []string `json:"synonyms"`           //同义词
+	Tags         []string `json:"tags"`               //标签
+	Relates      []string `json:"relates"`            //关联的一些数据，可以是社区，场景等
+
 	Properties      []*proxy.PropertyInfo     `json:"properties"`
 	StaticEvents    []*proxy.EventBrief       `json:"events"`
 	StaticRelations []*proxy.RelationCaseInfo `json:"relations"`
@@ -98,7 +101,12 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Cover = db.Cover
 	mine.Mark = db.Mark
 	mine.Quote = db.Quote
+	mine.Access = db.Access
 	mine.Summary = db.Summary
+	mine.Links = db.Links
+	if mine.Links == nil {
+		mine.Links = make([]string, 0, 1)
+	}
 	mine.Relates = db.Relates
 	if mine.Relates == nil {
 		mine.Relates = make([]string, 0, 1)
@@ -430,6 +438,33 @@ func (mine *EntityInfo) UpdateRelates(operator string, list []string) error {
 	}
 	mine.Operator = operator
 	mine.Relates = list
+	mine.UpdateTime = time.Now()
+	return nil
+}
+
+func (mine *EntityInfo) UpdateLinks(operator string, list []string) error {
+	if list == nil {
+		list = make([]string, 0, 1)
+	}
+	err := nosql.UpdateEntityLinks(mine.table(), mine.UID, operator, list)
+	if err != nil {
+		return err
+	}
+
+	mine.Operator = operator
+	mine.Links = list
+	mine.UpdateTime = time.Now()
+	return nil
+}
+
+func (mine *EntityInfo) UpdateAccess(operator string, acc uint32) error {
+	err := nosql.UpdateEntityAccess(mine.table(), mine.UID, operator, acc)
+	if err != nil {
+		return err
+	}
+
+	mine.Operator = operator
+	mine.Access = acc
 	mine.UpdateTime = time.Now()
 	return nil
 }

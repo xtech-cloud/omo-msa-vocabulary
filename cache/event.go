@@ -33,6 +33,7 @@ type EventInfo struct {
 	Tags        []string
 	Assets      []string
 	Relations   []proxy.RelationCaseInfo
+	Labels      []proxy.PairInfo
 }
 
 func (mine *cacheContext) GetActivityCountBy(arr []string, date time.Time) []*pb.StatisticInfo {

@@ -314,7 +314,7 @@ func (mine *cacheContext) createLink(from, to string, kind LinkType, relationUID
 	return err
 }
 
-func stringToUint32(str string) uint32 {
+func StringToUint32(str string) uint32 {
 	num, _ := strconv.ParseUint(str, 10, 32)
 	return uint32(num)
 }

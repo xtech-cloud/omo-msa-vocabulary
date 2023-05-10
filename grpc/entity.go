@@ -77,6 +77,8 @@ func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	tmp.Published = info.Published
 	tmp.Pushed = info.Pushed
 	tmp.Relates = info.Relates
+	tmp.Links = info.Links
+	tmp.Access = info.Access
 	tmp.Records = make([]*pb.EntityRecord, 0, 10)
 	records, _ := info.GetRecords()
 	for _, record := range records {
@@ -312,7 +314,7 @@ func (mine *EntityService) GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy
 		total, _, list := checkPage(in.Page, in.Number, array)
 		out.List = make([]*pb.EntityInfo, 0, in.Number)
 		out.Total = uint32(total)
-		for _, value := range list.([]*cache.EntityInfo) {
+		for _, value := range list {
 			out.List = append(out.List, switchStaticEntity(value, true))
 		}
 	} else {
@@ -320,7 +322,7 @@ func (mine *EntityService) GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy
 		total, _, list := checkPage(in.Page, in.Number, array)
 		out.List = make([]*pb.EntityInfo, 0, in.Number)
 		out.Total = uint32(total)
-		for _, value := range list.([]*cache.EntityInfo) {
+		for _, value := range list {
 			out.List = append(out.List, switchStaticEntity(value, true))
 		}
 	}
@@ -341,7 +343,7 @@ func (mine *EntityService) GetListByBox(ctx context.Context, in *pb.RequestPage,
 	total, _, list := checkPage(in.Page, in.Number, array)
 	out.List = make([]*pb.EntityInfo, 0, in.Number)
 	out.Total = uint32(total)
-	for _, value := range list.([]*cache.EntityInfo) {
+	for _, value := range list {
 		out.List = append(out.List, switchStaticEntity(value, true))
 	}
 	out.Page = uint32(in.Page)
@@ -492,8 +494,11 @@ func (mine *EntityService) SearchPublic(ctx context.Context, in *pb.ReqEntitySea
 	out.List = make([]*pb.EntityInfo, 0, 200)
 	list := cache.Context().GetArchivedList(in.Name)
 	for _, value := range list {
-
 		out.List = append(out.List, switchStaticEntity(value, false))
+	}
+	arr := cache.Context().SearchPersonalEntities(in.Name)
+	for _, info := range arr {
+		out.List = append(out.List, switchStaticEntity(info, false))
 	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
@@ -503,10 +508,10 @@ func (mine *EntityService) SearchMatch(ctx context.Context, in *pb.ReqEntityMatc
 	path := "entity.searchMatch"
 	inLog(path, in)
 	out.Flag = ""
-	array := cache.Context().SearchEntities(in.Keywords)
+	array := cache.Context().MatchEntities(in.Keywords)
 	total, _, list := checkPage(in.Page, in.Number, array)
 	out.List = make([]*pb.EntityInfo, 0, total)
-	for _, value := range list.([]*cache.EntityInfo) {
+	for _, value := range list {
 		out.List = append(out.List, switchStaticEntity(value, false))
 	}
 	out.Page = uint32(in.Page)
@@ -876,6 +881,11 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 		err = entity.UpdatePushTime(in.Operator)
 	} else if in.Key == "relates" {
 		err = entity.UpdateRelates(in.Operator, in.Values)
+	} else if in.Key == "links" {
+		err = entity.UpdateLinks(in.Operator, in.Values)
+	} else if in.Key == "access" {
+		acc := cache.StringToUint32(in.Value)
+		err = entity.UpdateAccess(in.Operator, acc)
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)

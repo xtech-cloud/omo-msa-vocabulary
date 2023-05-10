@@ -81,3 +81,9 @@ func UpdateAttributeBase(uid, name, desc, begin, end, operator string, kind uint
 	_, err := updateOne(TableAttribute, uid, msg)
 	return err
 }
+
+func UpdateAttributeKey(uid, key, operator string) error {
+	msg := bson.M{"key": key, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableAttribute, uid, msg)
+	return err
+}

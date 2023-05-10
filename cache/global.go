@@ -86,8 +86,22 @@ func (mine *cacheContext) AllEntities() []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext) SearchEntities(key string) []*EntityInfo {
+func (mine *cacheContext) MatchEntities(key string) []*EntityInfo {
 	array, err := nosql.GetEntitiesByMatch(DefaultEntityTable, key)
+	if err != nil {
+		return make([]*EntityInfo, 0, 0)
+	}
+	list := make([]*EntityInfo, 0, len(array))
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	return list
+}
+
+func (mine *cacheContext) SearchPersonalEntities(key string) []*EntityInfo {
+	array, err := nosql.GetEntitiesByMatch(UserEntityTable, key)
 	if err != nil {
 		return make([]*EntityInfo, 0, 0)
 	}

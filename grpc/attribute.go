@@ -5,6 +5,7 @@ import (
 	"fmt"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
+	"strings"
 )
 
 type AttributeService struct{}
@@ -31,14 +32,14 @@ func (mine *AttributeService) AddOne(ctx context.Context, in *pb.ReqAttributeAdd
 		out.Status = outError(path, "the name of attribute is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
-
-	if len(in.Key) > 1 && cache.Context().HadAttributeByKey(in.Key) {
+	key := strings.ToLower(in.Key)
+	if len(in.Key) > 1 && cache.Context().HadAttributeByKey(key) {
 		out.Status = outError(path, "the key of attribute is repeated", pb.ResultStatus_Empty)
 		return nil
 	}
 	info := new(cache.AttributeInfo)
 	info.Name = in.Name
-	info.Key = in.Key
+	info.Key = key
 	info.Kind = cache.AttributeType(in.Type)
 	info.Remark = in.Remark
 	info.Begin = in.Begin
@@ -122,6 +123,12 @@ func (mine *AttributeService) Update(ctx context.Context, in *pb.ReqAttributeUpd
 	if err != nil {
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
+	}
+	key := strings.ToLower(in.Key)
+	if in.Key != "" && info.Key != key {
+		if !cache.Context().HadAttributeByKey(in.Key) {
+			_ = info.UpdateKey(key, in.Operator)
+		}
 	}
 	out.Info = switchAttribute(info)
 	out.Status = outLog(path, out)

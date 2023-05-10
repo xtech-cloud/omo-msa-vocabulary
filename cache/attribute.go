@@ -4,6 +4,7 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy/nosql"
+	"strings"
 	"time"
 )
 
@@ -85,7 +86,7 @@ func (mine *cacheContext) GetAttribute(uid string) *AttributeInfo {
 
 func (mine *cacheContext) GetAttributeByKey(key string) *AttributeInfo {
 	for _, value := range mine.attributes {
-		if value.Key == key {
+		if strings.ToLower(value.Key) == strings.ToLower(key) {
 			return value
 		}
 	}
@@ -129,6 +130,16 @@ func (mine *AttributeInfo) UpdateBase(name, remark, begin, end, operator string,
 		mine.Begin = begin
 		mine.End = end
 		mine.Kind = AttributeType(kind)
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *AttributeInfo) UpdateKey(key, operator string) error {
+	err := nosql.UpdateAttributeKey(mine.UID, key, operator)
+	if err == nil {
+		mine.Key = key
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
 	}
