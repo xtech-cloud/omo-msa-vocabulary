@@ -178,7 +178,7 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 		out.Status = outError(path, "the entity name is empty", pb.ResultStatus_Empty)
 		return nil
 	}
-	if cache.Context().HadEntityByName(in.Name, in.Add) {
+	if cache.Context().HadEntityByName(in.Name, in.Add, in.Owner) {
 		out.Status = outError(path, "the entity name is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
@@ -200,6 +200,7 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 	info.Summary = in.Summary
 	info.Status = cache.EntityStatus(in.Status)
 	info.Mark = in.Mark
+	info.Access = 0
 	info.Relates = in.Relates
 	info.StaticEvents = make([]*proxy.EventBrief, 0, len(in.Events))
 	for _, event := range in.Events {
@@ -500,6 +501,10 @@ func (mine *EntityService) SearchPublic(ctx context.Context, in *pb.ReqEntitySea
 	for _, info := range arr {
 		out.List = append(out.List, switchStaticEntity(info, false))
 	}
+	arr2 := cache.Context().SearchDefaultEntities(in.Owner, in.Name)
+	for _, info1 := range arr2 {
+		out.List = append(out.List, switchStaticEntity(info1, false))
+	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
@@ -594,7 +599,7 @@ func (mine *EntityService) UpdateBase(ctx context.Context, in *pb.ReqEntityBase,
 		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
 		return nil
 	}
-	if in.Name != "" && in.Name != info.Name && cache.Context().HadEntityByName(in.Name, in.Add) {
+	if in.Name != "" && in.Name != info.Name && cache.Context().HadEntityByName(in.Name, in.Add, "") {
 		out.Status = outError(path, "the entity name is repeated", pb.ResultStatus_Repeated)
 		return nil
 	}
@@ -769,7 +774,7 @@ func (mine *EntityService) UpdateStatic(ctx context.Context, in *pb.ReqEntitySta
 		return nil
 	}
 	if entity.Name != in.Name || entity.Add != in.Add {
-		if cache.Context().HadEntityByName(in.Name, in.Add) {
+		if cache.Context().HadEntityByName(in.Name, in.Add, "") {
 			out.Status = outError(path, "the entity name is repeated", pb.ResultStatus_Repeated)
 			return nil
 		}

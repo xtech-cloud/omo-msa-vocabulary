@@ -237,6 +237,24 @@ func GetEntitiesByName(table, name string) ([]*Entity, error) {
 	return items, nil
 }
 
+func GetEntitiesByOwnName(table, name, owner string) ([]*Entity, error) {
+	msg := bson.M{"name": name, "scene": owner, "deleteAt": new(time.Time)}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 10)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEntitiesByOwner(table, owner string) ([]*Entity, error) {
 	msg := bson.M{"scene": owner, "deleteAt": new(time.Time)}
 	cursor, err1 := findMany(table, msg, 0)
@@ -275,6 +293,24 @@ func GetEntitiesByRelate(table, relate string) ([]*Entity, error) {
 
 func GetEntitiesByMatch(table, name string) ([]*Entity, error) {
 	msg := bson.M{"name": bson.M{"$regex": name}, "deleteAt": new(time.Time)}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEntitiesByOwnMatch(table, name, owner string) ([]*Entity, error) {
+	msg := bson.M{"name": bson.M{"$regex": name}, "scene": owner, "deleteAt": new(time.Time)}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1

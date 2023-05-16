@@ -34,6 +34,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
 	db.Status = uint8(info.Status)
 	db.Tags = info.Tags
 	db.Pushed = 0
+	db.Access = info.Access
 	db.Synonyms = info.Synonyms
 	db.Events = info.StaticEvents
 	db.Relations = info.StaticRelations
@@ -114,7 +115,21 @@ func (mine *cacheContext) SearchPersonalEntities(key string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext) HadEntityByName(name, add string) bool {
+func (mine *cacheContext) SearchDefaultEntities(owner, key string) []*EntityInfo {
+	array, err := nosql.GetEntitiesByOwnMatch(DefaultEntityTable, key, owner)
+	if err != nil {
+		return make([]*EntityInfo, 0, 0)
+	}
+	list := make([]*EntityInfo, 0, len(array))
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	return list
+}
+
+func (mine *cacheContext) HadEntityByName(name, add, owner string) bool {
 	if len(name) < 1 {
 		return true
 	}
@@ -129,6 +144,12 @@ func (mine *cacheContext) HadEntityByName(name, add string) bool {
 		db, err := nosql.GetEntitiesByName(DefaultEntityTable, name)
 		if err == nil && db != nil {
 			if len(db) > 0 {
+				return true
+			}
+		}
+		db1, err1 := nosql.GetEntitiesByOwnName(UserEntityTable, name, owner)
+		if err1 == nil && db1 != nil {
+			if len(db1) > 0 {
 				return true
 			}
 		}

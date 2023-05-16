@@ -331,27 +331,27 @@ func (mine *ConceptInfo) CreateAttribute(key, val, begin, end string, kind Attri
 	return err
 }
 
-func (mine *ConceptInfo) UpdateAttributes(attributes []string) error {
-	if attributes == nil {
-		return errors.New("the attributes is nil when update")
+func (mine *ConceptInfo) UpdateAttributes(arr []string) error {
+	if arr == nil {
+		arr = make([]string, 0, 1)
 	}
 
-	err := nosql.UpdateConceptAttributes(mine.UID, attributes)
+	err := nosql.UpdateConceptAttributes(mine.UID, arr)
 	if err == nil {
-		mine.attributes = attributes
+		mine.attributes = arr
 		mine.UpdateTime = time.Now()
 	}
 	return err
 }
 
-func (mine *ConceptInfo) UpdatePrivates(attributes []string) error {
-	if attributes == nil {
-		return errors.New("the attributes is nil when update")
+func (mine *ConceptInfo) UpdatePrivates(arr []string) error {
+	if arr == nil {
+		arr = make([]string, 0, 1)
 	}
 
-	err := nosql.UpdateConceptPrivates(mine.UID, attributes)
+	err := nosql.UpdateConceptPrivates(mine.UID, arr)
 	if err == nil {
-		mine.privates = attributes
+		mine.privates = arr
 		mine.UpdateTime = time.Now()
 	}
 	return err
