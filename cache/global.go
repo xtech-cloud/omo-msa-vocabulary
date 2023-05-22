@@ -525,6 +525,60 @@ func (mine *cacheContext) GetEventsByQuote(quote string) []*EventInfo {
 	return list
 }
 
+func (mine *cacheContext) GetEventsAssetsByQuote(quote string, page, number int32) (int32, int32, []*EventInfo) {
+	all, err := nosql.GetEventsByQuote2(quote)
+	var list []*EventInfo
+	var total int32
+	var pages int32
+	if err == nil {
+		list = make([]*EventInfo, 0, len(all))
+		assets := make([]string, 0, len(all)*3)
+		for _, db := range all {
+			assets = append(assets, db.Assets...)
+		}
+		var arr []string
+		total, pages, arr = CheckPage(page, number, assets)
+		for _, uid := range arr {
+			eve := getEventByAsset(all, uid)
+			if eve != nil {
+				info := new(EventInfo)
+				info.initInfo(eve)
+				list = append(list, info)
+			}
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return total, pages, list
+}
+
+func getEventByAsset(list []*nosql.Event, uid string) *nosql.Event {
+	for _, event := range list {
+		if tool.HasItem(event.Assets, uid) {
+			return event
+		}
+	}
+	return nil
+}
+
+func (mine *cacheContext) GetEventsByQuotePage(quote string, page, number int32) (int32, int32, []*EventInfo) {
+	arr, err := nosql.GetEventsByQuote2(quote)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return CheckPage(page, number, list)
+}
+
 func (mine *cacheContext) GetEventsByEntity(entity string, tp uint8) []*EventInfo {
 	arr, err := nosql.GetEventsByType(entity, tp)
 	var list []*EventInfo

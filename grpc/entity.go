@@ -7,6 +7,7 @@ import (
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
+	"strings"
 )
 
 type EntityService struct{}
@@ -186,6 +187,10 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 	//	out.Status = outError(path,"the entity mark is repeated", pb.ResultStatus_Repeated)
 	//	return nil
 	//}
+	if strings.Contains(in.Cover, "http://") || strings.Contains(in.Cover, "https://") {
+		out.Status = outError(path, "the cover format is error", pb.ResultStatus_Empty)
+		return nil
+	}
 	info := new(cache.EntityInfo)
 	info.Name = in.Name
 	info.Description = in.Description
@@ -312,7 +317,7 @@ func (mine *EntityService) GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy
 	out.Flag = in.Owner
 	if len(in.Owner) > 1 {
 		array := cache.Context().GetEntitiesByOwnerStatus(in.Owner, in.Concept, cache.EntityStatus(in.Status))
-		total, _, list := checkPage(in.Page, in.Number, array)
+		total, _, list := cache.CheckPage(in.Page, in.Number, array)
 		out.List = make([]*pb.EntityInfo, 0, in.Number)
 		out.Total = uint32(total)
 		for _, value := range list {
@@ -320,7 +325,7 @@ func (mine *EntityService) GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy
 		}
 	} else {
 		array := cache.Context().GetEntitiesByStatus(cache.EntityStatus(in.Status), in.Concept)
-		total, _, list := checkPage(in.Page, in.Number, array)
+		total, _, list := cache.CheckPage(in.Page, in.Number, array)
 		out.List = make([]*pb.EntityInfo, 0, in.Number)
 		out.Total = uint32(total)
 		for _, value := range list {
@@ -341,7 +346,7 @@ func (mine *EntityService) GetListByBox(ctx context.Context, in *pb.RequestPage,
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
-	total, _, list := checkPage(in.Page, in.Number, array)
+	total, _, list := cache.CheckPage(in.Page, in.Number, array)
 	out.List = make([]*pb.EntityInfo, 0, in.Number)
 	out.Total = uint32(total)
 	for _, value := range list {
@@ -514,7 +519,7 @@ func (mine *EntityService) SearchMatch(ctx context.Context, in *pb.ReqEntityMatc
 	inLog(path, in)
 	out.Flag = ""
 	array := cache.Context().MatchEntities(in.Keywords)
-	total, _, list := checkPage(in.Page, in.Number, array)
+	total, _, list := cache.CheckPage(in.Page, in.Number, array)
 	out.List = make([]*pb.EntityInfo, 0, total)
 	for _, value := range list {
 		out.List = append(out.List, switchStaticEntity(value, false))

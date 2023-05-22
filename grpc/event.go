@@ -191,19 +191,26 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 	path := "event.getByFilter"
 	inLog(path, in)
 	var err error
-	out.List = make([]*pb.EventInfo, 0, 200)
+	var total int32
+	var pages int32
+	var list []*cache.EventInfo
+
 	if in.Key == "entities_sys" {
+		list = make([]*cache.EventInfo, 0, 200)
 		for _, uid := range in.Values {
-			events := cache.Context().GetEventsByEntity(uid, 1)
-			for _, event := range events {
-				out.List = append(out.List, switchEntityEvent(event))
-			}
+			arr := cache.Context().GetEventsByEntity(uid, 1)
+			list = append(list, arr...)
 		}
+		total = int32(len(list))
+		pages = 1
 	} else if in.Key == "relate" {
-		arr := cache.Context().GetEventsByRelate(in.Parent, in.Value)
-		for _, event := range arr {
-			out.List = append(out.List, switchEntityEvent(event))
-		}
+		list = cache.Context().GetEventsByRelate(in.Parent, in.Value)
+	} else if in.Key == "quote" {
+		total, pages, list = cache.Context().GetEventsByQuotePage(in.Value, in.Page, in.Number)
+	} else if in.Key == "assets" {
+		total, pages, list = cache.Context().GetEventsAssetsByQuote(in.Value, in.Page, in.Number)
+	} else if in.Key == "activity" {
+
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -211,6 +218,12 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
 		return nil
 	}
+	out.List = make([]*pb.EventInfo, 0, len(list))
+	for _, event := range list {
+		out.List = append(out.List, switchEntityEvent(event))
+	}
+	out.Total = uint32(total)
+	out.Pages = uint32(pages)
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
