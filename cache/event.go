@@ -5,6 +5,7 @@ import (
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
+	"strconv"
 	"time"
 )
 
@@ -42,6 +43,30 @@ func (mine *cacheContext) GetActivityCountBy(arr []string, date time.Time) []*pb
 		num := mine.GetActivityCountByDate(item, date)
 		list = append(list, &pb.StatisticInfo{Key: item, Count: uint32(num)})
 	}
+	return list
+}
+
+func (mine *cacheContext) GetEventCountBy(entity string) []*pb.StatisticInfo {
+	list := make([]*pb.StatisticInfo, 0, 3)
+	arr := mine.GetEvents(entity)
+	expCount := new(pb.StatisticInfo)
+	expCount.Key = strconv.Itoa(EventCustom)
+	honorCount := new(pb.StatisticInfo)
+	honorCount.Key = strconv.Itoa(EventHonor)
+	actCount := new(pb.StatisticInfo)
+	actCount.Key = strconv.Itoa(EventActivity)
+	for _, item := range arr {
+		if item.Type == EventCustom {
+			expCount.Count = expCount.Count + 1
+		} else if item.Type == EventActivity {
+			actCount.Count = actCount.Count + 1
+		} else {
+			honorCount.Count = honorCount.Count + 1
+		}
+	}
+	list = append(list, expCount)
+	list = append(list, honorCount)
+	list = append(list, actCount)
 	return list
 }
 

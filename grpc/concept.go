@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 )
@@ -42,11 +43,11 @@ func (mine *ConceptService) AddOne(ctx context.Context, in *pb.ReqConceptAdd, ou
 	if len(in.Parent) > 0 {
 		parent := cache.Context().GetConcept(in.Parent)
 		if parent == nil {
-			out.Status = outError(path, "not found the parent concept", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the parent concept", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		if parent.HadChildByName(in.Name) {
-			out.Status = outError(path, "the concept child name is repeated", pb.ResultStatus_Repeated)
+			out.Status = outError(path, "the concept child name is repeated", pbstaus.ResultStatus_Repeated)
 			return nil
 		}
 
@@ -59,7 +60,7 @@ func (mine *ConceptService) AddOne(ctx context.Context, in *pb.ReqConceptAdd, ou
 		info.Creator = in.Operator
 		err := parent.CreateChild(info)
 		if err != nil {
-			out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+			out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 			return nil
 		} else {
 			out.Info = switchConcept(info)
@@ -67,12 +68,12 @@ func (mine *ConceptService) AddOne(ctx context.Context, in *pb.ReqConceptAdd, ou
 		}
 	} else {
 		//if len(in.Table) > 0 && cache.Context().HadConceptByTable(in.Table) {
-		//	out.Status = outError(path,"the table name is repeated", pb.ResultStatus_Repeated)
+		//	out.Status = outError(path,"the table name is repeated", pbstaus.ResultStatus_Repeated)
 		//	return nil
 		//}
 
 		if cache.Context().HadConceptByName(in.Name, in.Parent) {
-			out.Status = outError(path, "the concept name is repeated", pb.ResultStatus_Repeated)
+			out.Status = outError(path, "the concept name is repeated", pbstaus.ResultStatus_Repeated)
 			return nil
 		}
 
@@ -87,7 +88,7 @@ func (mine *ConceptService) AddOne(ctx context.Context, in *pb.ReqConceptAdd, ou
 			out.Info = switchConcept(info)
 			out.Status = outLog(path, out)
 		} else {
-			out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+			out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		}
 	}
 	return nil
@@ -99,7 +100,7 @@ func (mine *ConceptService) GetOne(ctx context.Context, in *pb.RequestInfo, out 
 	if len(in.Uid) > 0 {
 		info := cache.Context().GetConcept(in.Uid)
 		if info == nil {
-			out.Status = outError(path, "not found the concept by uid", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the concept by uid", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchConcept(info)
@@ -107,13 +108,13 @@ func (mine *ConceptService) GetOne(ctx context.Context, in *pb.RequestInfo, out 
 	} else if len(in.Key) > 0 {
 		info := cache.Context().GetConceptByName(in.Key)
 		if info == nil {
-			out.Status = outError(path, "not found the concept by key", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the concept by key", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchConcept(info)
 		out.Status = outLog(path, out)
 	} else {
-		out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
 	}
 	return nil
 }
@@ -122,13 +123,13 @@ func (mine *ConceptService) RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 	path := "concept.removeOne"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.Status = outError(path, "the concept uid is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the concept uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
 
 	err := cache.Context().RemoveConcept(in.Uid, in.Operator)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = in.Uid
@@ -151,7 +152,7 @@ func (mine *ConceptService) GetAll(ctx context.Context, in *pb.RequestInfo, out 
 func (mine *ConceptService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
 	path := "concept.getStatistic"
 	inLog(path, in)
-	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
 	return nil
 }
 
@@ -160,12 +161,12 @@ func (mine *ConceptService) Update(ctx context.Context, in *pb.ReqConceptUpdate,
 	inLog(path, in)
 	info := cache.Context().GetConcept(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the concept by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the concept by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateBase(in.Name, in.Remark, in.Operator, uint8(in.Type), uint8(in.Scene))
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Info = switchConcept(info)
@@ -178,20 +179,20 @@ func (mine *ConceptService) UpdateAttributes(ctx context.Context, in *pb.Request
 	inLog(path, in)
 	info := cache.Context().GetConcept(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the concept by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the concept by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	if in.Status == 1 {
 		err := info.UpdatePrivates(in.List)
 		if err != nil {
-			out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+			out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 			return nil
 		}
 		out.Attributes = info.Privates()
 	} else {
 		err := info.UpdateAttributes(in.List)
 		if err != nil {
-			out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+			out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 			return nil
 		}
 		out.Attributes = info.Attributes()

@@ -6,6 +6,7 @@ import (
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
+	"sort"
 	"strings"
 	"time"
 )
@@ -436,6 +437,39 @@ func (mine *cacheContext) GetEntitiesByRelate(relate string) []*EntityInfo {
 	return list
 }
 
+func (mine *cacheContext) GetEntitiesByRank(relate string, num int) []*EntityInfo {
+	list := make([]*EntityInfo, 0, num)
+	dbs, err := nosql.GetRecordsByRelate(relate, uint8(OptionSwitch))
+	if err != nil {
+		return list
+	}
+	arr := make([]string, 0, 50)
+	pairs := make([]*PairInfo, 0, 50)
+	for _, db := range dbs {
+		if !tool.HasItem(arr, db.Entity) {
+			arr = append(arr, db.Entity)
+			events := mine.GetEvents(db.Entity)
+			pairs = append(pairs, &PairInfo{Key: db.Entity, Count: int32(len(events))})
+		}
+	}
+
+	sort.SliceStable(pairs, func(i, j int) bool {
+		return pairs[i].Count > pairs[j].Count
+	})
+
+	for i := 0; i < len(pairs); i += 1 {
+		if i < num {
+			entity := mine.GetEntity(pairs[i].Key)
+			if entity != nil {
+				entity.Score = uint32(pairs[i].Count)
+				list = append(list, entity)
+			}
+		}
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetEntityCountByRelate(relate string) uint32 {
 	dbs, err := nosql.GetRecordsByRelate(relate, uint8(OptionSwitch))
 	if err != nil {
@@ -525,6 +559,15 @@ func (mine *cacheContext) GetEventsByQuote(quote string) []*EventInfo {
 	return list
 }
 
+func hadEvent(list []*EventInfo, uid string) bool {
+	for _, item := range list {
+		if item.UID == uid {
+			return true
+		}
+	}
+	return false
+}
+
 func (mine *cacheContext) GetEventsAssetsByQuote(quote string, page, number int32) (int32, int32, []*EventInfo) {
 	all, err := nosql.GetEventsByQuote2(quote)
 	var list []*EventInfo
@@ -540,7 +583,7 @@ func (mine *cacheContext) GetEventsAssetsByQuote(quote string, page, number int3
 		total, pages, arr = CheckPage(page, number, assets)
 		for _, uid := range arr {
 			eve := getEventByAsset(all, uid)
-			if eve != nil {
+			if eve != nil && !hadEvent(list, eve.UID.Hex()) {
 				info := new(EventInfo)
 				info.initInfo(eve)
 				list = append(list, info)
@@ -577,6 +620,22 @@ func (mine *cacheContext) GetEventsByQuotePage(quote string, page, number int32)
 	}
 
 	return CheckPage(page, number, list)
+}
+
+func (mine *cacheContext) GetEventsByEntityType(entity string, tp, page, number int32) (int32, int32, []*EventInfo) {
+	arr, err := nosql.GetEventsByType(entity, uint8(tp))
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+		return CheckPage(page, number, list)
+	} else {
+		return 0, 0, make([]*EventInfo, 0, 1)
+	}
 }
 
 func (mine *cacheContext) GetEventsByEntity(entity string, tp uint8) []*EventInfo {

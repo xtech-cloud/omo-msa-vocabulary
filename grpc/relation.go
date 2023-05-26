@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 )
@@ -34,7 +35,7 @@ func (mine *RelationService) AddOne(ctx context.Context, in *pb.ReqRelationAdd, 
 	path := "relation.addOne"
 	inLog(path, in)
 	if cache.Context().HadRelationByName(in.Name, in.Parent) {
-		out.Status = outError(path, "the relation name had existed", pb.ResultStatus_Repeated)
+		out.Status = outError(path, "the relation name had existed", pbstaus.ResultStatus_Repeated)
 		return nil
 	}
 	info := new(cache.RelationshipInfo)
@@ -47,7 +48,7 @@ func (mine *RelationService) AddOne(ctx context.Context, in *pb.ReqRelationAdd, 
 		out.Info = switchRelation(info)
 		out.Status = outLog(path, out)
 	} else {
-		out.Status = outError(path, "the relation name had existed", pb.ResultStatus_DBException)
+		out.Status = outError(path, "the relation name had existed", pbstaus.ResultStatus_DBException)
 	}
 	return nil
 }
@@ -58,7 +59,7 @@ func (mine *RelationService) GetOne(ctx context.Context, in *pb.RequestInfo, out
 	if len(in.Uid) > 0 {
 		info := cache.Context().GetRelation(in.Uid)
 		if info == nil {
-			out.Status = outError(path, "not found the relation by uid", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the relation by uid", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchRelation(info)
@@ -66,13 +67,13 @@ func (mine *RelationService) GetOne(ctx context.Context, in *pb.RequestInfo, out
 	} else if len(in.Key) > 0 {
 		info := cache.Context().GetRelationByName(in.Key)
 		if info == nil {
-			out.Status = outError(path, "not found the relation by key", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the relation by key", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchRelation(info)
 		out.Status = outLog(path, out)
 	} else {
-		out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
 	}
 	return nil
 }
@@ -82,13 +83,13 @@ func (mine *RelationService) RemoveOne(ctx context.Context, in *pb.RequestInfo, 
 	inLog(path, in)
 	var err error
 	if len(in.Uid) < 1 {
-		out.Status = outError(path, "the uid is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
 	if len(in.Key) > 0 {
 		parent := cache.Context().GetRelation(in.Key)
 		if parent == nil {
-			out.Status = outError(path, "not found the relation by parent", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the relation by parent", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		err = parent.RemoveChild(in.Uid, in.Operator)
@@ -98,7 +99,7 @@ func (mine *RelationService) RemoveOne(ctx context.Context, in *pb.RequestInfo, 
 	out.Uid = in.Uid
 	out.Key = in.Key
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Status = outLog(path, out)
@@ -120,7 +121,7 @@ func (mine *RelationService) GetAll(ctx context.Context, in *pb.RequestInfo, out
 func (mine *RelationService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
 	path := "relation.getStatistic"
 	inLog(path, in)
-	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
 	return nil
 }
 
@@ -129,17 +130,17 @@ func (mine *RelationService) UpdateInfo(ctx context.Context, in *pb.ReqRelationU
 	inLog(path, in)
 	var err error
 	if len(in.Uid) < 1 {
-		out.Status = outError(path, "the uid is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
 	info := cache.Context().GetRelation(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the relation by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the relation by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err = info.UpdateBase(in.Name, in.Remark, in.Operator, in.Custom, uint8(in.Type))
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Info = switchRelation(info)

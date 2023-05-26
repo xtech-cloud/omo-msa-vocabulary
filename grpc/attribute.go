@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"strings"
@@ -29,12 +30,12 @@ func (mine *AttributeService) AddOne(ctx context.Context, in *pb.ReqAttributeAdd
 	path := "attribute.addOne"
 	inLog(path, in)
 	if cache.Context().HadAttributeByName(in.Name) {
-		out.Status = outError(path, "the name of attribute is repeated", pb.ResultStatus_Repeated)
+		out.Status = outError(path, "the name of attribute is repeated", pbstaus.ResultStatus_Repeated)
 		return nil
 	}
 	key := strings.ToLower(in.Key)
 	if len(in.Key) > 1 && cache.Context().HadAttributeByKey(key) {
-		out.Status = outError(path, "the key of attribute is repeated", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the key of attribute is repeated", pbstaus.ResultStatus_Empty)
 		return nil
 	}
 	info := new(cache.AttributeInfo)
@@ -50,7 +51,7 @@ func (mine *AttributeService) AddOne(ctx context.Context, in *pb.ReqAttributeAdd
 		out.Info = switchAttribute(info)
 		out.Status = outLog(path, out)
 	} else {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 	}
 	return nil
 }
@@ -61,7 +62,7 @@ func (mine *AttributeService) GetOne(ctx context.Context, in *pb.RequestInfo, ou
 	if len(in.Uid) > 0 {
 		info := cache.Context().GetAttribute(in.Uid)
 		if info == nil {
-			out.Status = outError(path, "not found the attribute by uid", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the attribute by uid", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchAttribute(info)
@@ -69,13 +70,13 @@ func (mine *AttributeService) GetOne(ctx context.Context, in *pb.RequestInfo, ou
 	} else if len(in.Key) > 0 {
 		info := cache.Context().GetAttributeByKey(in.Key)
 		if info == nil {
-			out.Status = outError(path, "not found the attribute by key", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the attribute by key", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchAttribute(info)
 		out.Status = outLog(path, out)
 	} else {
-		out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
 	}
 	return nil
 }
@@ -83,7 +84,7 @@ func (mine *AttributeService) GetOne(ctx context.Context, in *pb.RequestInfo, ou
 func (mine *AttributeService) GetStatistic(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyStatistic) error {
 	path := "attribute.getStatistic"
 	inLog(path, in)
-	out.Status = outError(path, "param is empty", pb.ResultStatus_Empty)
+	out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
 	return nil
 }
 
@@ -92,7 +93,7 @@ func (mine *AttributeService) RemoveOne(ctx context.Context, in *pb.RequestInfo,
 	inLog(path, in)
 	err := cache.Context().RemoveAttribute(in.Uid, in.Operator)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = in.Uid
@@ -116,12 +117,12 @@ func (mine *AttributeService) Update(ctx context.Context, in *pb.ReqAttributeUpd
 	inLog(path, in)
 	info := cache.Context().GetAttribute(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the attribute by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the attribute by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateBase(in.Name, in.Remark, in.Begin, in.End, in.Operator, uint8(in.Type))
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	key := strings.ToLower(in.Key)

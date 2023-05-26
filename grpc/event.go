@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
@@ -75,14 +76,14 @@ func (mine *EventService) AddOne(ctx context.Context, in *pb.ReqEventAdd, out *p
 	inLog(path, in)
 	info := cache.Context().GetEntity(in.Parent)
 	if info == nil {
-		out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	//event := info.GetEventBy(in.Date.Begin, in.Place.Name)
 	//if event != nil {
 	//	er := event.UpdateInfo(in.Name, in.Description, in.Operator)
 	//	if er != nil {
-	//		out.Status = outError(path, er.Error(), pb.ResultStatus_DBException)
+	//		out.Status = outError(path, er.Error(), pbstaus.ResultStatus_DBException)
 	//	}else{
 	//		out.Info = switchEntityEvent(event)
 	//		out.Status = outLog(path, out)
@@ -108,7 +109,7 @@ func (mine *EventService) AddOne(ctx context.Context, in *pb.ReqEventAdd, out *p
 		out.Info = switchEntityEvent(event)
 		out.Status = outLog(path, out)
 	} else {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 	}
 	return nil
 }
@@ -119,13 +120,13 @@ func (mine *EventService) GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 	if len(in.Uid) > 0 {
 		info := cache.Context().GetEvent(in.Uid)
 		if info == nil {
-			out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchEntityEvent(info)
 		out.Status = outLog(path, out)
 	} else {
-		out.Status = outError(path, "the uid or key all is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the uid or key all is empty", pbstaus.ResultStatus_Empty)
 	}
 	return nil
 }
@@ -135,7 +136,7 @@ func (mine *EventService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 	inLog(path, in)
 	err := cache.Context().RemoveEvent(in.Uid, in.Operator)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = in.Uid
@@ -149,7 +150,7 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 	info := cache.Context().GetEntity(in.Uid)
 	out.List = make([]*pb.EventInfo, 0, 10)
 	if info == nil {
-		//out.Status = outError(path, "not found the entity by uid", pb.ResultStatus_NotExisted)
+		//out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
 		//return nil
 		list := cache.Context().GetEventsByQuote(in.Key)
 		for _, value := range list {
@@ -209,13 +210,16 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		total, pages, list = cache.Context().GetEventsByQuotePage(in.Value, in.Page, in.Number)
 	} else if in.Key == "assets" {
 		total, pages, list = cache.Context().GetEventsAssetsByQuote(in.Value, in.Page, in.Number)
-	} else if in.Key == "activity" {
-
+	} else if in.Key == "type" {
+		tp, er := strconv.Atoi(in.Value)
+		if er == nil {
+			total, pages, list = cache.Context().GetEventsByEntityType(in.Parent, int32(tp), in.Page, in.Number)
+		}
 	} else {
 		err = errors.New("not define the key")
 	}
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.List = make([]*pb.EventInfo, 0, len(list))
@@ -236,10 +240,12 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 	} else if in.Key == "date" {
 		date, err := time.Parse("2006-01-02", in.Value)
 		if err != nil {
-			out.Status = outError(path, err.Error(), pb.ResultStatus_Empty)
+			out.Status = outError(path, err.Error(), pbstaus.ResultStatus_Empty)
 			return nil
 		}
 		out.List = cache.Context().GetActivityCountBy(in.Values, date)
+	} else if in.Key == "analyse" {
+
 	}
 	out.Owner = in.Value
 	out.Key = in.Key
@@ -252,7 +258,7 @@ func (mine *EventService) UpdateBase(ctx context.Context, in *pb.ReqEventUpdate,
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	begin := proxy.Date{}
@@ -265,7 +271,7 @@ func (mine *EventService) UpdateBase(ctx context.Context, in *pb.ReqEventUpdate,
 	place := proxy.PlaceInfo{UID: in.Place.Uid, Name: in.Place.Name, Location: in.Place.Location}
 	err := info.UpdateBase(in.Name, in.Description, in.Operator, uint8(in.Access), date, place, in.Assets)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 
@@ -279,12 +285,12 @@ func (mine *EventService) UpdateTags(ctx context.Context, in *pb.RequestList, ou
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateTags("", in.List)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = in.Uid
@@ -297,12 +303,12 @@ func (mine *EventService) UpdateCover(ctx context.Context, in *pb.RequestInfo, o
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateCover(in.Operator, in.Key)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = info.UID
@@ -315,12 +321,12 @@ func (mine *EventService) UpdateQuote(ctx context.Context, in *pb.RequestInfo, o
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateQuote(in.Key, in.Operator)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = info.UID
@@ -333,12 +339,12 @@ func (mine *EventService) UpdateAccess(ctx context.Context, in *pb.ReqEventAcces
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateAccess(in.Operator, uint8(in.Access))
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = info.UID
@@ -351,12 +357,12 @@ func (mine *EventService) UpdateAssets(ctx context.Context, in *pb.RequestList, 
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.UpdateAssets(in.Operator, in.List)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = in.Uid
@@ -370,13 +376,13 @@ func (mine *EventService) AppendAsset(ctx context.Context, in *pb.ReqEventAsset,
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 
 	err := info.AppendAsset(in.Asset)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = in.Uid
@@ -390,13 +396,13 @@ func (mine *EventService) SubtractAsset(ctx context.Context, in *pb.ReqEventAsse
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 
 	err := info.SubtractAsset(in.Asset)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Uid = in.Uid
@@ -410,14 +416,14 @@ func (mine *EventService) AppendRelation(ctx context.Context, in *pb.ReqEventRel
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	tmp := proxy.RelationCaseInfo{Direction: uint8(in.Relation.Direction),
 		Name: in.Relation.Name, Category: in.Relation.Category, Entity: in.Relation.Entity}
 	err := info.AppendRelation(&tmp)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
@@ -433,12 +439,12 @@ func (mine *EventService) SubtractRelation(ctx context.Context, in *pb.ReqEventR
 	inLog(path, in)
 	info := cache.Context().GetEvent(in.Uid)
 	if info == nil {
-		out.Status = outError(path, "not found the event by uid", pb.ResultStatus_NotExisted)
+		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
 	err := info.SubtractRelation(in.Relation.Uid)
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
@@ -453,12 +459,12 @@ func (mine *EventService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFi
 	path := "event.updateByFilter"
 	inLog(path, in)
 	if len(in.Uid) < 1 {
-		out.Status = outError(path, "the uid is empty", pb.ResultStatus_Empty)
+		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
 	entity := cache.Context().GetEntity(in.Uid)
 	if entity == nil {
-		out.Status = outError(path, "not found the entity", pb.ResultStatus_Empty)
+		out.Status = outError(path, "not found the entity", pbstaus.ResultStatus_Empty)
 		return nil
 	}
 	var err error
@@ -466,7 +472,7 @@ func (mine *EventService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFi
 		err = entity.UpdatePushTime(in.Operator)
 	}
 	if err != nil {
-		out.Status = outError(path, err.Error(), pb.ResultStatus_DBException)
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
 	out.Updated = uint64(entity.UpdateTime.Unix())

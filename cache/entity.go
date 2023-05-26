@@ -38,21 +38,24 @@ type EntityInfo struct {
 	Status EntityStatus `json:"-"`
 	Pushed int64        `json:"-"`
 	BaseInfo
-	FirstLetters string   `json:"letters"` //名称首字母
-	Concept      string   `json:"concept"`
-	Summary      string   `json:"summary"`
-	Description  string   `json:"description"`
-	Cover        string   `json:"cover"`
-	Add          string   `json:"add"`   //消歧义
-	Owner        string   `json:"owner"` //所属单位
-	Mark         string   `json:"mark"`  // 标记或者来源
-	Quote        string   `json:"quote"` // 引用
-	Published    bool     `json:"published"`
-	Access       uint32   //是否可被第三方访问，默认0是可以被访问的
-	Links        []string `json:"links" bson:"links"` //可与其他实体链接
-	Synonyms     []string `json:"synonyms"`           //同义词
-	Tags         []string `json:"tags"`               //标签
-	Relates      []string `json:"relates"`            //关联的一些数据，可以是社区，场景等
+	FirstLetters string `json:"letters"` //名称首字母
+	Concept      string `json:"concept"`
+	Summary      string `json:"summary"`
+	Description  string `json:"description"`
+	Cover        string `json:"cover"`
+	Add          string `json:"add"`   //消歧义
+	Owner        string `json:"owner"` //所属单位
+	Mark         string `json:"mark"`  // 标记或者来源
+	Quote        string `json:"quote"` // 引用
+	Published    bool   `json:"published"`
+	Access       uint32 //是否可被第三方访问，默认0是可以被访问的
+
+	Score uint32
+
+	Links    []string `json:"links" bson:"links"` //可与其他实体链接
+	Synonyms []string `json:"synonyms"`           //同义词
+	Tags     []string `json:"tags"`               //标签
+	Relates  []string `json:"relates"`            //关联的一些数据，可以是社区，场景等
 
 	Properties      []*proxy.PropertyInfo     `json:"properties"`
 	StaticEvents    []*proxy.EventBrief       `json:"events"`

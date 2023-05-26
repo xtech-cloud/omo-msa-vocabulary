@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"github.com/micro/go-micro/v2/logger"
 	"github.com/mozillazg/go-pinyin"
 	"mime/multipart"
@@ -33,6 +34,7 @@ type WritingInfo struct {
 type PairInfo struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
+	Count int32  `json:"count"`
 }
 
 type DurationInfo struct {
@@ -338,8 +340,10 @@ func convertExcelDays(days int64) (year uint16, month uint8) {
 	return year, month
 }
 
-func checkRepeatProperties() {
-
+func TestPages() {
+	slice := []int{1, 2, 4, 5, 8, 9, 10, 11, 22}
+	num := len(slice)
+	fmt.Printf("print = %v\n", slice[4:num-1])
 }
 
 func parseDate(date string) (year uint16, month uint8) {
@@ -415,11 +419,13 @@ func CheckPage[T any](page, number int32, all []T) (int32, int32, []T) {
 	if page < 1 {
 		return total, maxPage, all
 	}
-
+	if page > maxPage {
+		page = maxPage
+	}
 	var start = (page - 1) * number
 	var end = start + number
-	if end > total-1 {
-		end = total - 1
+	if end >= total {
+		end = total
 	}
 	list := make([]T, 0, number)
 	list = append(all[start:end])
