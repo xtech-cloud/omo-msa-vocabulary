@@ -245,7 +245,7 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 		}
 		out.List = cache.Context().GetActivityCountBy(in.Values, date)
 	} else if in.Key == "analyse" {
-
+		out.List = cache.Context().GetEventCountBy(in.Value)
 	}
 	out.Owner = in.Value
 	out.Key = in.Key

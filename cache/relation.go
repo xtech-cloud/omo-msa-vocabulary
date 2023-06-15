@@ -29,6 +29,7 @@ func (mine *cacheContext) AllRelations() []*RelationshipInfo {
 	return mine.relations
 }
 
+//创建关系类型
 func (mine *cacheContext) CreateRelation(parent, creator string, info *RelationshipInfo) error {
 	if info == nil {
 		return errors.New("the attribute info is nil")

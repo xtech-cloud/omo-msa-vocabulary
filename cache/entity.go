@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
@@ -48,6 +49,7 @@ type EntityInfo struct {
 	Mark         string `json:"mark"`  // 标记或者来源
 	Quote        string `json:"quote"` // 引用
 	Published    bool   `json:"published"`
+	Thumb        string `json:"thumb"` //图谱头像
 	Access       uint32 //是否可被第三方访问，默认0是可以被访问的
 
 	Score uint32
@@ -57,9 +59,9 @@ type EntityInfo struct {
 	Tags     []string `json:"tags"`               //标签
 	Relates  []string `json:"relates"`            //关联的一些数据，可以是社区，场景等
 
-	Properties      []*proxy.PropertyInfo     `json:"properties"`
-	StaticEvents    []*proxy.EventBrief       `json:"events"`
-	StaticRelations []*proxy.RelationCaseInfo `json:"relations"`
+	Properties      []*proxy.PropertyInfo `json:"properties"`
+	StaticEvents    []*proxy.EventBrief   `json:"events"`
+	StaticRelations []*VEdgeInfo          `json:"relations"`
 	events          []*EventInfo
 }
 
@@ -74,6 +76,60 @@ func switchEntityLabel(concept string) string {
 			return DefaultEntityTable
 		}
 	}
+}
+
+func (mine *cacheContext) CreateEntity(info *EntityInfo, relations []*pb.VEdgeInfo) error {
+	if info == nil {
+		return errors.New("the entity info is nil")
+	}
+	db := new(nosql.Entity)
+	db.UID = primitive.NewObjectID()
+	db.CreatedTime = time.Now()
+	db.ID = nosql.GetEntityNextID(info.table())
+	db.Name = info.Name
+	db.Description = info.Description
+	db.Scene = info.Owner
+	db.Creator = info.Creator
+	db.Operator = info.Operator
+	db.Add = info.Add
+	db.Cover = info.Cover
+	db.Summary = info.Summary
+	db.Quote = info.Quote
+	db.Mark = info.Mark
+	db.Concept = info.Concept
+	db.Status = uint8(info.Status)
+	db.Tags = info.Tags
+	db.Pushed = 0
+	db.Thumb = ""
+	db.Access = info.Access
+	db.Synonyms = info.Synonyms
+	db.Events = info.StaticEvents
+	//db.Relations = info.StaticRelations
+	db.Relates = info.Relates
+	if db.Relates == nil {
+		db.Relates = make([]string, 0, 1)
+	}
+	info.events = make([]*EventInfo, 0, 1)
+	if info.Properties == nil {
+		info.Properties = make([]*proxy.PropertyInfo, 0, 1)
+	}
+	db.FirstLetters = firstLetter(info.Name)
+	db.Properties = info.Properties
+	if db.Tags == nil {
+		db.Tags = make([]string, 0, 1)
+	}
+	if db.Synonyms == nil {
+		db.Synonyms = make([]string, 0, 1)
+	}
+	var err error
+	err = nosql.CreateEntity(db, info.table())
+	if err == nil {
+		info.initInfo(db)
+		//mine.entities = append(mine.entities, info)
+		info.UpdateStaticRelations(info.Operator, relations)
+		mine.syncGraphNode(info)
+	}
+	return err
 }
 
 func (mine *EntityInfo) Construct() {
@@ -106,6 +162,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Quote = db.Quote
 	mine.Access = db.Access
 	mine.Summary = db.Summary
+	mine.Thumb = db.Thumb
 	mine.Links = db.Links
 	if mine.Links == nil {
 		mine.Links = make([]string, 0, 1)
@@ -121,10 +178,11 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	}
 
 	mine.StaticEvents = db.Events
-	mine.StaticRelations = db.Relations
-	if mine.StaticRelations == nil {
-		mine.StaticRelations = make([]*proxy.RelationCaseInfo, 0, 1)
+	if db.Relations == nil {
+		mine.relationsToVEdges(db.Relations)
 	}
+	mine.StaticRelations = mine.GetVEdges()
+
 	if mine.StaticEvents == nil {
 		mine.StaticEvents = make([]*proxy.EventBrief, 0, 1)
 	}
@@ -145,7 +203,7 @@ func (mine *EntityInfo) clear() {
 }
 
 func (mine *EntityInfo) table() string {
-	if len(mine.Concept) < 1 {
+	if len(mine.Concept) < 2 {
 		return DefaultEntityTable
 	} else {
 		top := Context().GetTopConcept(mine.Concept)
@@ -175,6 +233,29 @@ func (mine *EntityInfo) updateConcept(concept, operator string) error {
 	} else {
 		return nil
 	}
+}
+
+func (mine *EntityInfo) relationsToVEdges(list []*proxy.RelationCaseInfo) {
+	if len(list) < 1 {
+		return
+	}
+	for _, item := range list {
+		target := proxy.VNode{Name: item.Entity, Entity: "", UID: "", Thumb: ""}
+		if hadChinese(item.Entity) {
+			target.Name = item.Entity
+			target.Entity = ""
+		} else {
+			target.Name = ""
+			target.Entity = item.Entity
+		}
+
+		_, _ = mine.CreateVEdge(mine.UID, item.Name, item.Category, mine.Operator, uint32(item.Direction), item.Weight, target)
+	}
+	_ = nosql.UpdateEntityRelations(mine.table(), mine.UID, mine.Operator, make([]*proxy.RelationCaseInfo, 0, 1))
+}
+
+func (mine *EntityInfo) GetVEdges() []*VEdgeInfo {
+	return cacheCtx.GetVEdgesByCenter(mine.UID)
 }
 
 func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote, sum, operator string) error {
@@ -230,7 +311,7 @@ func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote,
 	return err
 }
 
-func (mine *EntityInfo) UpdateStatic(info *EntityInfo) error {
+func (mine *EntityInfo) UpdateStatic(info *EntityInfo, relations []*pb.VEdgeInfo) error {
 	if mine.Status != EntityStatusDraft {
 		return errors.New("the entity is not draft so can not update")
 	}
@@ -244,8 +325,8 @@ func (mine *EntityInfo) UpdateStatic(info *EntityInfo) error {
 	if len(info.StaticEvents) > 0 {
 		_ = mine.UpdateStaticEvents(info.Operator, info.StaticEvents)
 	}
-	if len(info.StaticRelations) > 0 {
-		_ = mine.UpdateStaticRelations(info.Operator, info.StaticRelations)
+	if len(relations) > 0 {
+		_ = mine.UpdateStaticRelations(info.Operator, relations)
 	}
 	return err
 }
@@ -263,17 +344,37 @@ func (mine *EntityInfo) UpdateStaticEvents(operator string, events []*proxy.Even
 	return err
 }
 
-func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*proxy.RelationCaseInfo) error {
+func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*pb.VEdgeInfo) error {
 	if mine.Status != EntityStatusDraft {
 		return errors.New("the entity is not draft so can not update")
 	}
-	err := nosql.UpdateEntityRelations(mine.table(), mine.UID, operator, list)
-	if err == nil {
-		mine.Operator = operator
-		mine.StaticRelations = list
-		mine.UpdateTime = time.Now()
+
+	for _, brief := range list {
+		target := proxy.VNode{
+			Name:   brief.Target.Name,
+			Entity: brief.Target.Entity,
+			Thumb:  brief.Target.Thumb,
+			UID:    brief.Target.Uid,
+		}
+		if brief.Uid != "" {
+			err := nosql.UpdateVEdgeBase(brief.Uid, brief.Name, brief.Category, operator, uint8(brief.Direction), target)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err := mine.CreateVEdge(brief.Source, brief.Name, brief.Category, operator, brief.Direction, brief.Weight, target)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	return err
+	//err := nosql.UpdateEntityRelations(mine.table(), mine.UID, operator, list)
+	//if err == nil {
+	//	mine.Operator = operator
+	//mine.StaticRelations = list
+	//	mine.UpdateTime = time.Now()
+	//}
+	return nil
 }
 
 func (mine *EntityInfo) UpdateCover(cover, operator string) error {
@@ -301,6 +402,19 @@ func (mine *EntityInfo) setCover(cover, operator string) error {
 	err := nosql.UpdateEntityCover(mine.table(), mine.UID, cover, operator)
 	if err == nil {
 		mine.Cover = cover
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *EntityInfo) UpdateThumb(thumb, operator string) error {
+	if thumb == "" || thumb == mine.Thumb {
+		return nil
+	}
+	err := nosql.UpdateEntityThumb(mine.table(), mine.UID, thumb, operator)
+	if err == nil {
+		mine.Thumb = thumb
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
 	}
@@ -471,6 +585,35 @@ func (mine *EntityInfo) UpdateAccess(operator string, acc uint32) error {
 	mine.UpdateTime = time.Now()
 	return nil
 }
+
+//region VEdge fun
+func (mine *EntityInfo) CreateVEdge(source, name, relation, operator string, dire, weight uint32, target proxy.VNode) (*VEdgeInfo, error) {
+	if target.Name == "" {
+		return nil, errors.New("the target is empty")
+	}
+	target.UID = "temp-" + primitive.NewObjectID().Hex()
+	db := new(nosql.VEdge)
+	db.UID = primitive.NewObjectID()
+	db.ID = nosql.GetEventNextID()
+	db.CreatedTime = time.Now()
+	db.Creator = operator
+	db.Name = name
+	db.Source = source
+	db.Center = mine.UID
+	db.Catalog = relation
+	db.Target = target
+	db.Direction = uint8(dire)
+	db.Weight = weight
+	err := nosql.CreateVEdge(db)
+	if err != nil {
+		return nil, err
+	}
+	info := new(VEdgeInfo)
+	info.initInfo(db)
+	return info, nil
+}
+
+//endregion
 
 //region Event Fun
 func (mine *EntityInfo) initEvents() {
@@ -676,7 +819,6 @@ func (mine *EntityInfo) GetEvent(uid string) *EventInfo {
 //endregion
 
 //region Property Fun
-
 func (mine *EntityInfo) addProp(key string, words []proxy.WordInfo) {
 	if mine.Properties == nil {
 		return

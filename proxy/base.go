@@ -30,6 +30,7 @@ type PairInfo struct {
 
 type RelationCaseInfo struct {
 	UID       string `json:"uid" bson:"uid"`
+	Source    string `json:"source" bson:"source"` //
 	Direction uint8  `json:"direction" bson:"direction"`
 	Name      string `json:"relation" bson:"relation"` // 如果是定制则是显示定制名称，否则显示类型名称
 	Category  string `json:"category" bson:"category"` //关系类型UID
@@ -45,6 +46,13 @@ type EventBrief struct {
 	Place       PlaceInfo
 	Tags        []string
 	Assets      []string
+}
+
+type VNode struct {
+	UID    string `json:"uid" bson:"uid"`
+	Name   string `json:"name" bson:"name"`
+	Entity string `json:"entity" bson:"entity"`
+	Thumb  string `json:"thumb" bson:"thumb"`
 }
 
 type Date struct {

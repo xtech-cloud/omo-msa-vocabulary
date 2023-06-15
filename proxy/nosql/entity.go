@@ -23,6 +23,7 @@ type Entity struct {
 	Description  string                    `json:"desc" bson:"desc"`
 	Summary      string                    `json:"summary" bson:"summary"`
 	Cover        string                    `json:"cover" bson:"cover"`
+	Thumb        string                    `json:"thumb" bson:"thumb"`
 	Concept      string                    `json:"concept" bson:"concept"`
 	Status       uint8                     `json:"status" bson:"status"`
 	Scene        string                    `json:"scene" bson:"scene"` // 所属场景
@@ -419,6 +420,12 @@ func UpdateEntityPushed(table, uid string, operator string) error {
 
 func UpdateEntityCover(table, uid string, cover string, operator string) error {
 	msg := bson.M{"cover": cover, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityThumb(table, uid string, cover string, operator string) error {
+	msg := bson.M{"thumb": cover, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

@@ -21,9 +21,10 @@ func switchStaticEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
 		for i, event := range info.StaticEvents {
 			tmp.Events = append(tmp.Events, switchEventBriefToPB(fmt.Sprintf("%s-%d", info.UID, i), event))
 		}
-		tmp.Relations = make([]*pb.RelationBrief, 0, len(info.StaticRelations))
-		for _, item := range info.StaticRelations {
-			tmp.Relations = append(tmp.Relations, switchRRelationBrief(item))
+		tmp.Relations = make([]*pb.VEdgeInfo, 0, len(info.StaticRelations))
+		edges := info.GetVEdges()
+		for _, item := range edges {
+			tmp.Relations = append(tmp.Relations, switchVEdge(item))
 		}
 	}
 	length := len(info.Properties)
@@ -154,25 +155,42 @@ func switchEventBriefToPB(uid string, info *proxy.EventBrief) *pb.EventBrief {
 	return tmp
 }
 
-func switchRelationBrief(info *pb.RelationBrief) *proxy.RelationCaseInfo {
-	tmp := new(proxy.RelationCaseInfo)
-	tmp.Name = info.Name
-	tmp.Entity = info.Entity
-	tmp.Category = info.Type
-	tmp.Direction = uint8(info.Direction)
-	tmp.Weight = info.Weight
-	return tmp
-}
+//func switchRelationBrief(info *pb.RelationBrief) *proxy.RelationCaseInfo {
+//	tmp := new(proxy.RelationCaseInfo)
+//	tmp.UID = info.Uid
+//	tmp.Name = info.Name
+//	tmp.Entity = info.Target
+//	tmp.Category = info.Type
+//	tmp.Direction = uint8(info.Direction)
+//	tmp.Weight = info.Weight
+//	tmp.Source = info.Entity
+//	return tmp
+//}
 
-func switchRRelationBrief(info *proxy.RelationCaseInfo) *pb.RelationBrief {
-	tmp := new(pb.RelationBrief)
-	tmp.Name = info.Name
-	tmp.Entity = info.Entity
-	tmp.Type = info.Category
-	tmp.Direction = uint32(info.Direction)
-	tmp.Weight = info.Weight
-	return tmp
-}
+//func switchRRelationBrief(info *proxy.RelationCaseInfo) *pb.RelationBrief {
+//	tmp := new(pb.RelationBrief)
+//	tmp.Name = info.Name
+//	tmp.Entity = info.Source
+//	tmp.Type = info.Category
+//	tmp.Target = info.Entity
+//	tmp.Direction = uint32(info.Direction)
+//	tmp.Weight = info.Weight
+//	return tmp
+//}
+
+//func switchVEdgeToRelation(info *cache.VEdgeInfo) *pb.RelationBrief {
+//	tmp := new(pb.RelationBrief)
+//	tmp.Uid = info.UID
+//	tmp.Name = info.Name
+//	tmp.Entity = info.Source
+//	tmp.Type = info.Relation
+//	tmp.Target = info.Target.Entity
+//	tmp.Label = info.Target.Name
+//	tmp.Thumb = info.Target.Thumb
+//	tmp.Direction = uint32(info.Direction)
+//	tmp.Weight = info.Weight
+//	return tmp
+//}
 
 func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityInfo) error {
 	path := "entity.addOne"
@@ -208,21 +226,24 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 	info.Status = cache.EntityStatus(in.Status)
 	info.Mark = in.Mark
 	info.Access = 0
+	info.Thumb = ""
 	info.Relates = in.Relates
 	info.StaticEvents = make([]*proxy.EventBrief, 0, len(in.Events))
 	for _, event := range in.Events {
 		info.StaticEvents = append(info.StaticEvents, switchEventBriefFromPB(event))
 	}
-	info.StaticRelations = make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
-	for _, relation := range in.Relations {
-		info.StaticRelations = append(info.StaticRelations, switchRelationBrief(relation))
-	}
+
 	info.Properties = make([]*proxy.PropertyInfo, 0, len(in.Relations))
 	for _, prop := range in.Properties {
 		info.Properties = append(info.Properties, switchPropertyFromPB(prop))
 	}
 
-	err := cache.Context().CreateEntity(info)
+	//info.StaticRelations = make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
+	//for _, relation := range in.Relations {
+	//	info.StaticRelations = append(info.StaticRelations, switchRelationBrief(relation))
+	//}
+
+	err := cache.Context().CreateEntity(info, in.Relations)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
@@ -408,18 +429,22 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 
 	out.Systems = make([]*pb.EntityInfo, 0, len(in.List))
 	out.Users = make([]*pb.EntityInfo, 0, len(in.List))
+	all := true
+	if in.Operator == "brief" {
+		all = false
+	}
 	if in.Status == 1 { //获取标准的静态实体数据，由软件采集生成
 		array, err := cache.Context().GetEntitiesByList(cache.EntityStatusUsable, in.List)
 		if err == nil {
 			for _, value := range array {
-				out.Systems = append(out.Systems, switchStaticEntity(value, true))
+				out.Systems = append(out.Systems, switchStaticEntity(value, all))
 			}
 		}
 	} else if in.Status == 2 { //获取动态实体数据，非软件采集数据，一般是用户实体数据
 		list, err := cache.Context().GetCustomEntitiesByList(in.List)
 		if err == nil {
 			for _, value := range list {
-				out.Users = append(out.Users, switchDynamicEntity(value, true))
+				out.Users = append(out.Users, switchDynamicEntity(value, all))
 			}
 		}
 	} else {
@@ -430,7 +455,7 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 		}
 		if err == nil {
 			for _, value := range array {
-				out.Systems = append(out.Systems, switchStaticEntity(value, true))
+				out.Systems = append(out.Systems, switchStaticEntity(value, all))
 				for i := 0; i < len(rest); i += 1 {
 					if rest[i] == value.UID {
 						rest = append(rest[:i], rest[i+1:]...)
@@ -442,7 +467,7 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 		list, err := cache.Context().GetCustomEntitiesByList(rest)
 		if err == nil {
 			for _, value := range list {
-				out.Users = append(out.Users, switchDynamicEntity(value, false))
+				out.Users = append(out.Users, switchDynamicEntity(value, all))
 			}
 		}
 	}
@@ -646,7 +671,13 @@ func (mine *EntityService) UpdateCover(ctx context.Context, in *pb.RequestInfo, 
 		out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
-	err := info.UpdateCover(in.Key, in.Operator)
+	var err error
+	if in.Id > 0 {
+		err = info.UpdateThumb(in.Key, in.Operator)
+	} else {
+		err = info.UpdateCover(in.Key, in.Operator)
+	}
+
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
@@ -817,15 +848,15 @@ func (mine *EntityService) UpdateStatic(ctx context.Context, in *pb.ReqEntitySta
 	for _, event := range in.Events {
 		info.StaticEvents = append(info.StaticEvents, switchEventBriefFromPB(event))
 	}
-	info.StaticRelations = make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
-	for _, relation := range in.Relations {
-		info.StaticRelations = append(info.StaticRelations, switchRelationBrief(relation))
-	}
+	//info.StaticRelations = make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
+	//for _, relation := range in.Relations {
+	//	info.StaticRelations = append(info.StaticRelations, switchRelationBrief(relation))
+	//}
 	info.Properties = make([]*proxy.PropertyInfo, 0, len(in.Properties))
 	for _, prop := range in.Properties {
 		info.Properties = append(info.Properties, switchPropertyFromPB(prop))
 	}
-	err := entity.UpdateStatic(info)
+	err := entity.UpdateStatic(info, in.Relations)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
@@ -848,12 +879,12 @@ func (mine *EntityService) UpdateRelations(ctx context.Context, in *pb.ReqEntity
 		return nil
 	}
 
-	relations := make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
-	for _, relation := range in.Relations {
-		relations = append(relations, switchRelationBrief(relation))
-	}
+	//relations := make([]*proxy.RelationCaseInfo, 0, len(in.Relations))
+	//for _, relation := range in.Relations {
+	//	relations = append(relations, switchRelationBrief(relation))
+	//}
 
-	err := entity.UpdateStaticRelations(in.Operator, relations)
+	err := entity.UpdateStaticRelations(in.Operator, in.Relations)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
@@ -912,6 +943,8 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 	} else if in.Key == "access" {
 		acc := cache.StringToUint32(in.Value)
 		err = entity.UpdateAccess(in.Operator, acc)
+	} else if in.Key == "thumb" {
+		err = entity.UpdateThumb(in.Value, in.Operator)
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

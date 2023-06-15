@@ -18,4 +18,5 @@ const (
 	TableBox          = "boxes"
 	TableArchived     = "archived"
 	TableRecord       = "records"
+	TableEdge         = "edges"
 )

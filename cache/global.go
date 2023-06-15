@@ -2,68 +2,13 @@ package cache
 
 import (
 	"errors"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
 	"sort"
 	"strings"
-	"time"
 )
 
 //region Global Entity
-
-func (mine *cacheContext) CreateEntity(info *EntityInfo) error {
-	if info == nil {
-		return errors.New("the entity info is nil")
-	}
-	db := new(nosql.Entity)
-	db.UID = primitive.NewObjectID()
-	db.CreatedTime = time.Now()
-	db.ID = nosql.GetEntityNextID(info.table())
-	db.Name = info.Name
-	db.Description = info.Description
-	db.Scene = info.Owner
-	db.Creator = info.Creator
-	db.Operator = info.Operator
-	db.Add = info.Add
-	db.Cover = info.Cover
-	db.Summary = info.Summary
-	db.Quote = info.Quote
-	db.Mark = info.Mark
-	db.Concept = info.Concept
-	db.Status = uint8(info.Status)
-	db.Tags = info.Tags
-	db.Pushed = 0
-	db.Access = info.Access
-	db.Synonyms = info.Synonyms
-	db.Events = info.StaticEvents
-	db.Relations = info.StaticRelations
-	db.Relates = info.Relates
-	if db.Relates == nil {
-		db.Relates = make([]string, 0, 1)
-	}
-	info.events = make([]*EventInfo, 0, 1)
-	if info.Properties == nil {
-		info.Properties = make([]*proxy.PropertyInfo, 0, 1)
-	}
-	db.FirstLetters = firstLetter(info.Name)
-	db.Properties = info.Properties
-	if db.Tags == nil {
-		db.Tags = make([]string, 0, 1)
-	}
-	if db.Synonyms == nil {
-		db.Synonyms = make([]string, 0, 1)
-	}
-	var err error
-	err = nosql.CreateEntity(db, info.table())
-	if err == nil {
-		info.initInfo(db)
-		//mine.entities = append(mine.entities, info)
-		mine.syncGraphNode(info)
-	}
-	return err
-}
 
 func (mine *cacheContext) syncGraphNode(info *EntityInfo) {
 	var name = info.Name

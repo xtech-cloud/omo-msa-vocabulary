@@ -30,34 +30,34 @@ func (mine *cacheContext) checkRelations(old, now *EntityInfo) {
 		return
 	}
 	if old == nil {
-		for _, relation := range now.StaticRelations {
-			relationKind := Context().GetRelation(relation.Category)
+		for _, edge := range now.StaticRelations {
+			relationKind := Context().GetRelation(edge.Relation)
 			if relationKind != nil {
-				Context().addSyncLink(now.UID, relation.Entity, relationKind.UID, relation.Name, switchRelationToLink(relationKind.Kind), relation.Direction)
+				Context().addSyncLink(now.UID, edge.Source, relationKind.UID, edge.Name, switchRelationToLink(relationKind.Kind), edge.Direction)
 			}
 		}
 	} else {
 		oldList := make([]string, 0, 10)
-		for _, relation := range old.StaticRelations {
-			oldList = append(oldList, relation.Entity)
+		for _, edge := range old.StaticRelations {
+			oldList = append(oldList, edge.Source)
 		}
 		newList := make([]string, 0, 10)
 		for _, relation := range now.StaticRelations {
-			newList = append(newList, relation.Entity)
+			newList = append(newList, relation.Source)
 		}
 		for _, oldR := range old.StaticRelations {
-			if !tool.HasItem(newList, oldR.Entity) {
-				link := Context().graph.GetRelationBy(now.UID, oldR.Entity)
+			if !tool.HasItem(newList, oldR.Source) {
+				link := Context().graph.GetRelationBy(now.UID, oldR.Source)
 				if link != nil {
 					_ = Context().graph.RemoveLink(link.ID)
 				}
 			}
 		}
 		for _, nowR := range now.StaticRelations {
-			if !tool.HasItem(oldList, nowR.Entity) {
-				relationKind := Context().GetRelation(nowR.Category)
+			if !tool.HasItem(oldList, nowR.Source) {
+				relationKind := Context().GetRelation(nowR.Source)
 				if relationKind != nil {
-					Context().addSyncLink(now.UID, nowR.Entity, relationKind.UID, nowR.Name, switchRelationToLink(relationKind.Kind), nowR.Direction)
+					Context().addSyncLink(now.UID, nowR.Source, relationKind.UID, nowR.Name, switchRelationToLink(relationKind.Kind), nowR.Direction)
 				}
 			}
 		}
