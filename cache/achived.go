@@ -11,12 +11,14 @@ import (
 )
 
 type ArchivedInfo struct {
+	Access uint8
 	BaseInfo
 	Concept string
 	Entity  string
 	File    string
 	MD5     string
 	Scene   string
+	Score   uint32
 }
 
 func (mine *cacheContext) CreateArchived(info *EntityInfo) error {
@@ -33,6 +35,8 @@ func (mine *cacheContext) CreateArchived(info *EntityInfo) error {
 	db.Scene = info.Owner
 	db.Creator = info.Creator
 	db.Operator = info.Operator
+	db.Access = 0
+	db.Score = 0
 	file, er := json.Marshal(info)
 	if er != nil {
 		return er
@@ -143,6 +147,7 @@ func (mine *ArchivedInfo) initInfo(db *nosql.Archived) bool {
 	mine.File = db.File
 	mine.MD5 = db.MD5
 	mine.Scene = db.Scene
+	mine.Access = db.Access
 	//if strings.Contains(mine.File,"http://rdp-down.suii.cn/") {
 	//	f := strings.Replace(mine.File, "http://rdp-down.suii.cn/", "", 1)
 	//	_ = mine.setFile(f)
@@ -177,6 +182,15 @@ func (mine *ArchivedInfo) UpdateFile(info *EntityInfo, operator string) error {
 	return err
 }
 
+func (mine *ArchivedInfo) UpdateAccess(operator string, acc uint8) error {
+	err := nosql.UpdateArchivedAccess(mine.UID, operator, acc)
+	if err == nil {
+		mine.Access = acc
+		mine.Operator = operator
+	}
+	return err
+}
+
 func (mine *ArchivedInfo) GetEntity() *EntityInfo {
 	entity := new(EntityInfo)
 	er := json.Unmarshal([]byte(mine.File), entity)
@@ -186,5 +200,6 @@ func (mine *ArchivedInfo) GetEntity() *EntityInfo {
 	now := cacheCtx.GetEntity(entity.UID)
 	entity.Status = now.Status
 	entity.Published = true
+	entity.Access = mine.Access
 	return entity
 }

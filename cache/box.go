@@ -26,61 +26,91 @@ type BoxInfo struct {
 //region Global Fun
 
 func (mine *cacheContext) GetBoxByName(name string) *BoxInfo {
-	for i := 0; i < len(mine.boxes); i += 1 {
-		if mine.boxes[i].Name == name {
-			return mine.boxes[i]
-		}
+	db, err := nosql.GetBoxByName(name)
+	if err == nil {
+		info := new(BoxInfo)
+		info.initInfo(db)
+		return info
 	}
 	return nil
 }
 
 func (mine *cacheContext) GetBox(uid string) *BoxInfo {
-	for i := 0; i < len(mine.boxes); i += 1 {
-		if mine.boxes[i].UID == uid {
-			return mine.boxes[i]
-		}
+	db, err := nosql.GetBox(uid)
+	if err == nil {
+		info := new(BoxInfo)
+		info.initInfo(db)
+		return info
 	}
 	return nil
 }
 
 func (mine *cacheContext) GetBoxes(owner string, kind uint8) []*BoxInfo {
-	list := make([]*BoxInfo, 0, 10)
 	if len(owner) < 1 {
 		owner = DefaultOwner
 	}
-	for _, box := range mine.boxes {
-		if box.Owner == owner && box.Type == kind {
-			list = append(list, box)
-		}
+	dbs, _ := nosql.GetBoxesByType(owner, kind)
+	list := make([]*BoxInfo, 0, len(dbs))
+	for _, db := range dbs {
+		box := new(BoxInfo)
+		box.initInfo(db)
+		list = append(list, box)
 	}
-	//dbs,err := nosql.GetBoxesByType(owner, kind)
-	//if err == nil {
-	//	for _, box := range dbs {
-	//		info := new(BoxInfo)
-	//		info.initInfo(box)
-	//		list = append(list, info)
-	//	}
-	//}
 
 	return list
 }
 
 func (mine *cacheContext) GetBoxesByUser(user string) []*BoxInfo {
-	list := make([]*BoxInfo, 0, 10)
-	for _, box := range mine.boxes {
-		if tool.HasItem(box.Users, user) {
-			list = append(list, box)
-		}
+	dbs, _ := nosql.GetBoxesByUser(user)
+	list := make([]*BoxInfo, 0, len(dbs))
+	for _, db := range dbs {
+		box := new(BoxInfo)
+		box.initInfo(db)
+		list = append(list, box)
 	}
 	return list
 }
 
 func (mine *cacheContext) GetBoxesByReviewer(user string) []*BoxInfo {
-	list := make([]*BoxInfo, 0, 10)
-	for _, box := range mine.boxes {
-		if tool.HasItem(box.Reviewers, user) {
-			list = append(list, box)
-		}
+	dbs, _ := nosql.GetBoxesByReviewer(user)
+	list := make([]*BoxInfo, 0, len(dbs))
+	for _, db := range dbs {
+		box := new(BoxInfo)
+		box.initInfo(db)
+		list = append(list, box)
+	}
+	return list
+}
+
+func (mine *cacheContext) GetBoxesByConcept(concept string) []*BoxInfo {
+	dbs, _ := nosql.GetBoxesByConcept(concept)
+	list := make([]*BoxInfo, 0, len(dbs))
+	for _, db := range dbs {
+		box := new(BoxInfo)
+		box.initInfo(db)
+		list = append(list, box)
+	}
+	return list
+}
+
+func (mine *cacheContext) GetBoxesByKeyword(key string) []*BoxInfo {
+	dbs, _ := nosql.GetBoxesByKeyword(key)
+	list := make([]*BoxInfo, 0, len(dbs))
+	for _, db := range dbs {
+		box := new(BoxInfo)
+		box.initInfo(db)
+		list = append(list, box)
+	}
+	return list
+}
+
+func (mine *cacheContext) GetBoxesByOwner(owner string) []*BoxInfo {
+	dbs, _ := nosql.GetBoxesByOwner(owner)
+	list := make([]*BoxInfo, 0, len(dbs))
+	for _, db := range dbs {
+		box := new(BoxInfo)
+		box.initInfo(db)
+		list = append(list, box)
 	}
 	return list
 }
@@ -146,7 +176,6 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	err := nosql.CreateBox(db)
 	if err == nil {
 		info.initInfo(db)
-		mine.boxes = append(mine.boxes, info)
 	}
 	return err
 }
@@ -154,31 +183,26 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 func (mine *cacheContext) RemoveBox(uid, operator string) error {
 	err := nosql.RemoveBox(uid, operator)
 	if err == nil {
-		for i := 0; i < len(mine.boxes); i += 1 {
-			if mine.boxes[i].UID == uid {
-				mine.boxes = append(mine.boxes[:i], mine.boxes[i+1:]...)
-				break
-			}
-		}
+		//for i := 0; i < len(mine.boxes); i += 1 {
+		//	if mine.boxes[i].UID == uid {
+		//		mine.boxes = append(mine.boxes[:i], mine.boxes[i+1:]...)
+		//		break
+		//	}
+		//}
 	}
 	return err
 }
 
 func (mine *cacheContext) HadBoxByName(name string) bool {
-	for i := 0; i < len(mine.boxes); i += 1 {
-		if mine.boxes[i].Name == name {
-			return true
-		}
-	}
-	return false
+	had, _ := nosql.HadBoxByName(name)
+	return had
 }
 
 func (mine *cacheContext) checkEntityFromBoxes(uid, name string) {
-	for _, box := range mine.boxes {
-		if box.HadKeyword(uid) {
-			_ = box.RemoveKeyword(uid)
-			_ = box.AppendKeyword(name)
-		}
+	boxes := mine.GetBoxesByKeyword(uid)
+	for _, box := range boxes {
+		_ = box.RemoveKeyword(uid)
+		_ = box.AppendKeyword(name)
 	}
 }
 

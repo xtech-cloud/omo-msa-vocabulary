@@ -78,7 +78,6 @@ type cacheContext struct {
 	graph        *GraphInfo
 	entityTables []string
 	concepts     []*ConceptInfo
-	boxes        []*BoxInfo
 	attributes   []*AttributeInfo
 	relations    []*RelationshipInfo
 	nodesMap     *CountMap
@@ -93,7 +92,6 @@ func InitData() error {
 	cacheCtx.concepts = make([]*ConceptInfo, 0, 50)
 	cacheCtx.attributes = make([]*AttributeInfo, 0, 100)
 	cacheCtx.relations = make([]*RelationshipInfo, 0, 100)
-	cacheCtx.boxes = make([]*BoxInfo, 0, 50)
 	cacheCtx.entityTables = make([]string, 0, 5)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, DefaultEntityTable)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, UserEntityTable)
@@ -141,14 +139,6 @@ func InitData() error {
 		//}
 	}
 	logger.Infof("init concerts!!! number = %d", len(cacheCtx.concepts))
-
-	boxes, _ := nosql.GetBoxes()
-	for i := 0; i < len(boxes); i += 1 {
-		info := new(BoxInfo)
-		info.initInfo(boxes[i])
-		cacheCtx.boxes = append(cacheCtx.boxes, info)
-	}
-	logger.Infof("init boxes!!! number = %d", len(cacheCtx.boxes))
 
 	//for _, kind := range cacheCtx.concerts {
 	//	if kind.Table != "" {

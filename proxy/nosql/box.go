@@ -97,6 +97,118 @@ func GetBoxesByType(owner string, tp uint8) ([]*Box, error) {
 	return items, nil
 }
 
+func GetBoxesByOwner(owner string) ([]*Box, error) {
+	var items = make([]*Box, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"owner": owner, "deleteAt": def}
+	cursor, err1 := findMany(TableBox, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Box)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetBoxByName(name string) (*Box, error) {
+	def := new(time.Time)
+	filter := bson.M{"name": name, "deleteAt": def}
+	result, err1 := findOneBy(TableBox, filter)
+	model := new(Box)
+	err1 = result.Decode(model)
+	if err1 != nil {
+		return nil, err1
+	}
+	return model, nil
+}
+
+func GetBoxesByUser(user string) ([]*Box, error) {
+	var items = make([]*Box, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"users": user, "deleteAt": def}
+	cursor, err1 := findMany(TableBox, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Box)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetBoxesByReviewer(user string) ([]*Box, error) {
+	var items = make([]*Box, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"reviewers": user, "deleteAt": def}
+	cursor, err1 := findMany(TableBox, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Box)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetBoxesByKeyword(key string) ([]*Box, error) {
+	var items = make([]*Box, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"keywords": key, "deleteAt": def}
+	cursor, err1 := findMany(TableBox, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Box)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetBoxesByConcept(concept string) ([]*Box, error) {
+	var items = make([]*Box, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"concept": concept, "deleteAt": def}
+	cursor, err1 := findMany(TableBox, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Box)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func UpdateBoxBase(uid, name, desc, concept, operator string) error {
 	msg := bson.M{"name": name, "remark": desc, "operator": operator, "concept": concept, "updatedAt": time.Now()}
 	_, err := updateOne(TableBox, uid, msg)

@@ -31,6 +31,11 @@ const (
 	OptionSwitch OptionType = 3 //切换关联
 )
 
+const (
+	AccessAll    = 0 //全部可以访问
+	AccessIgnore = 1 //
+)
+
 type EntityStatus uint8
 
 type OptionType uint8
@@ -39,30 +44,28 @@ type EntityInfo struct {
 	Status EntityStatus `json:"-"`
 	Pushed int64        `json:"-"`
 	BaseInfo
-	FirstLetters string `json:"letters"` //名称首字母
-	Concept      string `json:"concept"`
-	Summary      string `json:"summary"`
-	Description  string `json:"description"`
-	Cover        string `json:"cover"`
-	Add          string `json:"add"`   //消歧义
-	Owner        string `json:"owner"` //所属单位
-	Mark         string `json:"mark"`  // 标记或者来源
-	Quote        string `json:"quote"` // 引用
-	Published    bool   `json:"published"`
-	Thumb        string `json:"thumb"` //图谱头像
-	Access       uint32 //是否可被第三方访问，默认0是可以被访问的
+	FirstLetters string   `json:"letters"` //名称首字母
+	Concept      string   `json:"concept"`
+	Summary      string   `json:"summary"`
+	Description  string   `json:"description"`
+	Cover        string   `json:"cover"`
+	Add          string   `json:"add"`   //消歧义
+	Owner        string   `json:"owner"` //所属单位
+	Mark         string   `json:"mark"`  // 标记采集来源
+	Quote        string   `json:"quote"` // 引用外部链接，或者群晖路径
+	Published    bool     `json:"published"`
+	Thumb        string   `json:"thumb"` //图谱头像
+	Access       uint8    `json:"-"`     //是否可被第三方访问，默认0是可以被访问的
+	Score        uint32   `json:"-"`
+	Links        []string `json:"links" bson:"links"` //可与其他实体链接
+	Synonyms     []string `json:"synonyms"`           //同义词
+	Tags         []string `json:"tags"`               //标签
+	Relates      []string `json:"relates"`            //关联的一些数据，可以是社区，场景等
 
-	Score uint32
-
-	Links    []string `json:"links" bson:"links"` //可与其他实体链接
-	Synonyms []string `json:"synonyms"`           //同义词
-	Tags     []string `json:"tags"`               //标签
-	Relates  []string `json:"relates"`            //关联的一些数据，可以是社区，场景等
-
-	Properties      []*proxy.PropertyInfo `json:"properties"`
-	StaticEvents    []*proxy.EventBrief   `json:"events"`
-	StaticRelations []*VEdgeInfo          `json:"relations"`
-	events          []*EventInfo
+	Properties   []*proxy.PropertyInfo `json:"properties"`
+	StaticEvents []*proxy.EventBrief   `json:"events"`
+	//StaticRelations []*VEdgeInfo          `json:"relations"`
+	events []*EventInfo
 }
 
 func switchEntityLabel(concept string) string {
@@ -177,12 +180,12 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 		mine.Published = false
 	}
 
-	mine.StaticEvents = db.Events
 	if db.Relations == nil {
 		mine.relationsToVEdges(db.Relations)
 	}
-	mine.StaticRelations = mine.GetVEdges()
+	//mine.StaticRelations = mine.GetVEdges()
 
+	mine.StaticEvents = db.Events
 	if mine.StaticEvents == nil {
 		mine.StaticEvents = make([]*proxy.EventBrief, 0, 1)
 	}
@@ -421,6 +424,32 @@ func (mine *EntityInfo) UpdateThumb(thumb, operator string) error {
 	return err
 }
 
+func (mine *EntityInfo) UpdateMark(mark, operator string) error {
+	if mark == mine.Mark {
+		return nil
+	}
+	err := nosql.UpdateEntityMark(mine.table(), mine.UID, mark, operator)
+	if err == nil {
+		mine.Mark = mark
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *EntityInfo) UpdateQuote(quote, operator string) error {
+	if quote == mine.Quote {
+		return nil
+	}
+	err := nosql.UpdateEntityQuote(mine.table(), mine.UID, quote, operator)
+	if err == nil {
+		mine.Quote = quote
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
 func (mine *EntityInfo) GetRecords() ([]*nosql.Record, error) {
 	dbs, err := nosql.GetRecords(mine.UID)
 	if err != nil {
@@ -574,15 +603,19 @@ func (mine *EntityInfo) UpdateLinks(operator string, list []string) error {
 	return nil
 }
 
-func (mine *EntityInfo) UpdateAccess(operator string, acc uint32) error {
-	err := nosql.UpdateEntityAccess(mine.table(), mine.UID, operator, acc)
+func (mine *EntityInfo) UpdateAccess(operator string, acc uint8) error {
+	info := cacheCtx.GetArchivedByEntity(mine.UID)
+	if info == nil {
+		return errors.New("not found the archived file by entity")
+	}
+	err := nosql.UpdateArchivedAccess(info.UID, operator, acc)
 	if err != nil {
 		return err
 	}
 
-	mine.Operator = operator
-	mine.Access = acc
-	mine.UpdateTime = time.Now()
+	info.Operator = operator
+	info.Access = acc
+	//mine.UpdateTime = time.Now()
 	return nil
 }
 

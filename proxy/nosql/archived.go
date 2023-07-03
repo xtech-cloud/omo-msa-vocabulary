@@ -16,6 +16,8 @@ type Archived struct {
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
+	Access  uint8  `json:"access" bson:"access"`
+	Score   uint32 `json:"score" bson:"score"`
 	Concept string `json:"concept" bson:"concept"`
 	Name    string `json:"name" bson:"name"`
 	Entity  string `json:"entity" bson:"entity"`
@@ -136,6 +138,12 @@ func GetArchivedListBy(scene, concept string) ([]*Archived, error) {
 
 func UpdateArchivedFile(uid, operator, file, md5 string) error {
 	msg := bson.M{"file": file, "md5": md5, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableArchived, uid, msg)
+	return err
+}
+
+func UpdateArchivedAccess(uid, operator string, acc uint8) error {
+	msg := bson.M{"access": acc, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableArchived, uid, msg)
 	return err
 }

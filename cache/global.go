@@ -156,9 +156,9 @@ func (mine *cacheContext) GetEntitiesByOwner(owner string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext) GetEntitiesByConcept(concept string) []*EntityInfo {
+func (mine *cacheContext) GetEntitiesByConcept(owner, concept string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
-	array, err := nosql.GetEntitiesByConcept(DefaultEntityTable, concept)
+	array, err := nosql.GetEntitiesByConcept(DefaultEntityTable, owner, concept)
 	if err != nil {
 		return list
 	}

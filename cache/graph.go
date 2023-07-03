@@ -30,7 +30,8 @@ func (mine *cacheContext) checkRelations(old, now *EntityInfo) {
 		return
 	}
 	if old == nil {
-		for _, edge := range now.StaticRelations {
+		edges := mine.GetVEdgesByCenter(now.UID)
+		for _, edge := range edges {
 			relationKind := Context().GetRelation(edge.Relation)
 			if relationKind != nil {
 				Context().addSyncLink(now.UID, edge.Source, relationKind.UID, edge.Name, switchRelationToLink(relationKind.Kind), edge.Direction)
@@ -38,14 +39,16 @@ func (mine *cacheContext) checkRelations(old, now *EntityInfo) {
 		}
 	} else {
 		oldList := make([]string, 0, 10)
-		for _, edge := range old.StaticRelations {
+		oldEdges := mine.GetVEdgesByCenter(old.UID)
+		for _, edge := range oldEdges {
 			oldList = append(oldList, edge.Source)
 		}
 		newList := make([]string, 0, 10)
-		for _, relation := range now.StaticRelations {
+		newEdges := mine.GetVEdgesByCenter(now.UID)
+		for _, relation := range newEdges {
 			newList = append(newList, relation.Source)
 		}
-		for _, oldR := range old.StaticRelations {
+		for _, oldR := range oldEdges {
 			if !tool.HasItem(newList, oldR.Source) {
 				link := Context().graph.GetRelationBy(now.UID, oldR.Source)
 				if link != nil {
@@ -53,7 +56,7 @@ func (mine *cacheContext) checkRelations(old, now *EntityInfo) {
 				}
 			}
 		}
-		for _, nowR := range now.StaticRelations {
+		for _, nowR := range newEdges {
 			if !tool.HasItem(oldList, nowR.Source) {
 				relationKind := Context().GetRelation(nowR.Source)
 				if relationKind != nil {

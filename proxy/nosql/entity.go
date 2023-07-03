@@ -31,7 +31,7 @@ type Entity struct {
 	Mark         string                    `json:"mark" bson:"mark"`
 	Quote        string                    `json:"quote" bson:"quote"`
 	Pushed       int64                     `json:"pushed" bson:"pushed"`
-	Access       uint32                    `json:"access" bson:"access"`
+	Access       uint8                     `json:"access" bson:"access"`
 	Synonyms     []string                  `json:"synonyms" bson:"synonyms"`
 	Tags         []string                  `json:"tags" bson:"tags"`
 	Relates      []string                  `json:"relates" bson:"relates"`
@@ -202,8 +202,8 @@ func GetEntitiesByOwnerAndStatus(table, owner string, st uint8) ([]*Entity, erro
 	return items, nil
 }
 
-func GetEntitiesByConcept(table, concept string) ([]*Entity, error) {
-	msg := bson.M{"concept": concept, "deleteAt": new(time.Time)}
+func GetEntitiesByConcept(table, owner, concept string) ([]*Entity, error) {
+	msg := bson.M{"scene": owner, "concept": concept, "deleteAt": new(time.Time)}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -426,6 +426,18 @@ func UpdateEntityCover(table, uid string, cover string, operator string) error {
 
 func UpdateEntityThumb(table, uid string, cover string, operator string) error {
 	msg := bson.M{"thumb": cover, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityMark(table, uid, mark, operator string) error {
+	msg := bson.M{"mark": mark, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityQuote(table, uid, quote, operator string) error {
+	msg := bson.M{"quote": quote, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

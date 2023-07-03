@@ -85,9 +85,9 @@ func (mine *VEdgeInfo) initInfo(db *nosql.VEdge) {
 }
 
 func (mine *VEdgeInfo) UpdateBase(name, relation, operator string, dire uint8, target proxy.VNode) error {
-	if name == "" {
-		name = mine.Name
-	}
+	//if name == "" {
+	//	name = mine.Name
+	//}
 	if relation == "" {
 		relation = mine.Relation
 	}

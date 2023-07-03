@@ -21,8 +21,9 @@ func switchStaticEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
 		for i, event := range info.StaticEvents {
 			tmp.Events = append(tmp.Events, switchEventBriefToPB(fmt.Sprintf("%s-%d", info.UID, i), event))
 		}
-		tmp.Relations = make([]*pb.VEdgeInfo, 0, len(info.StaticRelations))
+
 		edges := info.GetVEdges()
+		tmp.Relations = make([]*pb.VEdgeInfo, 0, len(edges))
 		for _, item := range edges {
 			tmp.Relations = append(tmp.Relations, switchVEdge(item))
 		}
@@ -49,6 +50,12 @@ func switchDynamicEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
 		events2 := cache.Context().GetEventsByEntity(info.UID, cache.EventActivity)
 		for _, event := range events2 {
 			tmp.Events = append(tmp.Events, switchEntityEventBrief(event))
+		}
+
+		edges := info.GetVEdges()
+		tmp.Relations = make([]*pb.VEdgeInfo, 0, len(edges))
+		for _, item := range edges {
+			tmp.Relations = append(tmp.Relations, switchVEdge(item))
 		}
 	}
 	tmp.Properties = make([]*pb.PropertyInfo, 0, len(info.Properties))
@@ -81,8 +88,9 @@ func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	tmp.Pushed = info.Pushed
 	tmp.Relates = info.Relates
 	tmp.Links = info.Links
-	tmp.Access = info.Access
+	tmp.Access = uint32(info.Access)
 	tmp.Score = info.Score
+	tmp.Thumb = info.Thumb
 	tmp.Records = make([]*pb.EntityRecord, 0, 10)
 	records, _ := info.GetRecords()
 	for _, record := range records {
@@ -487,6 +495,13 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 		list = cache.Context().GetUserEntitiesByLetter(in.Parent, in.Value)
 	} else if in.Key == "letters" {
 		list = cache.Context().GetUserEntitiesByLetters(in.Parent, in.Value)
+	} else if in.Key == "concept" {
+		if in.Value == "" {
+			list = cache.Context().GetEntitiesByOwner(in.Parent)
+		} else {
+			list = cache.Context().GetEntitiesByConcept(in.Parent, in.Value)
+		}
+
 	} else if in.Key == "rank" {
 		num, er := strconv.Atoi(in.Value)
 		if er != nil {
@@ -942,9 +957,13 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 		err = entity.UpdateLinks(in.Operator, in.Values)
 	} else if in.Key == "access" {
 		acc := cache.StringToUint32(in.Value)
-		err = entity.UpdateAccess(in.Operator, acc)
+		err = entity.UpdateAccess(in.Operator, uint8(acc))
 	} else if in.Key == "thumb" {
 		err = entity.UpdateThumb(in.Value, in.Operator)
+	} else if in.Key == "mark" {
+		err = entity.UpdateMark(in.Value, in.Operator)
+	} else if in.Key == "quote" {
+		err = entity.UpdateQuote(in.Value, in.Operator)
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

@@ -131,8 +131,26 @@ func (mine *BoxService) GetListByUser(ctx context.Context, in *pb.RequestInfo, o
 func (mine *BoxService) GetByFilter(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyBoxList) error {
 	path := "box.GetByFilter"
 	inLog(path, in)
-	out.List = make([]*pb.BoxInfo, 0, 200)
 
+	var err error
+	var list []*cache.BoxInfo
+	if in.Key == "concept" {
+		if in.Value == "" {
+			list = cache.Context().GetBoxesByOwner(in.Value)
+		} else {
+			list = cache.Context().GetBoxesByConcept(in.Value)
+		}
+	} else {
+		err = errors.New("not define the key")
+	}
+	if err != nil {
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
+		return nil
+	}
+	out.List = make([]*pb.BoxInfo, 0, len(list))
+	for _, info := range list {
+		out.List = append(out.List, switchBox(info))
+	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
