@@ -243,7 +243,7 @@ func (mine *EntityInfo) relationsToVEdges(list []*proxy.RelationCaseInfo) {
 		return
 	}
 	for _, item := range list {
-		target := proxy.VNode{Name: item.Entity, Entity: "", UID: "", Thumb: ""}
+		target := proxy.VNode{Name: "", Entity: "", UID: "", Thumb: ""}
 		if hadChinese(item.Entity) {
 			target.Name = item.Entity
 			target.Entity = ""
