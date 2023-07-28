@@ -432,3 +432,14 @@ func CheckPage[T any](page, number int32, all []T) (int32, int32, []T) {
 	list = append(all[start:end])
 	return total, maxPage, list
 }
+
+func DateToUTC(date string) int64 {
+	if date == "" {
+		return 0
+	}
+	t, e := time.ParseInLocation("2006/01/02", date, time.Local)
+	if e != nil {
+		return 0
+	}
+	return t.Unix()
+}

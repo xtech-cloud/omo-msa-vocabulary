@@ -542,6 +542,8 @@ func (mine *EntityService) GetStatistic(ctx context.Context, in *pb.RequestFilte
 			score = score + (i+1)*100
 		}
 		out.Count = uint32(score)
+	} else if in.Key == "" {
+
 	}
 	out.Owner = in.Value
 	out.Key = in.Key

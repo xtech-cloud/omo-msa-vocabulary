@@ -8,6 +8,7 @@ import (
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
+	"omo.msa.vocabulary/tool"
 	"strconv"
 	"time"
 )
@@ -215,6 +216,20 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		if er == nil {
 			total, pages, list = cache.Context().GetEventsByEntityType(in.Parent, int32(tp), in.Page, in.Number)
 		}
+	} else if in.Key == "week" {
+		//从指定时间开始7天内的活动事件列表
+		utc, er := strconv.Atoi(in.Value)
+		if er != nil {
+			out.Status = outError(path, er.Error(), pbstaus.ResultStatus_DBException)
+			return nil
+		}
+		arr := cache.Context().GetEventsByDate(int64(utc), 1)
+		list = make([]*cache.EventInfo, 0, len(arr))
+		for _, info := range arr {
+			if tool.HasItem(in.Values, info.Quote) {
+				list = append(list, info)
+			}
+		}
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -246,7 +261,35 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 		out.List = cache.Context().GetActivityCountBy(in.Values, date)
 	} else if in.Key == "analyse" {
 		out.List = cache.Context().GetEventCountBy(in.Value)
+	} else if in.Key == "quote" {
+		//作品数量
+		out.Count = uint32(cache.Context().GetEventCountByQuote(in.Value))
+	} else if in.Key == "sex" {
+		events := cache.Context().GetEventsByQuote(in.Value)
+		var boy uint32 = 0
+		var girl uint32 = 0
+		sex := cache.Context().GetAttributeByKey("sex")
+		if sex != nil {
+			for _, event := range events {
+				entity := cache.Context().GetEntity(event.Entity)
+				if entity != nil {
+					prop := entity.GetProperty(sex.UID)
+					if prop != nil && len(prop.Words) > 0 {
+						if prop.Words[0].Name == "1" || prop.Words[0].Name == "男" {
+							boy += 1
+						} else {
+							girl += 1
+						}
+					}
+				}
+			}
+		}
+
+		out.List = make([]*pb.StatisticInfo, 0, 2)
+		out.List = append(out.List, &pb.StatisticInfo{Key: "1", Count: boy})
+		out.List = append(out.List, &pb.StatisticInfo{Key: "0", Count: girl})
 	}
+
 	out.Owner = in.Value
 	out.Key = in.Key
 	out.Status = outLog(path, out)

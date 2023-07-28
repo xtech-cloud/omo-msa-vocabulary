@@ -203,6 +203,26 @@ func GetEventsByType(entity string, tp uint8) ([]*Event, error) {
 	return items, nil
 }
 
+func GetEventsByType2(tp uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"type": tp, "deleteAt": def}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEventsByTypeQuote(entity, quote string, tp uint8) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	def := new(time.Time)

@@ -84,6 +84,15 @@ func (mine *cacheContext) GetActivityCountByDate(entity string, date time.Time) 
 	return count
 }
 
+func (mine *cacheContext) GetEventCountByQuote(quote string) int {
+	count := 0
+	dbs, err := nosql.GetEventsByQuote2(quote)
+	if err != nil {
+		return count
+	}
+	return len(dbs)
+}
+
 func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID

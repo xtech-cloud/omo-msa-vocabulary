@@ -567,6 +567,27 @@ func (mine *cacheContext) GetEventsByQuotePage(quote string, page, number int32)
 	return CheckPage(page, number, list)
 }
 
+func (mine *cacheContext) GetEventsByDate(utc int64, tp uint8) []*EventInfo {
+	from := utc - 7*24*3600
+	arr, err := nosql.GetEventsByType2(tp)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			now := db.CreatedTime.Unix()
+			if now > from && now < utc {
+				info := new(EventInfo)
+				info.initInfo(db)
+				list = append(list, info)
+			}
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetEventsByEntityType(entity string, tp, page, number int32) (int32, int32, []*EventInfo) {
 	arr, err := nosql.GetEventsByType(entity, uint8(tp))
 	var list []*EventInfo
