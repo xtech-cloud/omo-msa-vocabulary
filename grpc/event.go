@@ -118,7 +118,10 @@ func (mine *EventService) AddOne(ctx context.Context, in *pb.ReqEventAdd, out *p
 func (mine *EventService) GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventInfo) error {
 	path := "event.getOne"
 	inLog(path, in)
-	if len(in.Uid) > 0 {
+	if in.Uid == "" {
+		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
+	}
+	if in.Key == "" {
 		info := cache.Context().GetEvent(in.Uid)
 		if info == nil {
 			out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
@@ -126,8 +129,14 @@ func (mine *EventService) GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 		}
 		out.Info = switchEntityEvent(info)
 		out.Status = outLog(path, out)
-	} else {
-		out.Status = outError(path, "the uid or key all is empty", pbstaus.ResultStatus_Empty)
+	} else if in.Key == "asset" {
+		info := cache.Context().GetEventByAsset(in.Uid)
+		if info == nil {
+			out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
+			return nil
+		}
+		out.Info = switchEntityEvent(info)
+		out.Status = outLog(path, out)
 	}
 	return nil
 }
@@ -261,6 +270,17 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 		out.List = cache.Context().GetActivityCountBy(in.Values, date)
 	} else if in.Key == "analyse" {
 		out.List = cache.Context().GetEventCountBy(in.Value)
+	} else if in.Key == "today" {
+		events := cache.Context().GetEventsByQuote(in.Value)
+		now := time.Now()
+		from := time.Date(now.Year(), now.Month(), now.Day(), 0, 1, 0, 0, time.UTC).Unix()
+		to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 0, 0, time.UTC).Unix()
+		for _, event := range events {
+			unix := event.CreateTime.Unix()
+			if unix < to && unix > from {
+				out.Count += 1
+			}
+		}
 	} else if in.Key == "quote" {
 		//作品数量
 		out.Count = uint32(cache.Context().GetEventCountByQuote(in.Value))

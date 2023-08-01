@@ -110,9 +110,9 @@ func InitData() error {
 		return err1
 	}
 
-	checkSequence()
+	//checkSequence()
 
-	checkEntityLetters()
+	//checkEntityLetters()
 
 	attributes, _ := nosql.GetAllAttributes()
 	for i := 0; i < len(attributes); i += 1 {

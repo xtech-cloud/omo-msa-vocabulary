@@ -63,6 +63,21 @@ func GetEvent(uid string) (*Event, error) {
 	return model, nil
 }
 
+func GetEventByAsset(uid string) (*Event, error) {
+	def := new(time.Time)
+	filter := bson.M{"assets": uid, "deleteAt": def}
+	result, err := findOneBy(TableEvent, filter)
+	if err != nil {
+		return nil, err
+	}
+	model := new(Event)
+	err1 := result.Decode(model)
+	if err1 != nil {
+		return nil, err1
+	}
+	return model, nil
+}
+
 func GetEventCountByEntity(entity string) uint32 {
 	def := new(time.Time)
 	filter := bson.M{"entity": entity, "deleteAt": def}

@@ -487,6 +487,17 @@ func (mine *cacheContext) GetEvent(uid string) *EventInfo {
 	return nil
 }
 
+func (mine *cacheContext) GetEventByAsset(uid string) *EventInfo {
+	event, err := nosql.GetEventByAsset(uid)
+	if err == nil && event != nil {
+		info := new(EventInfo)
+		info.initInfo(event)
+		return info
+	}
+
+	return nil
+}
+
 func (mine *cacheContext) GetEventsByQuote(quote string) []*EventInfo {
 	arr, err := nosql.GetEventsByQuote2(quote)
 	var list []*EventInfo
