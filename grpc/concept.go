@@ -6,6 +6,7 @@ import (
 	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
+	"strconv"
 )
 
 type ConceptService struct{}
@@ -126,7 +127,11 @@ func (mine *ConceptService) RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 		out.Status = outError(path, "the concept uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
-
+	num := cache.Context().GetEntitiesCountByConcept(in.Uid)
+	if num > 0 {
+		out.Status = outError(path, "the concept have entities used that num = "+strconv.Itoa(num), pbstaus.ResultStatus_Prohibition)
+		return nil
+	}
 	err := cache.Context().RemoveConcept(in.Uid, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

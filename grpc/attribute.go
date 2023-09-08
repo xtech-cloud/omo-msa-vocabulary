@@ -6,6 +6,7 @@ import (
 	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
+	"strconv"
 	"strings"
 )
 
@@ -91,6 +92,15 @@ func (mine *AttributeService) GetStatistic(ctx context.Context, in *pb.RequestFi
 func (mine *AttributeService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyInfo) error {
 	path := "attribute.removeOne"
 	inLog(path, in)
+	if len(in.Uid) < 1 {
+		out.Status = outError(path, "the attribute uid is empty", pbstaus.ResultStatus_Empty)
+		return nil
+	}
+	num := cache.Context().GetEntitiesCountByAttribute(in.Uid)
+	if num > 0 {
+		out.Status = outError(path, "the attribute have entities used that num = "+strconv.Itoa(num), pbstaus.ResultStatus_Prohibition)
+		return nil
+	}
 	err := cache.Context().RemoveAttribute(in.Uid, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

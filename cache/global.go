@@ -166,17 +166,39 @@ func (mine *cacheContext) GetEntitiesByOwner(owner string) []*EntityInfo {
 
 func (mine *cacheContext) GetEntitiesByConcept(owner, concept string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 10)
-	array, err := nosql.GetEntitiesByConcept(DefaultEntityTable, owner, concept)
-	if err != nil {
-		return list
-	}
-	for _, entity := range array {
-		info := new(EntityInfo)
-		info.initInfo(entity)
-		list = append(list, info)
+	for _, table := range mine.entityTables {
+		array, err := nosql.GetEntitiesByConcept(table, owner, concept)
+		if err != nil {
+			return list
+		}
+		for _, entity := range array {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
 	}
 
 	return list
+}
+
+func (mine *cacheContext) GetEntitiesCountByConcept(concept string) int {
+	num := 0
+	for _, table := range mine.entityTables {
+		array, _ := nosql.GetEntitiesByConcept2(table, concept)
+		num += len(array)
+	}
+
+	return num
+}
+
+func (mine *cacheContext) GetEntitiesCountByAttribute(attr string) int {
+	num := 0
+	for _, table := range mine.entityTables {
+		array, _ := nosql.GetEntitiesByAttribute(table, attr)
+		num += len(array)
+	}
+
+	return num
 }
 
 func (mine *cacheContext) GetEntitiesByStatus(status EntityStatus, concept string) []*EntityInfo {
@@ -378,15 +400,6 @@ func (mine *cacheContext) GetEntitiesByRelate(relate string) []*EntityInfo {
 		}
 	}
 
-	//dbs, err := nosql.GetEntitiesByRelate(UserEntityTable, relate)
-	//if err != nil {
-	//	return list
-	//}
-	//for _, db := range dbs {
-	//	info := new(EntityInfo)
-	//	info.initInfo(db)
-	//	list = append(list, info)
-	//}
 	return list
 }
 
