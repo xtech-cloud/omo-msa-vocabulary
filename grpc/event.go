@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/micro/go-micro/v2/logger"
 	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
-	"omo.msa.vocabulary/tool"
 	"strconv"
 	"time"
 )
@@ -232,13 +232,7 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 			out.Status = outError(path, er.Error(), pbstaus.ResultStatus_DBException)
 			return nil
 		}
-		arr := cache.Context().GetEventsByDate(int64(utc), 1)
-		list = make([]*cache.EventInfo, 0, len(arr))
-		for _, info := range arr {
-			if tool.HasItem(in.Values, info.Quote) {
-				list = append(list, info)
-			}
-		}
+		list = cache.Context().GetEventsByWeek(int64(utc), in.Values)
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -282,8 +276,12 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 			}
 		}
 	} else if in.Key == "quote" {
-		//作品数量
+		//参与人数或者被引用次数
 		out.Count = uint32(cache.Context().GetEventCountByQuote(in.Value))
+	} else if in.Key == "opus" {
+		//作品数量
+		assets := cache.Context().GetEventAssetsByQuote(in.Value)
+		out.Count = uint32(len(assets))
 	} else if in.Key == "sex" {
 		events := cache.Context().GetEventsByQuote(in.Value)
 		var boy uint32 = 0
@@ -295,6 +293,7 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 				if entity != nil {
 					prop := entity.GetProperty(sex.UID)
 					if prop != nil && len(prop.Words) > 0 {
+						logger.Warn(entity.Name + " that sex = " + prop.Words[0].Name)
 						if prop.Words[0].Name == "1" || prop.Words[0].Name == "男" {
 							boy += 1
 						} else {

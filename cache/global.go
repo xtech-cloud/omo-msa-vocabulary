@@ -44,6 +44,14 @@ func (mine *cacheContext) MatchEntities(key string) []*EntityInfo {
 		info.initInfo(entity)
 		list = append(list, info)
 	}
+	array2, err2 := nosql.GetEntitiesByMatch(UserEntityTable, key)
+	if err2 == nil {
+		for _, entity := range array2 {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
+	}
 	return list
 }
 
@@ -578,24 +586,24 @@ func (mine *cacheContext) GetEventsByQuotePage(quote string, page, number int32)
 	return CheckPage(page, number, list)
 }
 
-func (mine *cacheContext) GetEventsByDate(utc int64, tp uint8) []*EventInfo {
-	from := utc - 7*24*3600
-	arr, err := nosql.GetEventsByType2(tp)
-	var list []*EventInfo
-	if err == nil {
-		list = make([]*EventInfo, 0, len(arr))
-		for _, db := range arr {
-			now := db.CreatedTime.Unix()
-			if now > from && now < utc {
-				info := new(EventInfo)
-				info.initInfo(db)
-				list = append(list, info)
+func (mine *cacheContext) GetEventsByWeek(from int64, quotes []string) []*EventInfo {
+	end := from + 6*24*3600
+	list := make([]*EventInfo, 0, 100)
+	for _, quote := range quotes {
+		arr, err := nosql.GetEventsByQuote2(quote)
+		if err == nil {
+			for _, db := range arr {
+				now := db.CreatedTime.Unix()
+				if now > from && now < end {
+					info := new(EventInfo)
+					info.initInfo(db)
+					list = append(list, info)
+				}
 			}
-		}
-	} else {
-		list = make([]*EventInfo, 0, 1)
-	}
+		} else {
 
+		}
+	}
 	return list
 }
 

@@ -268,26 +268,17 @@ func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote,
 	if concept == "" {
 		concept = mine.Concept
 	}
-	if desc == "" {
-		desc = mine.Description
-	}
-	if add == "" {
-		add = mine.Add
-	}
 	if name == "" {
 		name = mine.Name
 	}
 	if mark == "" {
 		mark = mine.Mark
 	}
-	if sum == "" {
-		sum = mine.Summary
-	}
 	if quote == "" {
 		quote = mine.Quote
 	}
 	var err error
-	if len(cover) > 0 {
+	if len(cover) > 0 && cover != mine.Cover {
 		err = mine.UpdateCover(cover, operator)
 	}
 	if desc != mine.Description || sum != mine.Summary {
@@ -928,7 +919,12 @@ func (mine *EntityInfo) RemoveProperty(attribute string) error {
 	if err == nil {
 		for i := 0; i < len(mine.Properties); i += 1 {
 			if mine.Properties[i].Key == attribute {
-				mine.Properties = append(mine.Properties[:i], mine.Properties[i+1:]...)
+				if i == len(mine.Properties)-1 {
+					mine.Properties = append(mine.Properties[:i])
+				} else {
+					mine.Properties = append(mine.Properties[:i], mine.Properties[i+1:]...)
+				}
+
 				break
 			}
 		}

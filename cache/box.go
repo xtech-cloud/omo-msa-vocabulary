@@ -155,6 +155,15 @@ func (mine *cacheContext) GetEntitiesByName(name string) ([]*EntityInfo, error) 
 		info.initInfo(entity)
 		list = append(list, info)
 	}
+	array1, err1 := nosql.GetEntitiesByName(UserEntityTable, name)
+	if err1 == nil {
+		for _, entity := range array1 {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
+	}
+
 	return list, nil
 }
 

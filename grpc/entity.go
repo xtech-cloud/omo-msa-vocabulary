@@ -43,7 +43,7 @@ func switchDynamicEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
 		events := cache.Context().GetEventsByEntity(info.UID, cache.EventCustom)
 		tmp.Events = make([]*pb.EventBrief, 0, len(events))
 		for _, event := range events {
-			if event.Access == cache.AccessPublic {
+			if event.Access == cache.AccessPublic || event.Access == cache.AccessWR {
 				tmp.Events = append(tmp.Events, switchEntityEventBrief(event))
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
+	"omo.msa.vocabulary/tool"
 	"strconv"
 	"time"
 )
@@ -16,8 +17,9 @@ const (
 )
 
 const (
-	AccessPublic  = 0
-	AccessPrivate = 1
+	AccessPublic  = 0 //可读
+	AccessPrivate = 1 //
+	AccessWR      = 2 //可读写
 )
 
 type EventInfo struct {
@@ -91,6 +93,22 @@ func (mine *cacheContext) GetEventCountByQuote(quote string) int {
 		return count
 	}
 	return len(dbs)
+}
+
+func (mine *cacheContext) GetEventAssetsByQuote(quote string) []string {
+	assets := make([]string, 0, 10)
+	dbs, err := nosql.GetEventsByQuote2(quote)
+	if err != nil {
+		return assets
+	}
+	for _, db := range dbs {
+		for _, asset := range db.Assets {
+			if !tool.HasItem(assets, asset) {
+				assets = append(assets, asset)
+			}
+		}
+	}
+	return assets
 }
 
 func (mine *EventInfo) initInfo(db *nosql.Event) {
