@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"github.com/micro/go-micro/v2/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
@@ -129,7 +130,12 @@ func (mine *cacheContext) GetEntitiesByBox(uid string, st EntityStatus) ([]*Enti
 		if st == EntityStatusUsable {
 			info := mine.GetArchivedByEntity(item)
 			if info != nil {
-				list = append(list, info.GetEntity())
+				tmp, er := info.Decode()
+				if er == nil {
+					list = append(list, tmp)
+				} else {
+					logger.Warn("decode archive entity failed that uid = " + item + " and error = " + er.Error())
+				}
 			}
 		} else {
 			info := mine.GetEntity(item)

@@ -9,12 +9,12 @@ import (
 
 type VEdgeInfo struct {
 	BaseInfo
-	Center    string //中心实体或者根节点
-	Direction uint8  // 方向
-	Weight    uint32
-	Source    string //实体对象或者临时UID
-	Relation  string //关系类型
-	Target    proxy.VNode
+	Center    string      `json:"center"`    //中心实体或者根节点
+	Direction uint8       `json:"direction"` // 方向
+	Weight    uint32      `json:"weight"`
+	Source    string      `json:"source"`   //from实体对象或者临时UID
+	Relation  string      `json:"relation"` //关系类型或者名称
+	Target    proxy.VNode `json:"target"`   //目标对象to
 }
 
 func (mine *cacheContext) GetVEdge(uid string) (*VEdgeInfo, error) {

@@ -41,27 +41,6 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	return tmp
 }
 
-func switchEntityEventBrief(info *cache.EventInfo) *pb.EventBrief {
-	tmp := new(pb.EventBrief)
-	tmp.Uid = info.UID
-	tmp.Name = info.Name
-	tmp.Created = info.CreateTime.Unix()
-	tmp.Quote = info.Quote
-	tmp.Desc = info.Description
-	tmp.Place = new(pb.PlaceInfo)
-	tmp.Place.Name = info.Place.Name
-	tmp.Place.Uid = info.Place.UID
-	tmp.Place.Location = info.Place.Location
-	tmp.Assets = info.Assets
-	tmp.Tags = info.Tags
-	tmp.Date = new(pb.DateInfo)
-	tmp.Date.Uid = info.Date.UID
-	tmp.Date.Name = info.Date.Name
-	tmp.Date.Begin = info.Date.Begin.String()
-	tmp.Date.End = info.Date.End.String()
-	return tmp
-}
-
 func switchRelationIns(info *proxy.RelationCaseInfo) *pb.RelationshipInfo {
 	r := new(pb.RelationshipInfo)
 	r.Name = info.Name
@@ -233,6 +212,8 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 			return nil
 		}
 		list = cache.Context().GetEventsByWeek(int64(utc), in.Values)
+	} else if in.Key == "public" {
+		//获取发布的或者可访问的事件
 	} else {
 		err = errors.New("not define the key")
 	}

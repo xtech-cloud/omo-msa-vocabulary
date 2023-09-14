@@ -24,6 +24,7 @@ type Archived struct {
 	Scene   string `json:"scene" bson:"scene"`
 	File    string `json:"file" bson:"file"`
 	MD5     string `json:"md5" bson:"md5"`
+	Size    uint32 `json:"size" bson:"size"`
 }
 
 func CreateArchived(info *Archived) error {
@@ -136,8 +137,8 @@ func GetArchivedListBy(scene, concept string) ([]*Archived, error) {
 	return items, nil
 }
 
-func UpdateArchivedFile(uid, operator, file, md5 string) error {
-	msg := bson.M{"file": file, "md5": md5, "operator": operator, "updatedAt": time.Now()}
+func UpdateArchivedFile(uid, operator, file, md5 string, size uint32) error {
+	msg := bson.M{"file": file, "md5": md5, "size": size, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableArchived, uid, msg)
 	return err
 }

@@ -88,7 +88,13 @@ func (mine *VEdgeService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 func (mine *VEdgeService) GetAll(ctx context.Context, in *pb.RequestFilter, out *pb.ReplyVEdgeList) error {
 	path := "vedge.getAll"
 	inLog(path, in)
-	array := cache.Context().GetVEdgesByCenter(in.Parent)
+	var array []*cache.VEdgeInfo
+	if in.Key == "" {
+		array = cache.Context().GetVEdgesByCenter(in.Parent)
+	} else if in.Key == "public" {
+
+	}
+
 	out.List = make([]*pb.VEdgeInfo, 0, len(array))
 	for _, value := range array {
 		out.List = append(out.List, switchVEdge(value))

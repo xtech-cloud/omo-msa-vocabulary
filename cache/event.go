@@ -133,6 +133,30 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Relations = db.Relations
 }
 
+func (mine *EventInfo) initByBrief(entity string, info *proxy.EventBrief) {
+	msg := info.Name
+	if len(msg) < 1 {
+		msg = info.Description
+	}
+	mine.UID = "static_" + tool.StrToMD5(msg)
+	mine.ID = 0
+	mine.Type = 99
+	mine.Operator = ""
+	mine.Creator = "system"
+	mine.Name = info.Name
+	mine.Entity = entity
+	mine.Parent = ""
+	mine.Description = info.Description
+	mine.Date = info.Date
+	mine.Place = info.Place
+	mine.Cover = ""
+	mine.Quote = info.Quote
+	mine.Assets = info.Assets
+	mine.Access = AccessPublic
+	mine.Tags = info.Tags
+	mine.Relations = make([]proxy.RelationCaseInfo, 0, 1)
+}
+
 func (mine *EventInfo) UpdateBase(name, remark, operator string, access uint8, date proxy.DateInfo, place proxy.PlaceInfo, assets []string) error {
 	if name == "" {
 		name = mine.Name

@@ -88,7 +88,6 @@ var cacheCtx *cacheContext
 
 func InitData() error {
 	cacheCtx = &cacheContext{}
-	//cacheCtx.entities = make([]*EntityInfo, 0, 1000)
 	cacheCtx.concepts = make([]*ConceptInfo, 0, 50)
 	cacheCtx.attributes = make([]*AttributeInfo, 0, 100)
 	cacheCtx.relations = make([]*RelationshipInfo, 0, 100)

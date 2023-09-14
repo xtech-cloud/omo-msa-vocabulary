@@ -274,16 +274,10 @@ func (mine *cacheContext) GetEntity(uid string) *EntityInfo {
 	if len(uid) < 1 {
 		return nil
 	}
-	//for i := 0; i < len(mine.entities); i++ {
-	//	if mine.entities[i].UID == uid {
-	//		return mine.entities[i]
-	//	}
-	//}
 	db := mine.getEntityFromDB(uid)
 	if db != nil {
 		info := new(EntityInfo)
 		info.initInfo(db)
-		//mine.entities = append(mine.entities, info)
 		return info
 	}
 	return nil
@@ -322,11 +316,6 @@ func (mine *cacheContext) GetCustomEntitiesByList(array []string) ([]*EntityInfo
 }
 
 func (mine *cacheContext) getEntityFromDB(uid string) *nosql.Entity {
-	//db, err := nosql.GetEntity(DefaultEntityTable, uid)
-	//if err == nil && db != nil {
-	//	return db
-	//}
-	//logger.Error("getEntityFromDB in entities that error =" + err.Error())
 	for _, tb := range mine.EntityTables() {
 		db1, er := nosql.GetEntity(tb, uid)
 		if er == nil && db1 != nil {

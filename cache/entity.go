@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -62,10 +64,10 @@ type EntityInfo struct {
 	Tags         []string `json:"tags"`               //标签
 	Relates      []string `json:"relates"`            //关联的一些数据，可以是社区，场景等
 
-	Properties   []*proxy.PropertyInfo `json:"properties"`
-	StaticEvents []*proxy.EventBrief   `json:"events"`
-	//StaticRelations []*VEdgeInfo          `json:"relations"`
-	events []*EventInfo
+	Properties      []*proxy.PropertyInfo `json:"properties"`
+	StaticEvents    []*proxy.EventBrief   `json:"events"`
+	StaticRelations []*VEdgeInfo          `json:"relations"`
+	events          []*EventInfo          `json:"-"`
 }
 
 func switchEntityLabel(concept string) string {
@@ -128,8 +130,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo, relations []*pb.VEdgeIn
 	err = nosql.CreateEntity(db, info.table())
 	if err == nil {
 		info.initInfo(db)
-		//mine.entities = append(mine.entities, info)
-		info.UpdateStaticRelations(info.Operator, relations)
+		_ = info.UpdateStaticRelations(info.Operator, relations)
 		mine.syncGraphNode(info)
 	}
 	return err
@@ -338,6 +339,14 @@ func (mine *EntityInfo) UpdateStaticEvents(operator string, events []*proxy.Even
 	return err
 }
 
+func (mine *EntityInfo) GetEventCount() uint32 {
+	return uint32(len(mine.events)) + nosql.GetEventCountByEntity(mine.UID)
+}
+
+func (mine *EntityInfo) GetVEdgeCount() uint32 {
+	return nosql.GetVEdgeCountByEntity(mine.UID)
+}
+
 func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*pb.VEdgeInfo) error {
 	if mine.Status != EntityStatusDraft {
 		return errors.New("the entity is not draft so can not update")
@@ -529,25 +538,41 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator, remark strin
 	mine.Operator = operator
 	mine.createRecord(operator, remark, mine.Status, status)
 	if status == EntityStatusUsable {
+		mine.Published = true
 		tmp := Context().GetArchivedByEntity(mine.UID)
 		if tmp == nil {
 			err = Context().CreateArchived(mine)
 			if err != nil {
 				return err
 			}
-			cacheCtx.checkRelations(nil, mine)
+			//cacheCtx.checkRelations(nil, mine)
 		} else {
-			old := tmp.GetEntity()
+			_, er := tmp.Decode()
+			if er != nil {
+				return er
+			}
 			err = tmp.UpdateFile(mine, operator)
 			if err != nil {
 				return err
 			}
-			cacheCtx.checkRelations(old, mine)
+			//cacheCtx.checkRelations(old, mine)
 		}
 	}
 	mine.Status = status
 	mine.UpdateTime = time.Now()
 	return nil
+}
+
+func (mine *EntityInfo) encode() (string, string, uint32, error) {
+	mine.StaticRelations = mine.GetVEdges()
+	bts, er := json.Marshal(mine)
+	if er != nil {
+		return "", "", 0, er
+	}
+	md5 := tool.CalculateMD5(bts)
+	size := len(bts)
+	data := base64.StdEncoding.EncodeToString(bts)
+	return data, md5, uint32(size), nil
 }
 
 func (mine *EntityInfo) UpdatePushTime(operator string) error {
@@ -655,6 +680,13 @@ func (mine *EntityInfo) initEvents() {
 	} else {
 		mine.events = make([]*EventInfo, 0, 1)
 	}
+	if len(mine.StaticEvents) > 0 {
+		for _, event := range mine.StaticEvents {
+			tmp := new(EventInfo)
+			tmp.initByBrief(mine.UID, event)
+			mine.events = append(mine.events, tmp)
+		}
+	}
 }
 
 func (mine *EntityInfo) AllEvents() []*EventInfo {
@@ -706,22 +738,26 @@ func (mine *EntityInfo) GetEventsByQuote(quote string) []*EventInfo {
 func (mine *EntityInfo) GetEventsByAccess(tp, access uint8) []*EventInfo {
 	var arr []*nosql.Event
 	var err error
+	var list = make([]*EventInfo, 0, 50)
 	if tp > 0 {
 		arr, err = nosql.GetEventsByTypeAndAccess(mine.UID, tp, access)
 	} else {
 		arr, err = nosql.GetEventsByAccess(mine.UID, access)
+		if len(mine.StaticEvents) > 0 {
+			for _, event := range mine.StaticEvents {
+				tmp := new(EventInfo)
+				tmp.initByBrief(mine.UID, event)
+				list = append(list, tmp)
+			}
+		}
 	}
 
-	var list []*EventInfo
 	if err == nil {
-		list = make([]*EventInfo, 0, len(arr))
 		for _, db := range arr {
 			info := new(EventInfo)
 			info.initInfo(db)
 			list = append(list, info)
 		}
-	} else {
-		list = make([]*EventInfo, 0, 1)
 	}
 
 	return list

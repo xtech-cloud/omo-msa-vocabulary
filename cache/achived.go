@@ -1,12 +1,13 @@
 package cache
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/micro/go-micro/v2/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy/nosql"
-	"omo.msa.vocabulary/tool"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type ArchivedInfo struct {
 	MD5     string
 	Scene   string
 	Score   uint32
+	Size    uint32
 }
 
 func (mine *cacheContext) CreateArchived(info *EntityInfo) error {
@@ -37,12 +39,11 @@ func (mine *cacheContext) CreateArchived(info *EntityInfo) error {
 	db.Operator = info.Operator
 	db.Access = 0
 	db.Score = 0
-	file, er := json.Marshal(info)
+	var er error
+	db.File, db.MD5, db.Size, er = info.encode()
 	if er != nil {
 		return er
 	}
-	db.File = string(file)
-	db.MD5 = tool.CalculateMD5(file)
 	er = nosql.CreateArchived(db)
 	return er
 }
@@ -75,7 +76,12 @@ func (mine *cacheContext) GetArchivedByList(list []string) ([]*EntityInfo, error
 	for _, key := range list {
 		info := mine.GetArchivedByEntity(key)
 		if info != nil {
-			arr = append(arr, info.GetEntity())
+			tmp, er := info.Decode()
+			if er == nil {
+				arr = append(arr, tmp)
+			} else {
+				logger.Warn("decode archive entity failed that uid = " + key + " and error = " + er.Error())
+			}
 		}
 	}
 	return arr, nil
@@ -148,6 +154,7 @@ func (mine *ArchivedInfo) initInfo(db *nosql.Archived) bool {
 	mine.MD5 = db.MD5
 	mine.Scene = db.Scene
 	mine.Access = db.Access
+	mine.Size = db.Size
 	//if strings.Contains(mine.File,"http://rdp-down.suii.cn/") {
 	//	f := strings.Replace(mine.File, "http://rdp-down.suii.cn/", "", 1)
 	//	_ = mine.setFile(f)
@@ -155,29 +162,22 @@ func (mine *ArchivedInfo) initInfo(db *nosql.Archived) bool {
 	return true
 }
 
-func (mine *ArchivedInfo) setFile(file string) error {
-	md5 := tool.CalculateMD5([]byte(file))
-	err := nosql.UpdateArchivedFile(mine.UID, mine.Operator, file, md5)
-	if err == nil {
-		mine.File = file
-		mine.UpdateTime = time.Now()
-	}
-	return err
-}
-
 func (mine *ArchivedInfo) UpdateFile(info *EntityInfo, operator string) error {
 	if info == nil {
 		return errors.New("the entity info is nil")
 	}
-	data, er := json.Marshal(info)
+	data, md5, size, er := info.encode()
+	//data, er := json.Marshal(info)
 	if er != nil {
 		return er
 	}
-	md5 := tool.CalculateMD5(data)
-	err := nosql.UpdateArchivedFile(mine.UID, operator, string(data), md5)
+	//md5 := tool.CalculateMD5(data)
+	err := nosql.UpdateArchivedFile(mine.UID, operator, string(data), md5, size)
 	if err == nil {
-		mine.File = string(data)
+		mine.File = data
 		mine.MD5 = md5
+		mine.Size = size
+		mine.UpdateTime = time.Now()
 	}
 	return err
 }
@@ -191,15 +191,25 @@ func (mine *ArchivedInfo) UpdateAccess(operator string, acc uint8) error {
 	return err
 }
 
-func (mine *ArchivedInfo) GetEntity() *EntityInfo {
+func (mine *ArchivedInfo) Decode() (*EntityInfo, error) {
 	entity := new(EntityInfo)
-	er := json.Unmarshal([]byte(mine.File), entity)
+	var data []byte
+	var err error
+	if mine.Size > 0 {
+		data, err = base64.StdEncoding.DecodeString(mine.File)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		data = []byte(mine.File)
+	}
+	er := json.Unmarshal(data, entity)
 	if er != nil {
-		return nil
+		return nil, er
 	}
 	now := cacheCtx.GetEntity(entity.UID)
 	entity.Status = now.Status
 	entity.Published = true
 	entity.Access = mine.Access
-	return entity
+	return entity, nil
 }
