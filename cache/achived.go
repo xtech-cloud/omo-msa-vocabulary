@@ -61,6 +61,25 @@ func (mine *cacheContext) GetArchivedByEntity(entity string) *ArchivedInfo {
 	return nil
 }
 
+func (mine *cacheContext) GetPublicEntity(entity string) (*EntityInfo, error) {
+	if len(entity) < 1 {
+		return nil, errors.New("the entity uid is empty")
+	}
+	db, err := nosql.GetArchivedByEntity(entity)
+	if err == nil && db != nil {
+		info := new(ArchivedInfo)
+		info.initInfo(db)
+		return info.Decode()
+	}
+	db2, err1 := nosql.GetEntity(UserEntityTable, entity)
+	if err1 == nil && db2 != nil {
+		info := new(EntityInfo)
+		info.initInfo(db2)
+		return info, nil
+	}
+	return nil, err1
+}
+
 func (mine *cacheContext) HadArchivedByEntity(entity string) bool {
 	if len(entity) < 1 {
 		return false

@@ -33,6 +33,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Assets = info.Assets
 	tmp.Tags = info.Tags
 	tmp.Cover = info.Cover
+	tmp.Owner = info.Owner
 	tmp.Access = uint32(info.Access)
 	tmp.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
 	for i := 0; i < len(info.Relations); i += 1 {
@@ -84,7 +85,7 @@ func (mine *EventService) AddOne(ctx context.Context, in *pb.ReqEventAdd, out *p
 		relations = append(relations, proxy.RelationCaseInfo{UID: value.Uid, Direction: uint8(value.Direction),
 			Name: value.Name, Category: value.Category, Entity: value.Entity})
 	}
-	event, err := info.AddEvent(date, place, in.Name, in.Description, in.Cover, in.Quote, in.Operator, uint8(in.Type), uint8(in.Access), relations, in.Tags, in.Assets)
+	event, err := info.AddEvent(date, place, in.Name, in.Description, in.Cover, in.Quote, in.Owner, in.Operator, uint8(in.Type), uint8(in.Access), relations, in.Tags, in.Assets)
 	if err == nil {
 		out.Info = switchEntityEvent(event)
 		out.Status = outLog(path, out)
@@ -214,6 +215,11 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		list = cache.Context().GetEventsByWeek(int64(utc), in.Values)
 	} else if in.Key == "public" {
 		//获取发布的或者可访问的事件
+		var entity *cache.EntityInfo
+		entity, err = cache.Context().GetPublicEntity(in.Parent)
+		if entity != nil {
+			list = entity.GetPublicEvents()
+		}
 	} else {
 		err = errors.New("not define the key")
 	}

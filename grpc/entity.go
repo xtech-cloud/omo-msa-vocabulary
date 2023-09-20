@@ -503,7 +503,6 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 		} else {
 			list = cache.Context().GetEntitiesByConcept(in.Parent, in.Value)
 		}
-
 	} else if in.Key == "rank" {
 		num, er := strconv.Atoi(in.Value)
 		if er != nil {
@@ -511,6 +510,8 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 			return nil
 		}
 		list = cache.Context().GetEntitiesByRank(in.Parent, num)
+	} else if in.Key == "regex" {
+		list, _ = cache.Context().GetEntitiesByRegex(in.Parent, in.Value)
 	} else {
 		err = errors.New("not define the key")
 	}

@@ -165,6 +165,17 @@ func Context() *cacheContext {
 	return cacheCtx
 }
 
+func switchConcepts() {
+	info := cacheCtx.GetConcept("645b657f76522095f3d28b83")
+	if info == nil {
+		return
+	}
+	list := cacheCtx.GetEntitiesByConcept2("6302fcd3a057b2d0581f7439")
+	for _, item := range list {
+		item.updateConcept(info.UID, item.Operator)
+	}
+}
+
 func checkEntityLetters() {
 	for _, table := range cacheCtx.entityTables {
 		all, er := nosql.GetEntities(table)

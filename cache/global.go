@@ -181,6 +181,23 @@ func (mine *cacheContext) GetEntitiesByConcept(owner, concept string) []*EntityI
 	return list
 }
 
+func (mine *cacheContext) GetEntitiesByConcept2(concept string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 10)
+	for _, table := range mine.entityTables {
+		array, err := nosql.GetEntitiesByConcept2(table, concept)
+		if err != nil {
+			return list
+		}
+		for _, entity := range array {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetEntitiesCountByConcept(concept string) int {
 	num := 0
 	for _, table := range mine.entityTables {
@@ -281,6 +298,20 @@ func (mine *cacheContext) GetEntity(uid string) *EntityInfo {
 		return info
 	}
 	return nil
+}
+
+func (mine *cacheContext) GetEntitiesByRegex(key, val string) ([]*EntityInfo, error) {
+	dbs, err := nosql.GetEntitiesByRegex(DefaultEntityTable, key, val)
+	if err != nil {
+		return nil, err
+	}
+	list := make([]*EntityInfo, 0, len(dbs))
+	for _, db := range dbs {
+		info := new(EntityInfo)
+		info.initInfo(db)
+		list = append(list, info)
+	}
+	return list, nil
 }
 
 func (mine *cacheContext) GetEntitiesByList(st EntityStatus, array []string) ([]*EntityInfo, error) {

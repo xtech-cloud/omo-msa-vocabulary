@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/micro/go-micro/v2/logger"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"omo.msa.vocabulary/proxy"
@@ -64,10 +65,10 @@ type EntityInfo struct {
 	Tags         []string `json:"tags"`               //标签
 	Relates      []string `json:"relates"`            //关联的一些数据，可以是社区，场景等
 
-	Properties      []*proxy.PropertyInfo `json:"properties"`
-	StaticEvents    []*proxy.EventBrief   `json:"events"`
-	StaticRelations []*VEdgeInfo          `json:"relations"`
-	events          []*EventInfo          `json:"-"`
+	Properties   []*proxy.PropertyInfo `json:"properties"`
+	StaticEvents []*proxy.EventBrief   `json:"events"`
+	StaticVEdges []*VEdgeInfo          `json:"relations"`
+	events       []*EventInfo          `json:"-"`
 }
 
 func switchEntityLabel(concept string) string {
@@ -564,7 +565,7 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator, remark strin
 }
 
 func (mine *EntityInfo) encode() (string, string, uint32, error) {
-	mine.StaticRelations = mine.GetVEdges()
+	mine.StaticVEdges = mine.GetVEdges()
 	bts, er := json.Marshal(mine)
 	if er != nil {
 		return "", "", 0, er
@@ -660,6 +661,13 @@ func (mine *EntityInfo) CreateVEdge(source, name, relation, operator string, dir
 	info := new(VEdgeInfo)
 	info.initInfo(db)
 	return info, nil
+}
+
+func (mine *EntityInfo) GetPublicEdges() []*VEdgeInfo {
+	if mine.StaticVEdges != nil {
+		return mine.StaticVEdges
+	}
+	return cacheCtx.GetVEdgesByCenter(mine.UID)
 }
 
 //endregion
@@ -763,7 +771,35 @@ func (mine *EntityInfo) GetEventsByAccess(tp, access uint8) []*EventInfo {
 	return list
 }
 
-func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, cover, quote, operator string, tp, access uint8, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
+func (mine *EntityInfo) GetPublicEvents() []*EventInfo {
+	var arr []*nosql.Event
+	var err error
+	var list = make([]*EventInfo, 0, 50)
+	arr, err = nosql.GetEventsByEntity(mine.UID)
+	if err == nil {
+		for _, event := range arr {
+			if event.Access == AccessPublic || event.Access == AccessWR {
+				info := new(EventInfo)
+				info.initInfo(event)
+				list = append(list, info)
+			}
+		}
+	} else {
+		logger.Warn("get public events failed that error = " + err.Error() + " of " + mine.UID)
+	}
+
+	if len(mine.StaticEvents) > 0 {
+		for _, event := range mine.StaticEvents {
+			tmp := new(EventInfo)
+			tmp.initByBrief(mine.UID, event)
+			list = append(list, tmp)
+		}
+	}
+
+	return list
+}
+
+func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, cover, quote, owner, operator string, tp, access uint8, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
 	if mine.Status == EntityStatusUsable {
 		return nil, errors.New("the entity had published so can not update")
 	}
@@ -786,6 +822,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	db.Cover = cover
 	db.Tags = tags
 	db.Access = access
+	db.Owner = owner
 	if db.Tags == nil {
 		db.Tags = make([]string, 0, 1)
 	}

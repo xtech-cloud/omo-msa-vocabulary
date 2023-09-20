@@ -25,6 +25,7 @@ type Event struct {
 	Description string                   `json:"desc" bson:"desc"`
 	Cover       string                   `json:"cover" bson:"cover"`
 	Quote       string                   `json:"quote" bson:"quote"`
+	Owner       string                   `json:"owner" bson:"owner"`
 	Date        proxy.DateInfo           `json:"date" bson:"date"`
 	Place       proxy.PlaceInfo          `json:"place" bson:"place"`
 	Tags        []string                 `json:"tags" bson:"tags"`

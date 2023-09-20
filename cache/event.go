@@ -31,6 +31,7 @@ type EventInfo struct {
 	Parent      string //父级事件
 	Cover       string //封面
 	Quote       string // 引用或者备注，活动，超链接
+	Owner       string //
 	Date        proxy.DateInfo
 	Place       proxy.PlaceInfo
 	Tags        []string
@@ -127,6 +128,7 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Place = db.Place
 	mine.Cover = db.Cover
 	mine.Quote = db.Quote
+	mine.Owner = db.Owner
 	mine.Assets = db.Assets
 	mine.Access = db.Access
 	mine.Tags = db.Tags

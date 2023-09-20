@@ -92,7 +92,10 @@ func (mine *VEdgeService) GetAll(ctx context.Context, in *pb.RequestFilter, out 
 	if in.Key == "" {
 		array = cache.Context().GetVEdgesByCenter(in.Parent)
 	} else if in.Key == "public" {
-
+		entity, _ := cache.Context().GetPublicEntity(in.Parent)
+		if entity != nil {
+			array = entity.GetPublicEdges()
+		}
 	}
 
 	out.List = make([]*pb.VEdgeInfo, 0, len(array))
