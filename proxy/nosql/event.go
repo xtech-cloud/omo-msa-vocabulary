@@ -179,6 +179,44 @@ func GetEventsByQuote(entity, quote string) ([]*Event, error) {
 	return items, nil
 }
 
+func GetEventsByOwner(owner string) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"owner": owner}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsAllByType(tp uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"type": tp, "deleteAt": new(time.Time)}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEventsByQuote2(quote string) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	def := new(time.Time)
@@ -273,6 +311,12 @@ func UpdateEventBase(uid, name, desc, operator string, access uint8, date proxy.
 
 func UpdateEventAccess(uid, operator string, access uint8) error {
 	msg := bson.M{"access": access, "operator": operator, "updatedAt": time.Now()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
+func UpdateEventOwner(uid, owner, operator string) error {
+	msg := bson.M{"owner": owner, "operator": operator, "updatedAt": time.Now()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }

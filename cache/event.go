@@ -6,6 +6,7 @@ import (
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -94,6 +95,36 @@ func (mine *cacheContext) GetEventCountByQuote(quote string) int {
 		return count
 	}
 	return len(dbs)
+}
+
+func (mine *cacheContext) GetEventRanks(owner string, num int) []*PairInfo {
+	dbs, _ := nosql.GetEventsByOwner(owner)
+	list := make([]*PairInfo, 0, len(dbs))
+	for _, db := range dbs {
+		pair := getPair(db.Entity, list)
+		if pair == nil {
+			pair = &PairInfo{Key: db.Entity, Count: 1}
+		} else {
+			pair.Count += 1
+		}
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Count > list[j].Count
+	})
+	if len(list) < num {
+		return list
+	} else {
+		return list[:num]
+	}
+}
+
+func getPair(key string, list []*PairInfo) *PairInfo {
+	for _, info := range list {
+		if info.Key == key {
+			return info
+		}
+	}
+	return nil
 }
 
 func (mine *cacheContext) GetEventAssetsByQuote(quote string) []string {
@@ -236,6 +267,22 @@ func (mine *EventInfo) UpdateAccess(operator string, access uint8) error {
 	err := nosql.UpdateEventAccess(mine.UID, operator, access)
 	if err == nil {
 		mine.Access = access
+		mine.Operator = operator
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
+func (mine *EventInfo) UpdateOwner(owner, operator string) error {
+	if operator == "" {
+		operator = mine.Operator
+	}
+	if mine.Owner == owner {
+		return nil
+	}
+	err := nosql.UpdateEventOwner(mine.UID, owner, operator)
+	if err == nil {
+		mine.Owner = owner
 		mine.Operator = operator
 		mine.UpdateTime = time.Now()
 	}

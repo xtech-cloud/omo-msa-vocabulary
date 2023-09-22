@@ -619,6 +619,23 @@ func (mine *cacheContext) GetEventsByQuotePage(quote string, page, number int32)
 	return CheckPage(page, number, list)
 }
 
+func (mine *cacheContext) GetAllSystemEvents(page, number int32) (int32, int32, []*EventInfo) {
+	arr, err := nosql.GetEventsAllByType(1)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return CheckPage(page, number, list)
+}
+
 func (mine *cacheContext) GetEventsByWeek(from int64, quotes []string) []*EventInfo {
 	end := from + 6*24*3600
 	list := make([]*EventInfo, 0, 100)

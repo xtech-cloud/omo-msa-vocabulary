@@ -88,9 +88,7 @@ var cacheCtx *cacheContext
 
 func InitData() error {
 	cacheCtx = &cacheContext{}
-	cacheCtx.concepts = make([]*ConceptInfo, 0, 50)
-	cacheCtx.attributes = make([]*AttributeInfo, 0, 100)
-	cacheCtx.relations = make([]*RelationshipInfo, 0, 100)
+
 	cacheCtx.entityTables = make([]string, 0, 5)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, DefaultEntityTable)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, UserEntityTable)
@@ -109,11 +107,8 @@ func InitData() error {
 		return err1
 	}
 
-	//checkSequence()
-
-	//checkEntityLetters()
-
 	attributes, _ := nosql.GetAllAttributes()
+	cacheCtx.attributes = make([]*AttributeInfo, 0, len(attributes))
 	for i := 0; i < len(attributes); i += 1 {
 		info := new(AttributeInfo)
 		info.initInfo(attributes[i])
@@ -122,6 +117,7 @@ func InitData() error {
 	logger.Infof("init attribute!!! number = %d", len(cacheCtx.attributes))
 
 	relations, _ := nosql.GetTopRelations()
+	cacheCtx.relations = make([]*RelationshipInfo, 0, len(relations))
 	for i := 0; i < len(relations); i += 1 {
 		info := new(RelationshipInfo)
 		info.initInfo(relations[i])
@@ -129,6 +125,7 @@ func InitData() error {
 	}
 	logger.Infof("init relation!!! number = %d", len(cacheCtx.relations))
 	concerts, _ := nosql.GetTopConcepts()
+	cacheCtx.concepts = make([]*ConceptInfo, 0, len(concerts)*5)
 	for i := 0; i < len(concerts); i += 1 {
 		info := new(ConceptInfo)
 		info.initInfo(concerts[i])
@@ -174,6 +171,32 @@ func switchConcepts() {
 	for _, item := range list {
 		item.updateConcept(info.UID, item.Operator)
 	}
+}
+
+func CheckRepeatedAttribute() {
+	list := make([]*AttributeInfo, 0, 100)
+	repeats := make([]*AttributeInfo, 0, 100)
+	for _, item := range cacheCtx.attributes {
+		if !hadOne(item.Name, list) {
+			list = append(list, item)
+		} else {
+			repeats = append(repeats, item)
+		}
+	}
+	logger.Warnf("repeat attribute count = %d", len(repeats))
+}
+
+func checkAttribute(now, replace string) {
+
+}
+
+func hadOne(name string, list []*AttributeInfo) bool {
+	for _, info := range list {
+		if info.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 func checkEntityLetters() {

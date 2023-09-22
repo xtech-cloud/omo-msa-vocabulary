@@ -220,6 +220,8 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		if entity != nil {
 			list = entity.GetPublicEvents()
 		}
+	} else if in.Key == "system" {
+		total, pages, list = cache.Context().GetAllSystemEvents(in.Page, in.Number)
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -294,6 +296,12 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 		out.List = make([]*pb.StatisticInfo, 0, 2)
 		out.List = append(out.List, &pb.StatisticInfo{Key: "1", Count: boy})
 		out.List = append(out.List, &pb.StatisticInfo{Key: "0", Count: girl})
+	} else if in.Key == "ranks" {
+		list := cache.Context().GetEventRanks(in.Value, int(in.Number))
+		out.List = make([]*pb.StatisticInfo, 0, len(list))
+		for _, info := range list {
+			out.List = append(out.List, &pb.StatisticInfo{Key: info.Key, Count: uint32(info.Count)})
+		}
 	}
 
 	out.Owner = in.Value
@@ -511,20 +519,22 @@ func (mine *EventService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFi
 		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
-	entity := cache.Context().GetEntity(in.Uid)
-	if entity == nil {
-		out.Status = outError(path, "not found the entity", pbstaus.ResultStatus_Empty)
+	info := cache.Context().GetEvent(in.Uid)
+	if info == nil {
+		out.Status = outError(path, "not found the event", pbstaus.ResultStatus_Empty)
 		return nil
 	}
 	var err error
-	if in.Key == "pushed" {
-		err = entity.UpdatePushTime(in.Operator)
+	if in.Key == "owner" {
+		err = info.UpdateOwner(in.Value, in.Operator)
+	} else {
+		err = errors.New("not define the key")
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(entity.UpdateTime.Unix())
+	out.Updated = uint64(info.UpdateTime.Unix())
 	out.Status = outLog(path, out)
 	return nil
 }

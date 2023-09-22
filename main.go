@@ -51,6 +51,7 @@ func main() {
 	_ = proto.RegisterVEdgeServiceHandler(service.Server(), new(grpc.VEdgeService))
 
 	checkTimer()
+	go delayCall()
 
 	app, _ := filepath.Abs(os.Args[0])
 
@@ -76,6 +77,11 @@ func checkTimer() {
 		cache.Context().CheckSyncLinks()
 	})
 	c.Start()
+}
+
+func delayCall() {
+	time.Sleep(5 * time.Second)
+	cache.CheckRepeatedAttribute()
 }
 
 func md5hex(_file string) string {
