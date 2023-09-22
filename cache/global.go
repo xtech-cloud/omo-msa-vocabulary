@@ -218,6 +218,20 @@ func (mine *cacheContext) GetEntitiesCountByAttribute(attr string) int {
 	return num
 }
 
+func (mine *cacheContext) getEntitiesByAttribute(uid string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 500)
+	for _, table := range mine.entityTables {
+		array, _ := nosql.GetEntitiesByAttribute(table, uid)
+		for _, db := range array {
+			info := new(EntityInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetEntitiesByStatus(status EntityStatus, concept string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 100)
 	if status == EntityStatusUsable {

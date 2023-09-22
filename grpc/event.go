@@ -10,6 +10,7 @@ import (
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -55,6 +56,7 @@ func switchRelationIns(info *proxy.RelationCaseInfo) *pb.RelationshipInfo {
 func (mine *EventService) AddOne(ctx context.Context, in *pb.ReqEventAdd, out *pb.ReplyEventInfo) error {
 	path := "event.addOne"
 	inLog(path, in)
+	in.Name = strings.TrimSpace(in.Name)
 	info := cache.Context().GetEntity(in.Parent)
 	if info == nil {
 		out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
@@ -318,6 +320,7 @@ func (mine *EventService) UpdateBase(ctx context.Context, in *pb.ReqEventUpdate,
 		out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
+	in.Name = strings.TrimSpace(in.Name)
 	begin := proxy.Date{}
 	end := proxy.Date{}
 	if in.Date != nil {

@@ -93,6 +93,26 @@ func GetConceptsByParent(parent string) ([]*Concept, error) {
 	return items, nil
 }
 
+func GetConceptsByAttribute(uid string) ([]*Concept, error) {
+	var items = make([]*Concept, 0, 20)
+	def := new(time.Time)
+	filter := bson.M{"attributes": uid, "deleteAt": def}
+	cursor, err1 := findMany(TableConcept, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Concept)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func HadConceptByName(name string) (bool, error) {
 	msg := bson.M{"name": name}
 	return hadOne(TableConcept, msg)

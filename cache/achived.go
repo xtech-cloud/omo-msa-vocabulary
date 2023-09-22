@@ -118,9 +118,10 @@ func (mine *cacheContext) GetArchivedList(name string) []*EntityInfo {
 		return make([]*EntityInfo, 0, 1)
 	}
 	list := make([]*EntityInfo, 0, len(array))
-	for _, info := range array {
-		entity := new(EntityInfo)
-		er := json.Unmarshal([]byte(info.File), entity)
+	for _, db := range array {
+		info := new(ArchivedInfo)
+		info.initInfo(db)
+		entity, er := info.Decode()
 		if er == nil {
 			entity.Status = EntityStatusUsable
 			list = append(list, entity)
@@ -145,12 +146,30 @@ func (mine *cacheContext) GetArchivedEntities(scene, concept string) []*EntityIn
 		return make([]*EntityInfo, 0, 1)
 	}
 	list := make([]*EntityInfo, 0, len(array))
-	for _, info := range array {
-		entity := new(EntityInfo)
-		er := json.Unmarshal([]byte(info.File), entity)
+	for _, db := range array {
+		info := new(ArchivedInfo)
+		info.initInfo(db)
+		entity, er := info.Decode()
 		if er == nil {
 			entity.Status = EntityStatusUsable
 			list = append(list, entity)
+		}
+	}
+	return list
+}
+
+func (mine *cacheContext) getArchivedEntitiesByAttribute(attr string) []*ArchivedInfo {
+	array, err := nosql.GetAllArchived()
+	if err != nil {
+		return make([]*ArchivedInfo, 0, 1)
+	}
+	list := make([]*ArchivedInfo, 0, len(array))
+	for _, db := range array {
+		info := new(ArchivedInfo)
+		info.initInfo(db)
+		entity, er := info.Decode()
+		if er == nil && entity.HadProperty(attr) {
+			list = append(list, info)
 		}
 	}
 	return list
@@ -186,11 +205,9 @@ func (mine *ArchivedInfo) UpdateFile(info *EntityInfo, operator string) error {
 		return errors.New("the entity info is nil")
 	}
 	data, md5, size, er := info.encode()
-	//data, er := json.Marshal(info)
 	if er != nil {
 		return er
 	}
-	//md5 := tool.CalculateMD5(data)
 	err := nosql.UpdateArchivedFile(mine.UID, operator, string(data), md5, size)
 	if err == nil {
 		mine.File = data
@@ -208,6 +225,19 @@ func (mine *ArchivedInfo) UpdateAccess(operator string, acc uint8) error {
 		mine.Operator = operator
 	}
 	return err
+}
+
+func (mine *ArchivedInfo) replaceAttribute(old, news string) error {
+	entity, err := mine.Decode()
+	if err != nil {
+		return err
+	}
+	for _, prop := range entity.Properties {
+		if prop.Key == old {
+			prop.Key = news
+		}
+	}
+	return mine.UpdateFile(entity, mine.Operator)
 }
 
 func (mine *ArchivedInfo) Decode() (*EntityInfo, error) {

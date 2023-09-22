@@ -30,6 +30,7 @@ func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 func (mine *AttributeService) AddOne(ctx context.Context, in *pb.ReqAttributeAdd, out *pb.ReplyAttributeInfo) error {
 	path := "attribute.addOne"
 	inLog(path, in)
+	in.Name = strings.TrimSpace(in.Name)
 	if cache.Context().HadAttributeByName(in.Name) {
 		out.Status = outError(path, "the name of attribute is repeated", pbstaus.ResultStatus_Repeated)
 		return nil
@@ -130,6 +131,7 @@ func (mine *AttributeService) Update(ctx context.Context, in *pb.ReqAttributeUpd
 		out.Status = outError(path, "not found the attribute by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
+	in.Name = strings.TrimSpace(in.Name)
 	err := info.UpdateBase(in.Name, in.Remark, in.Begin, in.End, in.Operator, uint8(in.Type))
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

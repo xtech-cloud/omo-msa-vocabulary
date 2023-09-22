@@ -7,6 +7,7 @@ import (
 	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
+	"strings"
 )
 
 type BoxService struct{}
@@ -34,6 +35,7 @@ func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 func (mine *BoxService) AddOne(ctx context.Context, in *pb.ReqBoxAdd, out *pb.ReplyBoxInfo) error {
 	path := "box.addOne"
 	inLog(path, in)
+	in.Name = strings.TrimSpace(in.Name)
 	if cache.Context().HadBoxByName(in.Name) {
 		out.Status = outError(path, "the box name is repeated", pbstaus.ResultStatus_Repeated)
 		return nil
@@ -170,6 +172,7 @@ func (mine *BoxService) UpdateBase(ctx context.Context, in *pb.ReqBoxUpdate, out
 		out.Status = outError(path, "not found the box by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
+	in.Name = strings.TrimSpace(in.Name)
 	err := info.UpdateBase(in.Name, in.Remark, in.Concept, in.Operator)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

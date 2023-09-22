@@ -7,6 +7,7 @@ import (
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
+	"strings"
 )
 
 type VEdgeService struct{}
@@ -38,6 +39,8 @@ func switchVEdge(info *cache.VEdgeInfo) *pb.VEdgeInfo {
 func (mine *VEdgeService) AddOne(ctx context.Context, in *pb.ReqVEdgeAdd, out *pb.ReplyVEdgeInfo) error {
 	path := "vedge.addOne"
 	inLog(path, in)
+	in.Name = strings.TrimSpace(in.Name)
+
 	entity := cache.Context().GetEntity(in.Center)
 	if entity == nil {
 		out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
@@ -121,6 +124,8 @@ func (mine *VEdgeService) UpdateInfo(ctx context.Context, in *pb.ReqVEdgeUpdate,
 		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
+	in.Name = strings.TrimSpace(in.Name)
+
 	info, err := cache.Context().GetVEdge(in.Uid)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_NotExisted)

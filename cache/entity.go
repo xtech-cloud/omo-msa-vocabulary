@@ -225,9 +225,6 @@ func (mine *EntityInfo) table() string {
 }
 
 func (mine *EntityInfo) updateConcept(concept, operator string) error {
-	//if mine.Status != EntityStatusDraft {
-	//	return errors.New("the entity is not draft so can not update")
-	//}
 	if mine.Concept != concept {
 		err := nosql.UpdateEntityConcept(mine.table(), mine.UID, concept, operator)
 		if err == nil {
@@ -238,6 +235,21 @@ func (mine *EntityInfo) updateConcept(concept, operator string) error {
 	} else {
 		return nil
 	}
+}
+
+func (mine *EntityInfo) replaceAttribute(old, news string) error {
+	props := make([]*proxy.PropertyInfo, 0, len(mine.Properties))
+	props = append(props, mine.Properties...)
+	for _, prop := range props {
+		if prop.Key == old {
+			prop.Key = news
+		}
+	}
+	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, mine.Operator, props)
+	if err == nil {
+		mine.Properties = props
+	}
+	return err
 }
 
 func (mine *EntityInfo) relationsToVEdges(list []*proxy.RelationCaseInfo) {

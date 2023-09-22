@@ -57,6 +57,19 @@ func (mine *cacheContext) GetConceptByName(name string) *ConceptInfo {
 	return nil
 }
 
+func (mine *cacheContext) GetConceptsByAttribute(uid string) []*ConceptInfo {
+	dbs, err := nosql.GetConceptsByAttribute(uid)
+	list := make([]*ConceptInfo, 0, len(dbs))
+	if err == nil {
+		for _, db := range dbs {
+			info := new(ConceptInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	}
+	return list
+}
+
 func (mine *cacheContext) GetConcept(uid string) *ConceptInfo {
 	for i := 0; i < len(mine.concepts); i += 1 {
 		child := mine.concepts[i].GetChild(uid)
@@ -344,6 +357,27 @@ func (mine *ConceptInfo) UpdateAttributes(arr []string) error {
 	return err
 }
 
+func (mine *ConceptInfo) ReplaceAttributes(old, news string) error {
+	arr := make([]string, 0, len(mine.attributes))
+	arr = append(arr, mine.attributes...)
+	for i, item := range arr {
+		if item == old {
+			if i == len(arr)-1 {
+				arr = append(arr[:i])
+			} else {
+				arr = append(arr[:i], arr[i+1:]...)
+			}
+		}
+	}
+	arr = append(arr, news)
+	err := nosql.UpdateConceptAttributes(mine.UID, arr)
+	if err == nil {
+		mine.attributes = arr
+		mine.UpdateTime = time.Now()
+	}
+	return err
+}
+
 func (mine *ConceptInfo) UpdatePrivates(arr []string) error {
 	if arr == nil {
 		arr = make([]string, 0, 1)
@@ -433,7 +467,11 @@ func (mine *ConceptInfo) RemoveAttribute(uid string) error {
 	if err == nil {
 		for i := 0; i < len(mine.attributes); i += 1 {
 			if mine.attributes[i] == uid {
-				mine.attributes = append(mine.attributes[:i], mine.attributes[i+1:]...)
+				if i == len(mine.attributes)-1 {
+					mine.attributes = append(mine.attributes[:i])
+				} else {
+					mine.attributes = append(mine.attributes[:i], mine.attributes[i+1:]...)
+				}
 				break
 			}
 		}

@@ -7,6 +7,7 @@ import (
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"strconv"
+	"strings"
 )
 
 type ConceptService struct{}
@@ -41,6 +42,7 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 func (mine *ConceptService) AddOne(ctx context.Context, in *pb.ReqConceptAdd, out *pb.ReplyConceptInfo) error {
 	path := "concept.addOne"
 	inLog(path, in)
+	in.Name = strings.TrimSpace(in.Name)
 	if len(in.Parent) > 0 {
 		parent := cache.Context().GetConcept(in.Parent)
 		if parent == nil {
@@ -169,6 +171,7 @@ func (mine *ConceptService) Update(ctx context.Context, in *pb.ReqConceptUpdate,
 		out.Status = outError(path, "not found the concept by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
+	in.Name = strings.TrimSpace(in.Name)
 	err := info.UpdateBase(in.Name, in.Remark, in.Operator, uint8(in.Type), uint8(in.Scene))
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

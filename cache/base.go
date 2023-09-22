@@ -89,7 +89,7 @@ var cacheCtx *cacheContext
 func InitData() error {
 	cacheCtx = &cacheContext{}
 
-	cacheCtx.entityTables = make([]string, 0, 5)
+	cacheCtx.entityTables = make([]string, 0, 3)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, DefaultEntityTable)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, UserEntityTable)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, MuseumEntityTable)
@@ -130,29 +130,8 @@ func InitData() error {
 		info := new(ConceptInfo)
 		info.initInfo(concerts[i])
 		cacheCtx.concepts = append(cacheCtx.concepts, info)
-		//if len(info.Table) > 1 && !tool.HasItem(cacheCtx.entityTables, info.Table) {
-		//	cacheCtx.entityTables = append(cacheCtx.entityTables, info.Table)
-		//}
 	}
-	logger.Infof("init concerts!!! number = %d", len(cacheCtx.concepts))
-
-	//for _, kind := range cacheCtx.concerts {
-	//	if kind.Table != "" {
-	//		entities,_ := nosql.GetEntities(kind.Table)
-	//		for i := 0; i < len(entities); i += 1 {
-	//			info := new(EntityInfo)
-	//			info.initInfo(entities[i])
-	//			cacheCtx.entities = append(cacheCtx.entities, info)
-	//		}
-	//	}
-	//}
-	//entities,_ := nosql.GetEntities(DefaultEntityTable)
-	//for i := 0; i < len(entities); i += 1 {
-	//	info := new(EntityInfo)
-	//	info.initInfo(entities[i])
-	//	cacheCtx.entities = append(cacheCtx.entities, info)
-	//}
-	//logger.Infof("init entities!!! number = %d", len(cacheCtx.entities))
+	logger.Infof("init concepts!!! number = %d", len(cacheCtx.concepts))
 	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
 
 	return nil
@@ -177,22 +156,57 @@ func CheckRepeatedAttribute() {
 	list := make([]*AttributeInfo, 0, 100)
 	repeats := make([]*AttributeInfo, 0, 100)
 	for _, item := range cacheCtx.attributes {
-		if !hadOne(item.Name, list) {
+		if !hadOne(strings.TrimSpace(item.Name), list) {
 			list = append(list, item)
 		} else {
 			repeats = append(repeats, item)
 		}
 	}
-	logger.Warnf("repeat attribute count = %d", len(repeats))
+	num := len(repeats)
+	logger.Warnf("repeat attribute count = %d", num)
+	for _, repeat := range repeats {
+		news := getAttributeUID(strings.TrimSpace(repeat.Name), list)
+		if news != "" {
+			arr := cacheCtx.getEntitiesByAttribute(repeat.UID)
+			for _, entity := range arr {
+				_ = entity.replaceAttribute(repeat.UID, news)
+			}
+			arr1 := cacheCtx.getArchivedEntitiesByAttribute(repeat.UID)
+			for _, arch := range arr1 {
+				_ = arch.replaceAttribute(repeat.UID, news)
+			}
+			arr2 := cacheCtx.GetConceptsByAttribute(repeat.UID)
+			for _, item := range arr2 {
+				_ = item.ReplaceAttributes(repeat.UID, news)
+			}
+			_ = cacheCtx.RemoveAttribute(repeat.UID, repeat.Operator)
+		}
+	}
+	if num > 0 {
+		concerts, _ := nosql.GetTopConcepts()
+		cacheCtx.concepts = make([]*ConceptInfo, 0, len(concerts)*5)
+		for i := 0; i < len(concerts); i += 1 {
+			info := new(ConceptInfo)
+			info.initInfo(concerts[i])
+			cacheCtx.concepts = append(cacheCtx.concepts, info)
+		}
+	}
 }
 
-func checkAttribute(now, replace string) {
-
+func getAttributeUID(name string, list []*AttributeInfo) string {
+	for _, info := range list {
+		n := strings.TrimSpace(info.Name)
+		if n == name {
+			return info.UID
+		}
+	}
+	return ""
 }
 
 func hadOne(name string, list []*AttributeInfo) bool {
 	for _, info := range list {
-		if info.Name == name {
+		n := strings.TrimSpace(info.Name)
+		if n == name {
 			return true
 		}
 	}

@@ -9,6 +9,7 @@ import (
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
 	"strconv"
+	"strings"
 )
 
 type EntityService struct{}
@@ -205,6 +206,7 @@ func switchEventBriefToPB(uid string, info *proxy.EventBrief) *pb.EventInfo {
 func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out *pb.ReplyEntityInfo) error {
 	path := "entity.addOne"
 	inLog(path, in)
+	in.Name = strings.TrimSpace(in.Name)
 	if in.Name == "" {
 		out.Status = outError(path, "the entity name is empty", pbstaus.ResultStatus_Empty)
 		return nil
@@ -660,6 +662,7 @@ func (mine *EntityService) UpdateBase(ctx context.Context, in *pb.ReqEntityBase,
 		out.Status = outError(path, "the entity uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
+	in.Name = strings.TrimSpace(in.Name)
 	info := cache.Context().GetEntity(in.Uid)
 	if info == nil {
 		out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)

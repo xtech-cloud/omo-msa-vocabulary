@@ -6,6 +6,7 @@ import (
 	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
+	"strings"
 )
 
 type RelationService struct{}
@@ -34,6 +35,8 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 func (mine *RelationService) AddOne(ctx context.Context, in *pb.ReqRelationAdd, out *pb.ReplyRelationInfo) error {
 	path := "relation.addOne"
 	inLog(path, in)
+	in.Name = strings.TrimSpace(in.Name)
+
 	if cache.Context().HadRelationByName(in.Name, in.Parent) {
 		out.Status = outError(path, "the relation name had existed", pbstaus.ResultStatus_Repeated)
 		return nil
@@ -133,6 +136,8 @@ func (mine *RelationService) UpdateInfo(ctx context.Context, in *pb.ReqRelationU
 		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
+	in.Name = strings.TrimSpace(in.Name)
+
 	info := cache.Context().GetRelation(in.Uid)
 	if info == nil {
 		out.Status = outError(path, "not found the relation by uid", pbstaus.ResultStatus_NotExisted)
