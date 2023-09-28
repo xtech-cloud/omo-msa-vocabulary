@@ -100,10 +100,19 @@ func (mine *cacheContext) GetEventCountByQuote(quote string) int {
 func (mine *cacheContext) GetEventRanks(owner string, num int) []*PairInfo {
 	dbs, _ := nosql.GetEventsByOwner(owner)
 	list := make([]*PairInfo, 0, len(dbs))
+	getPair := func(key string, arr []*PairInfo) *PairInfo {
+		for _, info := range arr {
+			if info.Key == key {
+				return info
+			}
+		}
+		return nil
+	}
 	for _, db := range dbs {
 		pair := getPair(db.Entity, list)
 		if pair == nil {
 			pair = &PairInfo{Key: db.Entity, Count: 1}
+			list = append(list, pair)
 		} else {
 			pair.Count += 1
 		}
@@ -116,15 +125,6 @@ func (mine *cacheContext) GetEventRanks(owner string, num int) []*PairInfo {
 	} else {
 		return list[:num]
 	}
-}
-
-func getPair(key string, list []*PairInfo) *PairInfo {
-	for _, info := range list {
-		if info.Key == key {
-			return info
-		}
-	}
-	return nil
 }
 
 func (mine *cacheContext) GetEventAssetsByQuote(quote string) []string {

@@ -135,7 +135,7 @@ func (mine *GraphInfo) GetSubGraph(entity string) (*GraphInfo, error) {
 }
 
 func (mine *GraphInfo) GetOwnerGraph(owner string) *GraphInfo {
-	list := Context().GetEntitiesByOwner(owner)
+	_, _, list := Context().GetEntitiesByOwner(owner, 0, 1)
 	var g = new(GraphInfo)
 	g.construct()
 	for _, info := range list {

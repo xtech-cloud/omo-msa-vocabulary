@@ -189,13 +189,12 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 	var list []*cache.EventInfo
 
 	if in.Key == "entities_sys" {
-		list = make([]*cache.EventInfo, 0, 200)
+		all := make([]*cache.EventInfo, 0, 200)
 		for _, uid := range in.Values {
 			arr := cache.Context().GetEventsByEntity(uid, 1)
-			list = append(list, arr...)
+			all = append(all, arr...)
 		}
-		total = int32(len(list))
-		pages = 1
+		total, pages, list = cache.CheckPage(in.Page, in.Number, all)
 	} else if in.Key == "relate" {
 		list = cache.Context().GetEventsByRelate(in.Parent, in.Value)
 	} else if in.Key == "quote" {

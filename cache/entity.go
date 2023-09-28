@@ -394,9 +394,9 @@ func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*pb.VEdgeI
 }
 
 func (mine *EntityInfo) UpdateCover(cover, operator string) error {
-	if mine.Status == EntityStatusUsable {
-		return errors.New("the entity had published so can not update")
-	}
+	//if mine.Status == EntityStatusUsable {
+	//	return errors.New("the entity had published so can not update")
+	//}
 
 	if cover == "" || cover == mine.Cover {
 		return nil

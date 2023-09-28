@@ -149,27 +149,31 @@ func (mine *cacheContext) GetEntityByMark(mark string) *EntityInfo {
 	return nil
 }
 
-func (mine *cacheContext) GetEntitiesByOwner(owner string) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 30)
+func (mine *cacheContext) GetEntitiesByOwner(owner string, page, num int32) (int32, int32, []*EntityInfo) {
+	dbs := make([]*nosql.Entity, 0, 200)
 	for _, tb := range mine.EntityTables() {
 		array, err := nosql.GetEntitiesByOwner(tb, owner)
 		if err == nil {
-			for _, entity := range array {
-				info := new(EntityInfo)
-				info.initInfo(entity)
-				list = append(list, info)
-			}
+			dbs = append(dbs, array...)
+
 		}
 	}
-	return list
+	total, pages, arr := CheckPage(page, num, dbs)
+	list := make([]*EntityInfo, 0, len(arr))
+	for _, entity := range arr {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	return total, pages, list
 }
 
-func (mine *cacheContext) GetEntitiesByConcept(owner, concept string) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 10)
+func (mine *cacheContext) GetEntitiesByConcept(owner, concept string, page, num int32) (int32, int32, []*EntityInfo) {
+	list := make([]*EntityInfo, 0, 100)
 	for _, table := range mine.entityTables {
 		array, err := nosql.GetEntitiesByConcept(table, owner, concept)
 		if err != nil {
-			return list
+			return 0, 0, list
 		}
 		for _, entity := range array {
 			info := new(EntityInfo)
@@ -178,7 +182,7 @@ func (mine *cacheContext) GetEntitiesByConcept(owner, concept string) []*EntityI
 		}
 	}
 
-	return list
+	return CheckPage(page, num, list)
 }
 
 func (mine *cacheContext) GetEntitiesByConcept2(concept string) []*EntityInfo {
@@ -314,18 +318,23 @@ func (mine *cacheContext) GetEntity(uid string) *EntityInfo {
 	return nil
 }
 
-func (mine *cacheContext) GetEntitiesByRegex(key, val string) ([]*EntityInfo, error) {
+func (mine *cacheContext) GetEntitiesByRegex(key, val string, page, num int32) (int32, int32, []*EntityInfo, error) {
 	dbs, err := nosql.GetEntitiesByRegex(DefaultEntityTable, key, val)
 	if err != nil {
-		return nil, err
+		return 0, 0, nil, err
+	}
+	if len(dbs) > 100 && page < 1 {
+		page = 1
+		num = 100
 	}
 	list := make([]*EntityInfo, 0, len(dbs))
-	for _, db := range dbs {
+	max, pages, arr := CheckPage(page, num, dbs)
+	for _, db := range arr {
 		info := new(EntityInfo)
 		info.initInfo(db)
 		list = append(list, info)
 	}
-	return list, nil
+	return max, pages, list, nil
 }
 
 func (mine *cacheContext) GetEntitiesByList(st EntityStatus, array []string) ([]*EntityInfo, error) {
@@ -417,11 +426,11 @@ func (mine *cacheContext) HadOwnerOfAsset(owner string) bool {
 	return false
 }
 
-func (mine *cacheContext) GetEntitiesByRelate(relate string) []*EntityInfo {
-	list := make([]*EntityInfo, 0, 50)
+func (mine *cacheContext) GetEntitiesByRelate(relate string, page, num int32) (int32, int32, []*EntityInfo) {
+	list := make([]*EntityInfo, 0, 200)
 	dbs, err := nosql.GetRecordsByRelate(relate, uint8(OptionSwitch))
 	if err != nil {
-		return list
+		return 0, 0, list
 	}
 	arr := make([]string, 0, 50)
 	for _, db := range dbs {
@@ -434,7 +443,7 @@ func (mine *cacheContext) GetEntitiesByRelate(relate string) []*EntityInfo {
 		}
 	}
 
-	return list
+	return CheckPage(page, num, list)
 }
 
 func (mine *cacheContext) GetEntitiesByRank(relate string, num int) []*EntityInfo {
@@ -638,16 +647,17 @@ func (mine *cacheContext) GetAllSystemEvents(page, number int32) (int32, int32, 
 	var list []*EventInfo
 	if err == nil {
 		list = make([]*EventInfo, 0, len(arr))
-		for _, db := range arr {
+		max, pages, dbs := CheckPage(page, number, arr)
+		for _, db := range dbs {
 			info := new(EventInfo)
 			info.initInfo(db)
 			list = append(list, info)
 		}
+		return max, pages, list
 	} else {
 		list = make([]*EventInfo, 0, 1)
+		return 0, 0, list
 	}
-
-	return CheckPage(page, number, list)
 }
 
 func (mine *cacheContext) GetEventsByWeek(from int64, quotes []string) []*EventInfo {

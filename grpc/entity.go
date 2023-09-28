@@ -493,17 +493,19 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 	inLog(path, in)
 	var err error
 	var list []*cache.EntityInfo
+	var total int32
+	var pages int32
 	if in.Key == "relate" {
-		list = cache.Context().GetEntitiesByRelate(in.Value)
+		total, pages, list = cache.Context().GetEntitiesByRelate(in.Value, in.Page, in.Number)
 	} else if in.Key == "letter" {
 		list = cache.Context().GetUserEntitiesByLetter(in.Parent, in.Value)
 	} else if in.Key == "letters" {
 		list = cache.Context().GetUserEntitiesByLetters(in.Parent, in.Value)
 	} else if in.Key == "concept" {
 		if in.Value == "" {
-			list = cache.Context().GetEntitiesByOwner(in.Parent)
+			total, pages, list = cache.Context().GetEntitiesByOwner(in.Parent, in.Page, in.Number)
 		} else {
-			list = cache.Context().GetEntitiesByConcept(in.Parent, in.Value)
+			total, pages, list = cache.Context().GetEntitiesByConcept(in.Parent, in.Value, in.Page, in.Number)
 		}
 	} else if in.Key == "rank" {
 		num, er := strconv.Atoi(in.Value)
@@ -513,7 +515,7 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 		}
 		list = cache.Context().GetEntitiesByRank(in.Parent, num)
 	} else if in.Key == "regex" {
-		list, _ = cache.Context().GetEntitiesByRegex(in.Parent, in.Value)
+		total, pages, list, _ = cache.Context().GetEntitiesByRegex(in.Parent, in.Value, in.Page, in.Number)
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -523,6 +525,8 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 	}
 
 	out.Flag = ""
+	out.Total = uint32(total)
+	out.Page = uint32(pages)
 	out.List = make([]*pb.EntityInfo, 0, len(list))
 	for _, info := range list {
 		out.List = append(out.List, switchStaticEntity(info, !in.Brief))
