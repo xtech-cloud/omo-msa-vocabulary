@@ -319,16 +319,20 @@ func (mine *cacheContext) GetEntity(uid string) *EntityInfo {
 }
 
 func (mine *cacheContext) GetEntitiesByRegex(key, val string, page, num int32) (int32, int32, []*EntityInfo, error) {
-	dbs, err := nosql.GetEntitiesByRegex(DefaultEntityTable, key, val)
-	if err != nil {
-		return 0, 0, nil, err
+	list := make([]*EntityInfo, 0, 200)
+	all := make([]*nosql.Entity, 0, 200)
+	for _, table := range mine.entityTables {
+		dbs, err := nosql.GetEntitiesByRegex(table, key, val)
+		if err == nil {
+			all = append(all, dbs...)
+		}
 	}
-	if len(dbs) > 100 && page < 1 {
+
+	if len(all) > 100 && page < 1 {
 		page = 1
 		num = 100
 	}
-	list := make([]*EntityInfo, 0, len(dbs))
-	max, pages, arr := CheckPage(page, num, dbs)
+	max, pages, arr := CheckPage(page, num, all)
 	for _, db := range arr {
 		info := new(EntityInfo)
 		info.initInfo(db)

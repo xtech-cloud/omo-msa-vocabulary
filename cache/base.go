@@ -133,7 +133,6 @@ func InitData() error {
 	}
 	logger.Infof("init concepts!!! number = %d", len(cacheCtx.concepts))
 	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
-
 	return nil
 }
 
@@ -141,14 +140,14 @@ func Context() *cacheContext {
 	return cacheCtx
 }
 
-func switchConcepts() {
-	info := cacheCtx.GetConcept("645b657f76522095f3d28b83")
+func switchAttributes() {
+	info := cacheCtx.GetAttribute("60b9908fa0449d245dbde674")
 	if info == nil {
 		return
 	}
-	list := cacheCtx.GetEntitiesByConcept2("6302fcd3a057b2d0581f7439")
+	list := cacheCtx.getEntitiesByAttribute("60a4e2e36956c7f1bbe32414")
 	for _, item := range list {
-		item.updateConcept(info.UID, item.Operator)
+		item.replaceAttribute("60a4e2e36956c7f1bbe32414", "60b9908fa0449d245dbde674")
 	}
 }
 
