@@ -22,8 +22,8 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Uid = info.UID
 	tmp.Operator = info.Operator
 	tmp.Creator = info.Creator
-	tmp.Created = info.CreateTime.Unix()
-	tmp.Updated = info.UpdateTime.Unix()
+	tmp.Created = info.Created
+	tmp.Updated = info.Updated
 	tmp.Parent = info.Entity
 	tmp.Name = info.Name
 	tmp.Quote = info.Quote
@@ -223,6 +223,14 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		}
 	} else if in.Key == "system" {
 		total, pages, list = cache.Context().GetAllSystemEvents(in.Page, in.Number)
+	} else if in.Key == "duration" {
+		if len(in.Values) == 2 {
+			from, _ := strconv.ParseInt(in.Values[0], 10, 64)
+			to, _ := strconv.ParseInt(in.Values[1], 10, 64)
+			list = cache.Context().GetEventsByDuration(in.Value, from, to)
+		}
+	} else if in.Key == "regex" {
+		list = cache.Context().GetEventsByRegex(in.Value, in.Values[0], in.Values[1])
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -260,13 +268,13 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 		from := time.Date(now.Year(), now.Month(), now.Day(), 0, 1, 0, 0, time.UTC).Unix()
 		to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 0, 0, time.UTC).Unix()
 		for _, event := range events {
-			unix := event.CreateTime.Unix()
+			unix := event.Created
 			if unix < to && unix > from {
 				out.Count += 1
 			}
 		}
 	} else if in.Key == "quote" {
-		//参与人数或者被引用次数
+		//参与人数数量
 		out.Count = uint32(cache.Context().GetEventCountByQuote(in.Value))
 	} else if in.Key == "opus" {
 		//作品数量
@@ -536,7 +544,7 @@ func (mine *EventService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFi
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Updated = uint64(info.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }

@@ -13,15 +13,19 @@ type Address struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
-	Country     string             `json:"country" bson:"country"`
-	Province    string             `json:"province" bson:"province"`
-	City        string             `json:"city" bson:"city"`
-	District    string             `json:"district" bson:"district"`
-	Town        string             `json:"town" bson:"town"`
-	Village     string             `json:"village" bson:"village"`
-	Street      string             `json:"street" bson:"street"`
-	Number      string             `json:"number" bson:"number"`
-	User        string             `json:"user" bson:"user"`
+	Created     int64              `json:"created" bson:"created"`
+	Updated     int64              `json:"updated" bson:"updated"`
+	Deleted     int64              `json:"deleted" bson:"deleted"`
+
+	Country  string `json:"country" bson:"country"`
+	Province string `json:"province" bson:"province"`
+	City     string `json:"city" bson:"city"`
+	District string `json:"district" bson:"district"`
+	Town     string `json:"town" bson:"town"`
+	Village  string `json:"village" bson:"village"`
+	Street   string `json:"street" bson:"street"`
+	Number   string `json:"number" bson:"number"`
+	User     string `json:"user" bson:"user"`
 }
 
 func CreateAddress(info *Address) error {
@@ -60,7 +64,7 @@ func HadAddress(longitude float32, latitude float32) (bool, error) {
 }
 
 func GetAllAddresses() ([]*Address, error) {
-	cursor, err1 := findAll(TableAddress, 0)
+	cursor, err1 := findAllEnable(TableAddress, 0)
 	if err1 != nil {
 		return nil, err1
 	}

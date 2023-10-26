@@ -16,6 +16,9 @@ type Attribute struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Created     int64              `json:"created" bson:"created"`
+	Updated     int64              `json:"updated" bson:"updated"`
+	Deleted     int64              `json:"deleted" bson:"deleted"`
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
@@ -55,7 +58,7 @@ func GetAttribute(uid string) (*Attribute, error) {
 
 func GetAllAttributes() ([]*Attribute, error) {
 	var items = make([]*Attribute, 0, 100)
-	cursor, err1 := findAll(TableAttribute, 0)
+	cursor, err1 := findAllEnable(TableAttribute, 0)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -77,13 +80,13 @@ func RemoveAttribute(uid, operator string) error {
 }
 
 func UpdateAttributeBase(uid, name, desc, begin, end, operator string, kind uint8) error {
-	msg := bson.M{"name": name, "remark": desc, "type": kind, "begin": begin, "end": end, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "remark": desc, "type": kind, "begin": begin, "end": end, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableAttribute, uid, msg)
 	return err
 }
 
 func UpdateAttributeKey(uid, key, operator string) error {
-	msg := bson.M{"key": key, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"key": key, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableAttribute, uid, msg)
 	return err
 }

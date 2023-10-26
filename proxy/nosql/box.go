@@ -13,6 +13,9 @@ type Box struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Created     int64              `json:"created" bson:"created"`
+	Updated     int64              `json:"updated" bson:"updated"`
+	Deleted     int64              `json:"deleted" bson:"deleted"`
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
@@ -56,7 +59,7 @@ func GetBox(uid string) (*Box, error) {
 
 func GetBoxes() ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	cursor, err1 := findAll(TableBox, 0)
+	cursor, err1 := findAllEnable(TableBox, 0)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -79,8 +82,7 @@ func HadBoxByName(name string) (bool, error) {
 
 func GetBoxesByType(owner string, tp uint8) ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"owner": owner, "type": tp, "deleteAt": def}
+	filter := bson.M{"owner": owner, "type": tp, TimeDeleted: 0}
 	cursor, err1 := findMany(TableBox, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -99,8 +101,7 @@ func GetBoxesByType(owner string, tp uint8) ([]*Box, error) {
 
 func GetBoxesByOwner(owner string) ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"owner": owner, "deleteAt": def}
+	filter := bson.M{"owner": owner, TimeDeleted: 0}
 	cursor, err1 := findMany(TableBox, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -118,8 +119,7 @@ func GetBoxesByOwner(owner string) ([]*Box, error) {
 }
 
 func GetBoxByName(name string) (*Box, error) {
-	def := new(time.Time)
-	filter := bson.M{"name": name, "deleteAt": def}
+	filter := bson.M{"name": name, TimeDeleted: 0}
 	result, err1 := findOneBy(TableBox, filter)
 	model := new(Box)
 	err1 = result.Decode(model)
@@ -131,8 +131,7 @@ func GetBoxByName(name string) (*Box, error) {
 
 func GetBoxesByUser(user string) ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"users": user, "deleteAt": def}
+	filter := bson.M{"users": user, TimeDeleted: 0}
 	cursor, err1 := findMany(TableBox, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -151,8 +150,7 @@ func GetBoxesByUser(user string) ([]*Box, error) {
 
 func GetBoxesByReviewer(user string) ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"reviewers": user, "deleteAt": def}
+	filter := bson.M{"reviewers": user, TimeDeleted: 0}
 	cursor, err1 := findMany(TableBox, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -171,8 +169,7 @@ func GetBoxesByReviewer(user string) ([]*Box, error) {
 
 func GetBoxesByKeyword(key string) ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"keywords": key, "deleteAt": def}
+	filter := bson.M{"keywords": key, TimeDeleted: 0}
 	cursor, err1 := findMany(TableBox, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -191,8 +188,7 @@ func GetBoxesByKeyword(key string) ([]*Box, error) {
 
 func GetBoxesByConcept(concept string) ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"concept": concept, "deleteAt": def}
+	filter := bson.M{"concept": concept, TimeDeleted: 0}
 	cursor, err1 := findMany(TableBox, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -210,25 +206,25 @@ func GetBoxesByConcept(concept string) ([]*Box, error) {
 }
 
 func UpdateBoxBase(uid, name, desc, concept, operator string) error {
-	msg := bson.M{"name": name, "remark": desc, "operator": operator, "concept": concept, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "remark": desc, "operator": operator, "concept": concept, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
 
 func UpdateBoxCover(uid string, icon string) error {
-	msg := bson.M{"cover": icon, "updatedAt": time.Now()}
+	msg := bson.M{"cover": icon, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
 
 func UpdateBoxOwner(uid, owner string) error {
-	msg := bson.M{"owner": owner, "updatedAt": time.Now()}
+	msg := bson.M{"owner": owner, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
 
 func UpdateBoxKeywords(uid, operator string, list []string) error {
-	msg := bson.M{"keywords": list, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"keywords": list, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
@@ -239,13 +235,13 @@ func RemoveBox(uid, operator string) error {
 }
 
 func UpdateBoxUsers(uid, operator string, list []string) error {
-	msg := bson.M{"users": list, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"users": list, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
 
 func UpdateBoxReviewers(uid, operator string, list []string) error {
-	msg := bson.M{"reviewers": list, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"reviewers": list, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }

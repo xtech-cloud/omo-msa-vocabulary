@@ -14,8 +14,8 @@ type AttributeService struct{}
 
 func switchAttribute(info *cache.AttributeInfo) *pb.AttributeInfo {
 	tmp := new(pb.AttributeInfo)
-	tmp.Created = info.CreateTime.Unix()
-	tmp.Updated = info.UpdateTime.Unix()
+	tmp.Created = info.Created
+	tmp.Updated = info.Updated
 	tmp.Key = info.Key
 	tmp.Uid = info.UID
 	tmp.Id = info.ID

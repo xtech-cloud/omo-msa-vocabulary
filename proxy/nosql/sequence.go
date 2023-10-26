@@ -59,7 +59,7 @@ func getSequenceCount(name string) (uint64, error) {
 
 func GetAllSequences() ([]*Sequence, error) {
 	var items = make([]*Sequence, 0, 100)
-	cursor, err1 := findAll(TableSequence, 0)
+	cursor, err1 := findAllEnable(TableSequence, 0)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -81,8 +81,7 @@ func UpdateSequenceName(uid, name string) error {
 	return err
 }
 
-
 func DeleteSequence(uid string) error {
-	_,err := deleteOne(TableSequence, uid)
+	_, err := deleteOne(TableSequence, uid)
 	return err
 }

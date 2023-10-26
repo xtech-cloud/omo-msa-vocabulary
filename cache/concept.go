@@ -91,7 +91,7 @@ func (mine *cacheContext) CreateTopConcept(info *ConceptInfo) error {
 	db := new(nosql.Concept)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetConceptNextID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.Creator = info.Creator
 	db.Name = info.Name
 	db.Table = info.Table
@@ -175,8 +175,8 @@ func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
 	mine.Remark = db.Remark
 	mine.Table = db.Table
 	mine.Cover = db.Cover
-	mine.UpdateTime = db.UpdatedTime
-	mine.CreateTime = db.CreatedTime
+	mine.Updated = db.Updated
+	mine.Created = db.Created
 	mine.Operator = db.Operator
 	mine.Creator = db.Creator
 	mine.Parent = db.Parent
@@ -200,7 +200,7 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 	db := new(nosql.Concept)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetConceptNextID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.Creator = info.Creator
 	db.Name = info.Name
 	db.Table = ""
@@ -352,7 +352,7 @@ func (mine *ConceptInfo) UpdateAttributes(arr []string) error {
 	err := nosql.UpdateConceptAttributes(mine.UID, arr)
 	if err == nil {
 		mine.attributes = arr
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -373,7 +373,7 @@ func (mine *ConceptInfo) ReplaceAttributes(old, news string) error {
 	err := nosql.UpdateConceptAttributes(mine.UID, arr)
 	if err == nil {
 		mine.attributes = arr
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -386,7 +386,7 @@ func (mine *ConceptInfo) UpdatePrivates(arr []string) error {
 	err := nosql.UpdateConceptPrivates(mine.UID, arr)
 	if err == nil {
 		mine.privates = arr
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -401,7 +401,7 @@ func (mine *ConceptInfo) AppendAttribute(info *AttributeInfo) error {
 	err := nosql.AppendConceptAttribute(mine.UID, info.UID)
 	if err == nil {
 		mine.attributes = append(mine.attributes, info.UID)
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -487,7 +487,7 @@ func (mine *ConceptInfo) UpdateBase(name, remark, operator string, kind, scene u
 		mine.Operator = operator
 		mine.Type = kind
 		mine.Scene = scene
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -496,7 +496,7 @@ func (mine *ConceptInfo) UpdateCover(cover string) error {
 	err := nosql.UpdateConceptCover(mine.UID, cover)
 	if err == nil {
 		mine.Cover = cover
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }

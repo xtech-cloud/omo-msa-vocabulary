@@ -15,6 +15,9 @@ type Entity struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Created     int64              `json:"created" bson:"created"`
+	Updated     int64              `json:"updated" bson:"updated"`
+	Deleted     int64              `json:"deleted" bson:"deleted"`
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
@@ -50,7 +53,7 @@ func CreateEntity(info interface{}, table string) error {
 }
 
 func GetEntities(table string) ([]*Entity, error) {
-	cursor, err1 := findAll(table, 0)
+	cursor, err1 := findAllEnable(table, 0)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -111,8 +114,7 @@ func GetEntityCount(table string) uint32 {
 }
 
 func GetEntityCountByScene(table, scene string) uint32 {
-	def := new(time.Time)
-	filter := bson.M{"scene": scene, "deleteAt": def}
+	filter := bson.M{"scene": scene, TimeDeleted: 0}
 	count, err := getCountBy(table, filter)
 	if err != nil {
 		return 0
@@ -121,7 +123,7 @@ func GetEntityCountByScene(table, scene string) uint32 {
 }
 
 func GetEntityByName(table, name, add string) (*Entity, error) {
-	msg := bson.M{"name": name, "add": add, "deleteAt": new(time.Time)}
+	msg := bson.M{"name": name, "add": add, TimeDeleted: 0}
 	result, err := findOneBy(table, msg)
 	if err != nil {
 		return nil, err
@@ -135,7 +137,7 @@ func GetEntityByName(table, name, add string) (*Entity, error) {
 }
 
 func GetEntityByFirstLetter(table, relate, letter string) ([]*Entity, error) {
-	msg := bson.M{"letters": letter, "relates": relate, "deleteAt": new(time.Time)}
+	msg := bson.M{"letters": letter, "relates": relate, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -153,7 +155,7 @@ func GetEntityByFirstLetter(table, relate, letter string) ([]*Entity, error) {
 }
 
 func GetEntityByMark(table, mark string) (*Entity, error) {
-	msg := bson.M{"mark": mark, "deleteAt": new(time.Time)}
+	msg := bson.M{"mark": mark, TimeDeleted: 0}
 	result, err := findOneBy(table, msg)
 	if err != nil {
 		return nil, err
@@ -185,7 +187,7 @@ func GetEntitiesByProp(table, key, value string) ([]*Entity, error) {
 }
 
 func GetEntitiesByOwnerAndStatus(table, owner string, st uint8) ([]*Entity, error) {
-	msg := bson.M{"scene": owner, "status": st, "deleteAt": new(time.Time)}
+	msg := bson.M{"scene": owner, "status": st, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -203,7 +205,7 @@ func GetEntitiesByOwnerAndStatus(table, owner string, st uint8) ([]*Entity, erro
 }
 
 func GetEntitiesByConcept(table, owner, concept string) ([]*Entity, error) {
-	msg := bson.M{"scene": owner, "concept": concept, "deleteAt": new(time.Time)}
+	msg := bson.M{"scene": owner, "concept": concept, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -221,7 +223,7 @@ func GetEntitiesByConcept(table, owner, concept string) ([]*Entity, error) {
 }
 
 func GetEntitiesByConcept2(table, concept string) ([]*Entity, error) {
-	msg := bson.M{"concept": concept, "deleteAt": new(time.Time)}
+	msg := bson.M{"concept": concept, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -239,7 +241,7 @@ func GetEntitiesByConcept2(table, concept string) ([]*Entity, error) {
 }
 
 func GetEntitiesByAttribute(table, attr string) ([]*Entity, error) {
-	msg := bson.M{"props.key": attr, "deleteAt": new(time.Time)}
+	msg := bson.M{"props.key": attr, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -257,7 +259,7 @@ func GetEntitiesByAttribute(table, attr string) ([]*Entity, error) {
 }
 
 func GetEntitiesByName(table, name string) ([]*Entity, error) {
-	msg := bson.M{"name": name, "deleteAt": new(time.Time)}
+	msg := bson.M{"name": name, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -275,7 +277,7 @@ func GetEntitiesByName(table, name string) ([]*Entity, error) {
 }
 
 func GetEntitiesByOwnName(table, name, owner string) ([]*Entity, error) {
-	msg := bson.M{"name": name, "scene": owner, "deleteAt": new(time.Time)}
+	msg := bson.M{"name": name, "scene": owner, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -293,7 +295,7 @@ func GetEntitiesByOwnName(table, name, owner string) ([]*Entity, error) {
 }
 
 func GetEntitiesByOwner(table, owner string) ([]*Entity, error) {
-	msg := bson.M{"scene": owner, "deleteAt": new(time.Time)}
+	msg := bson.M{"scene": owner, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -311,7 +313,7 @@ func GetEntitiesByOwner(table, owner string) ([]*Entity, error) {
 }
 
 func GetEntitiesByRelate(table, relate string) ([]*Entity, error) {
-	msg := bson.M{"relates": relate, "deleteAt": new(time.Time)}
+	msg := bson.M{"relates": relate, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -329,7 +331,7 @@ func GetEntitiesByRelate(table, relate string) ([]*Entity, error) {
 }
 
 func GetEntitiesByRegex(table, key, val string) ([]*Entity, error) {
-	msg := bson.M{key: bson.M{"$regex": val}, "deleteAt": new(time.Time)}
+	msg := bson.M{key: bson.M{"$regex": val}, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -347,7 +349,7 @@ func GetEntitiesByRegex(table, key, val string) ([]*Entity, error) {
 }
 
 func GetEntitiesByMatch(table, name string) ([]*Entity, error) {
-	msg := bson.M{"name": bson.M{"$regex": name}, "deleteAt": new(time.Time)}
+	msg := bson.M{"name": bson.M{"$regex": name}, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -365,7 +367,7 @@ func GetEntitiesByMatch(table, name string) ([]*Entity, error) {
 }
 
 func GetEntitiesByOwnMatch(table, name, owner string) ([]*Entity, error) {
-	msg := bson.M{"name": bson.M{"$regex": name}, "scene": owner, "deleteAt": new(time.Time)}
+	msg := bson.M{"name": bson.M{"$regex": name}, "scene": owner, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -383,7 +385,7 @@ func GetEntitiesByOwnMatch(table, name, owner string) ([]*Entity, error) {
 }
 
 func GetEntitiesByStatus(table string, st uint8) ([]*Entity, error) {
-	msg := bson.M{"status": st, "deleteAt": new(time.Time)}
+	msg := bson.M{"status": st, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -401,37 +403,37 @@ func GetEntitiesByStatus(table string, st uint8) ([]*Entity, error) {
 }
 
 func UpdateEntityBase(table, uid, name, add, concept, quote, mark, operator string) error {
-	msg := bson.M{"name": name, "add": add, "quote": quote, "mark": mark, "concept": concept, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "add": add, "quote": quote, "mark": mark, "concept": concept, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityConcept(table, uid, concept, operator string) error {
-	msg := bson.M{"concept": concept, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"concept": concept, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityRelates(table, uid, operator string, list []string) error {
-	msg := bson.M{"relates": list, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"relates": list, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityLinks(table, uid, operator string, list []string) error {
-	msg := bson.M{"links": list, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"links": list, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityAccess(table, uid, operator string, acc uint32) error {
-	msg := bson.M{"access": acc, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"access": acc, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityRemark(table, uid, desc, summary, operator string) error {
-	msg := bson.M{"desc": desc, "summary": summary, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"desc": desc, "summary": summary, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
@@ -443,79 +445,79 @@ func UpdateEntityLetter(table, uid, letter string) error {
 }
 
 func UpdateEntityStatic(table, uid, operator string, tags []string, props []*proxy.PropertyInfo) error {
-	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "tags": tags, "props": props}
+	msg := bson.M{"operator": operator, TimeUpdated: time.Now().Unix(), "tags": tags, "props": props}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityEvents(table, uid, operator string, events []*proxy.EventBrief) error {
-	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "events": events}
+	msg := bson.M{"operator": operator, TimeUpdated: time.Now().Unix(), "events": events}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityRelations(table, uid, operator string, relations []*proxy.RelationCaseInfo) error {
-	msg := bson.M{"operator": operator, "updatedAt": time.Now(), "relations": relations}
+	msg := bson.M{"operator": operator, TimeUpdated: time.Now().Unix(), "relations": relations}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityStatus(table, uid string, state uint8, operator string) error {
-	msg := bson.M{"status": state, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"status": state, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityPushed(table, uid string, operator string) error {
-	msg := bson.M{"pushed": time.Now().Unix(), "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"pushed": time.Now().Unix(), "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityCover(table, uid string, cover string, operator string) error {
-	msg := bson.M{"cover": cover, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"cover": cover, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityThumb(table, uid string, cover string, operator string) error {
-	msg := bson.M{"thumb": cover, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"thumb": cover, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityMark(table, uid, mark, operator string) error {
-	msg := bson.M{"mark": mark, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"mark": mark, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityQuote(table, uid, quote, operator string) error {
-	msg := bson.M{"quote": quote, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"quote": quote, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityTags(table, uid string, operator string, tags []string) error {
-	msg := bson.M{"tags": tags, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"tags": tags, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityAdd(table, uid string, add string, operator string) error {
-	msg := bson.M{"add": add, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"add": add, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntitySynonyms(table, uid string, operator string, synonyms []string) error {
-	msg := bson.M{"synonyms": synonyms, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"synonyms": synonyms, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }
 
 func UpdateEntityProperties(table, uid string, operator string, array []*proxy.PropertyInfo) error {
-	msg := bson.M{"props": array, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"props": array, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

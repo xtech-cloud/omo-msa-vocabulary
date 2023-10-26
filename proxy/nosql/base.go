@@ -15,15 +15,6 @@ import (
 	"time"
 )
 
-/**
-type Base struct {
-	ID          uint64    `json:"id" bson:"id"`
-	Name        string    `json:"name" bson:"name"`
-	CreatedTime time.Time `json:"createdAt" bson:"createdAt"`
-	UpdatedTime time.Time `json:"updatedAt" bson:"updatedAt"`
-	DeleteTime  time.Time `json:"deleteAt" bson:"deleteAt"`
-}*/
-
 type FileInfo struct {
 	UID         string    `json:"_id" bson:"_id"`
 	UpdatedTime time.Time `json:"uploadDate" bson:"uploadDate"`
@@ -142,37 +133,54 @@ func readFile(path string, table string) error {
 	return analyticDataStructure(table, data)
 }
 
-func BackupDatabase() string {
-	/*timeStr := time.Now().Format("20060102150405")
-	path := "db/"+timeStr+"/"
-	bl := tool.FileIsExist(path)
-	if !bl {
-		err := os.MkdirAll(path, 0666)
-		if err != nil {
-			warn("backup database failed!!!")
-		}
+func CheckTimes() {
+	dbs := make([]*Concept, 0, 5000)
+	dbs = GetAll(TableConcept, dbs)
+	for _, db := range dbs {
+		UpdateItemTime(TableConcept, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+	}
+	dbs1 := make([]*Attribute, 0, 5000)
+	dbs1 = GetAll(TableAttribute, dbs1)
+	for _, db := range dbs1 {
+		UpdateItemTime(TableAttribute, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+	}
+	dbs2 := make([]*Relation, 0, 5000)
+	dbs2 = GetAll(TableRelation, dbs2)
+	for _, db := range dbs2 {
+		UpdateItemTime(TableRelation, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+	}
+	dbs4 := make([]*Event, 0, 5000)
+	dbs4 = GetAll(TableEvent, dbs4)
+	for _, db := range dbs4 {
+		UpdateItemTime(TableEvent, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+	}
+	dbs7 := make([]*Box, 0, 500)
+	dbs7 = GetAll(TableBox, dbs7)
+	for _, db := range dbs7 {
+		UpdateItemTime(TableBox, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+	}
+	dbs5 := make([]*Archived, 0, 1000)
+	dbs5 = GetAll(TableArchived, dbs5)
+	for _, db := range dbs5 {
+		UpdateItemTime(TableArchived, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+	}
+	dbs6 := make([]*VEdge, 0, 5000)
+	dbs6 = GetAll(TableEdge, dbs6)
+	for _, db := range dbs6 {
+		UpdateItemTime(TableEdge, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
 	}
 
-	tables, _ := noSql.ListCollectionNames(context.Background(), nil)
-	for i := 0; i < len(tables); i++ {
-		if tables[i] == TableAdmin {
-			//cursor,_ := findAll(TableAdmin)
-			//writeFile(path,tables[i],cursor.)
-		}else if tables[i] == TableScene {
-
-			//writeFile(path,tables[i],list)
-		}
+	dbs8 := make([]*Entity, 0, 5000)
+	dbs8 = GetAll("entities", dbs8)
+	for _, db := range dbs8 {
+		UpdateItemTime("entities", db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
 	}
-	return timeStr*/
-	return ""
-}
 
-func RecoveryDatabase(timeStr string) error {
-	//path := "db/" + timeStr + "/"
-
-	//tables, _ := noSql.ListCollectionNames(context.Background(), nil)
-
-	return nil
+	dbs9 := make([]*Entity, 0, 5000)
+	dbs9 = GetAll("entities_school", dbs9)
+	for _, db := range dbs9 {
+		UpdateItemTime("entities_school", db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+	}
 }
 
 func ImportDatabase(table string, file multipart.File) error {

@@ -13,6 +13,9 @@ type Concept struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Created     int64              `json:"created" bson:"created"`
+	Updated     int64              `json:"updated" bson:"updated"`
+	Deleted     int64              `json:"deleted" bson:"deleted"`
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
@@ -55,8 +58,7 @@ func GetConcept(uid string) (*Concept, error) {
 
 func GetTopConcepts() ([]*Concept, error) {
 	var items = make([]*Concept, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"parent": "", "deleteAt": def}
+	filter := bson.M{"parent": "", TimeDeleted: 0}
 	cursor, err1 := findMany(TableConcept, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -75,8 +77,7 @@ func GetTopConcepts() ([]*Concept, error) {
 
 func GetConceptsByParent(parent string) ([]*Concept, error) {
 	var items = make([]*Concept, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"parent": parent, "deleteAt": def}
+	filter := bson.M{"parent": parent, TimeDeleted: 0}
 	cursor, err1 := findMany(TableConcept, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -95,8 +96,7 @@ func GetConceptsByParent(parent string) ([]*Concept, error) {
 
 func GetConceptsByAttribute(uid string) ([]*Concept, error) {
 	var items = make([]*Concept, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"attributes": uid, "deleteAt": def}
+	filter := bson.M{"attributes": uid, TimeDeleted: 0}
 	cursor, err1 := findMany(TableConcept, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -119,13 +119,13 @@ func HadConceptByName(name string) (bool, error) {
 }
 
 func UpdateConceptBase(uid, name, desc, operator string, kind, scene uint8) error {
-	msg := bson.M{"name": name, "remark": desc, "operator": operator, "type": kind, "scene": scene, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "remark": desc, "operator": operator, "type": kind, "scene": scene, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }
 
 func UpdateConceptCover(uid string, icon string) error {
-	msg := bson.M{"cover": icon, "updatedAt": time.Now()}
+	msg := bson.M{"cover": icon, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }
@@ -136,13 +136,13 @@ func RemoveConcept(uid, operator string) error {
 }
 
 func UpdateConceptAttributes(uid string, attrs []string) error {
-	msg := bson.M{"attributes": attrs, "updatedAt": time.Now()}
+	msg := bson.M{"attributes": attrs, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }
 
 func UpdateConceptPrivates(uid string, attrs []string) error {
-	msg := bson.M{"privates": attrs, "updatedAt": time.Now()}
+	msg := bson.M{"privates": attrs, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }

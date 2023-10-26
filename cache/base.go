@@ -17,13 +17,13 @@ import (
 )
 
 type BaseInfo struct {
-	ID         uint64    `json:"id"`
-	UID        string    `json:"uid"`
-	Name       string    `json:"name"`
-	CreateTime time.Time `json:"create_time"`
-	UpdateTime time.Time `json:"update_time"`
-	Creator    string    `json:"creator"`
-	Operator   string    `json:"operator"`
+	ID       uint64 `json:"id"`
+	UID      string `json:"uid"`
+	Name     string `json:"name"`
+	Creator  string `json:"creator"`
+	Operator string `json:"operator"`
+	Created  int64
+	Updated  int64
 }
 
 type WritingInfo struct {
@@ -133,6 +133,7 @@ func InitData() error {
 	}
 	logger.Infof("init concepts!!! number = %d", len(cacheCtx.concepts))
 	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
+	nosql.CheckTimes()
 	return nil
 }
 

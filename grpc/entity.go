@@ -72,8 +72,8 @@ func switchEntityBrief(info *cache.EntityInfo) *pb.EntityBrief {
 	tmp.Concept = info.Concept
 	tmp.Cover = info.Cover
 	tmp.Name = info.Name
-	tmp.Created = info.CreateTime.Unix()
-	tmp.Updated = info.UpdateTime.Unix()
+	tmp.Created = info.Created
+	tmp.Updated = info.Updated
 	tmp.Description = info.Description
 	tmp.Operator = info.Operator
 	tmp.Creator = info.Creator
@@ -616,7 +616,7 @@ func (mine *EntityService) UpdateTags(ctx context.Context, in *pb.RequestList, o
 	}
 	out.Uid = info.UID
 	out.List = info.Tags
-	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Updated = uint64(info.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -654,7 +654,7 @@ func (mine *EntityService) UpdateProperties(ctx context.Context, in *pb.ReqEntit
 		tmp := switchPropertyToPB(value)
 		out.Properties = append(out.Properties, tmp)
 	}
-	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Updated = uint64(info.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -681,7 +681,7 @@ func (mine *EntityService) UpdateBase(ctx context.Context, in *pb.ReqEntityBase,
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Updated = uint64(info.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -710,7 +710,7 @@ func (mine *EntityService) UpdateCover(ctx context.Context, in *pb.RequestInfo, 
 		return nil
 	}
 	out.Uid = in.Uid
-	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Updated = uint64(info.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -734,7 +734,7 @@ func (mine *EntityService) UpdateStatus(ctx context.Context, in *pb.ReqEntitySta
 	}
 	out.Uid = in.Uid
 	out.State = in.Status
-	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Updated = uint64(info.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -758,7 +758,7 @@ func (mine *EntityService) UpdateSynonyms(ctx context.Context, in *pb.RequestLis
 	}
 	out.Uid = info.UID
 	out.List = info.Synonyms
-	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Updated = uint64(info.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -888,7 +888,7 @@ func (mine *EntityService) UpdateStatic(ctx context.Context, in *pb.ReqEntitySta
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(info.UpdateTime.Unix())
+	out.Updated = uint64(info.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -916,7 +916,7 @@ func (mine *EntityService) UpdateRelations(ctx context.Context, in *pb.ReqEntity
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(entity.UpdateTime.Unix())
+	out.Updated = uint64(entity.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -943,7 +943,7 @@ func (mine *EntityService) UpdateEvents(ctx context.Context, in *pb.ReqEntityEve
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(entity.UpdateTime.Unix())
+	out.Updated = uint64(entity.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -981,7 +981,7 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(entity.UpdateTime.Unix())
+	out.Updated = uint64(entity.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }

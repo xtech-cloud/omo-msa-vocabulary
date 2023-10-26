@@ -13,6 +13,9 @@ type Archived struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Created     int64              `json:"created" bson:"created"`
+	Updated     int64              `json:"updated" bson:"updated"`
+	Deleted     int64              `json:"deleted" bson:"deleted"`
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
@@ -56,8 +59,7 @@ func GetArchivedByEntity(uid string) (*Archived, error) {
 
 func GetAllArchived() ([]*Archived, error) {
 	var items = make([]*Archived, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"deleteAt": def}
+	filter := bson.M{TimeDeleted: 0}
 	cursor, err1 := findMany(TableArchived, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -138,13 +140,13 @@ func GetArchivedListBy(scene, concept string) ([]*Archived, error) {
 }
 
 func UpdateArchivedFile(uid, operator, file, md5 string, size uint32) error {
-	msg := bson.M{"file": file, "md5": md5, "size": size, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"file": file, "md5": md5, "size": size, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableArchived, uid, msg)
 	return err
 }
 
 func UpdateArchivedAccess(uid, operator string, acc uint8) error {
-	msg := bson.M{"access": acc, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"access": acc, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableArchived, uid, msg)
 	return err
 }

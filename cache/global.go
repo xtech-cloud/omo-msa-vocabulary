@@ -646,6 +646,40 @@ func (mine *cacheContext) GetEventsByQuotePage(quote string, page, number int32)
 	return CheckPage(page, number, list)
 }
 
+func (mine *cacheContext) GetEventsByDuration(quote string, from, end int64) []*EventInfo {
+	arr, err := nosql.GetEventsByDuration(quote, from, end)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
+func (mine *cacheContext) GetEventsByRegex(quote, key, value string) []*EventInfo {
+	arr, err := nosql.GetEventsByRegex(quote, key, value)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetAllSystemEvents(page, number int32) (int32, int32, []*EventInfo) {
 	arr, err := nosql.GetEventsAllByType(1)
 	var list []*EventInfo
@@ -671,7 +705,7 @@ func (mine *cacheContext) GetEventsByWeek(from int64, quotes []string) []*EventI
 		arr, err := nosql.GetEventsByQuote2(quote)
 		if err == nil {
 			for _, db := range arr {
-				now := db.CreatedTime.Unix()
+				now := db.Created
 				if now > from && now < end {
 					info := new(EventInfo)
 					info.initInfo(db)
@@ -759,7 +793,7 @@ func (mine *cacheContext) GetEventsByRelate(entity, relate string) []*EventInfo 
 	eveDBs, er := nosql.GetEventsByEntity(entity)
 	if er == nil {
 		for _, event := range eveDBs {
-			if event.CreatedTime.Unix() < latest.CreatedTime.Unix() {
+			if event.Created < latest.Created {
 				info := new(EventInfo)
 				info.initInfo(event)
 				list = append(list, info)

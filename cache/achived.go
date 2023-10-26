@@ -29,7 +29,7 @@ func (mine *cacheContext) CreateArchived(info *EntityInfo) error {
 	}
 	db := new(nosql.Archived)
 	db.UID = primitive.NewObjectID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.ID = nosql.GetEntityNextID(info.table())
 	db.Name = fmt.Sprintf("%s(%s)", info.Name, info.Add)
 	db.Concept = info.Concept
@@ -37,6 +37,7 @@ func (mine *cacheContext) CreateArchived(info *EntityInfo) error {
 	db.Scene = info.Owner
 	db.Creator = info.Creator
 	db.Operator = info.Operator
+
 	db.Access = 0
 	db.Score = 0
 	var er error
@@ -181,8 +182,8 @@ func (mine *ArchivedInfo) initInfo(db *nosql.Archived) bool {
 	}
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID
-	mine.CreateTime = db.CreatedTime
-	mine.UpdateTime = db.UpdatedTime
+	mine.Created = db.Created
+	mine.Updated = db.Updated
 	mine.Creator = db.Creator
 	mine.Operator = db.Operator
 	mine.Concept = db.Concept
@@ -213,7 +214,7 @@ func (mine *ArchivedInfo) UpdateFile(info *EntityInfo, operator string) error {
 		mine.File = data
 		mine.MD5 = md5
 		mine.Size = size
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }

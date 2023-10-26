@@ -81,7 +81,8 @@ func (mine *cacheContext) GetActivityCountByDate(entity string, date time.Time) 
 		return count
 	}
 	for _, db := range dbs {
-		if db.CreatedTime.Month() == date.Month() {
+		utc := time.Unix(db.Created, 0)
+		if utc.Month() == date.Month() {
 			count += 1
 		}
 	}
@@ -134,10 +135,8 @@ func (mine *cacheContext) GetEventAssetsByQuote(quote string) []string {
 		return assets
 	}
 	for _, db := range dbs {
-		for _, asset := range db.Assets {
-			if !tool.HasItem(assets, asset) {
-				assets = append(assets, asset)
-			}
+		if len(db.Assets) > 0 {
+			assets = append(assets, db.Assets...)
 		}
 	}
 	return assets
@@ -147,8 +146,8 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID
 	mine.Type = db.Type
-	mine.CreateTime = db.CreatedTime
-	mine.UpdateTime = db.UpdatedTime
+	mine.Created = db.Created
+	mine.Updated = db.Updated
 	mine.Operator = db.Operator
 	mine.Creator = db.Creator
 	mine.Name = db.Name
@@ -209,7 +208,7 @@ func (mine *EventInfo) UpdateBase(name, remark, operator string, access uint8, d
 		mine.Access = access
 		mine.Assets = assets
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -226,7 +225,7 @@ func (mine *EventInfo) UpdateInfo(name, remark, operator string) error {
 		mine.Name = name
 		mine.Description = remark
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -239,7 +238,7 @@ func (mine *EventInfo) UpdateAssets(operator string, list []string) error {
 	if err == nil {
 		mine.Assets = list
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -252,7 +251,7 @@ func (mine *EventInfo) UpdateTags(operator string, tags []string) error {
 	if err == nil {
 		mine.Tags = tags
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -268,7 +267,7 @@ func (mine *EventInfo) UpdateAccess(operator string, access uint8) error {
 	if err == nil {
 		mine.Access = access
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -284,7 +283,7 @@ func (mine *EventInfo) UpdateOwner(owner, operator string) error {
 	if err == nil {
 		mine.Owner = owner
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -300,7 +299,7 @@ func (mine *EventInfo) UpdateQuote(quote, operator string) error {
 	if err == nil {
 		mine.Quote = quote
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -316,7 +315,7 @@ func (mine *EventInfo) UpdateCover(operator, cover string) error {
 	if err == nil {
 		mine.Cover = cover
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -337,7 +336,7 @@ func (mine *EventInfo) AppendAsset(asset string) error {
 	err := nosql.AppendEventAsset(mine.UID, asset)
 	if err == nil {
 		mine.Assets = append(mine.Assets, asset)
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -354,7 +353,7 @@ func (mine *EventInfo) SubtractAsset(asset string) error {
 				break
 			}
 		}
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -364,7 +363,7 @@ func (mine *EventInfo) AppendRelation(relation *proxy.RelationCaseInfo) error {
 	err := nosql.AppendEventRelation(mine.UID, relation)
 	if err == nil {
 		mine.Relations = append(mine.Relations, *relation)
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 		tmp := Context().GetRelation(relation.Category)
 		if tmp != nil {
 			Context().addSyncLink(mine.Entity, relation.Entity, tmp.UID, relation.Name, switchRelationToLink(tmp.Kind), relation.Direction)
@@ -382,7 +381,7 @@ func (mine *EventInfo) SubtractRelation(relation string) error {
 				break
 			}
 		}
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }

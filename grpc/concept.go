@@ -15,8 +15,8 @@ type ConceptService struct{}
 func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	tmp := new(pb.ConceptInfo)
 	tmp.Uid = info.UID
-	tmp.Updated = info.UpdateTime.Unix()
-	tmp.Created = info.CreateTime.Unix()
+	tmp.Created = info.Created
+	tmp.Updated = info.Updated
 	tmp.Type = uint32(info.Type)
 	tmp.Name = info.Name
 	tmp.Remark = info.Remark

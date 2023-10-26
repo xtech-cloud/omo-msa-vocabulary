@@ -13,6 +13,9 @@ type Relation struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Created     int64              `json:"created" bson:"created"`
+	Updated     int64              `json:"updated" bson:"updated"`
+	Deleted     int64              `json:"deleted" bson:"deleted"`
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
@@ -38,8 +41,7 @@ func GetRelationNextID() uint64 {
 
 func GetRelationsByParent(parent string) ([]*Relation, error) {
 	var items = make([]*Relation, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"parent": parent, "deleteAt": def}
+	filter := bson.M{"parent": parent, TimeDeleted: 0}
 	cursor, err1 := findMany(TableRelation, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -71,8 +73,7 @@ func GetRelation(uid string) (*Relation, error) {
 
 func GetTopRelations() ([]*Relation, error) {
 	var items = make([]*Relation, 0, 100)
-	def := new(time.Time)
-	filter := bson.M{"parent": "", "deleteAt": def}
+	filter := bson.M{"parent": "", TimeDeleted: 0}
 	cursor, err1 := findMany(TableRelation, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -95,7 +96,7 @@ func RemoveRelation(uid, operator string) error {
 }
 
 func UpdateRelationBase(uid, name, desc, operator string, custom bool, kind uint8) error {
-	msg := bson.M{"name": name, "remark": desc, "custom": custom, "type": kind, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "remark": desc, "custom": custom, "type": kind, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableRelation, uid, msg)
 	return err
 }

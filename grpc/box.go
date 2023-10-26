@@ -15,8 +15,8 @@ type BoxService struct{}
 func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp := new(pb.BoxInfo)
 	tmp.Uid = info.UID
-	tmp.Updated = info.UpdateTime.Unix()
-	tmp.Created = info.CreateTime.Unix()
+	tmp.Created = info.Created
+	tmp.Updated = info.Updated
 	tmp.Name = info.Name
 	tmp.Remark = info.Remark
 	tmp.Concept = info.Concept
@@ -307,7 +307,7 @@ func (mine *BoxService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFilt
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Updated = uint64(box.UpdateTime.Unix())
+	out.Updated = uint64(box.Updated)
 	out.Status = outLog(path, out)
 	return nil
 }

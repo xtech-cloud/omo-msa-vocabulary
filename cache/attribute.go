@@ -37,7 +37,7 @@ func (mine *cacheContext) CreateAttribute(info *AttributeInfo) error {
 	db := new(nosql.Attribute)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetAttributeNextID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.Creator = info.Creator
 	db.Key = info.Key
 	db.Name = info.Name
@@ -118,8 +118,8 @@ func (mine *AttributeInfo) initInfo(db *nosql.Attribute) {
 	mine.Kind = AttributeType(db.Kind)
 	mine.Begin = db.Begin
 	mine.End = db.End
-	mine.CreateTime = db.CreatedTime
-	mine.UpdateTime = db.UpdatedTime
+	mine.Created = db.Created
+	mine.Updated = db.Updated
 }
 
 func (mine *AttributeInfo) UpdateBase(name, remark, begin, end, operator string, kind uint8) error {
@@ -131,7 +131,7 @@ func (mine *AttributeInfo) UpdateBase(name, remark, begin, end, operator string,
 		mine.End = end
 		mine.Kind = AttributeType(kind)
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -141,7 +141,7 @@ func (mine *AttributeInfo) UpdateKey(key, operator string) error {
 	if err == nil {
 		mine.Key = key
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }

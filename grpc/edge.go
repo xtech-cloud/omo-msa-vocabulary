@@ -20,8 +20,8 @@ func switchVEdge(info *cache.VEdgeInfo) *pb.VEdgeInfo {
 	tmp.Uid = info.UID
 	tmp.Operator = info.Operator
 	tmp.Creator = info.Creator
-	tmp.Created = info.CreateTime.Unix()
-	tmp.Updated = info.UpdateTime.Unix()
+	tmp.Created = info.Created
+	tmp.Updated = info.Updated
 	tmp.Source = info.Source
 	tmp.Target = &pb.VNode{
 		Name:   info.Target.Name,

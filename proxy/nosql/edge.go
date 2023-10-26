@@ -14,6 +14,9 @@ type VEdge struct {
 	CreatedTime time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedTime time.Time          `json:"updatedAt" bson:"updatedAt"`
 	DeleteTime  time.Time          `json:"deleteAt" bson:"deleteAt"`
+	Created     int64              `json:"created" bson:"created"`
+	Updated     int64              `json:"updated" bson:"updated"`
+	Deleted     int64              `json:"deleted" bson:"deleted"`
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
@@ -53,8 +56,7 @@ func GetVEdge(uid string) (*VEdge, error) {
 }
 
 func GetVEdgeCountByEntity(entity string) uint32 {
-	def := new(time.Time)
-	filter := bson.M{"center": entity, "deleteAt": def}
+	filter := bson.M{"center": entity, TimeDeleted: 0}
 	count, err := getCountBy(TableEdge, filter)
 	if err != nil {
 		return 0
@@ -64,8 +66,7 @@ func GetVEdgeCountByEntity(entity string) uint32 {
 
 func GetVEdgesBySource(uid string) ([]*VEdge, error) {
 	var items = make([]*VEdge, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"source": uid, "deleteAt": def}
+	filter := bson.M{"source": uid, TimeDeleted: 0}
 	cursor, err1 := findMany(TableEdge, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -84,8 +85,7 @@ func GetVEdgesBySource(uid string) ([]*VEdge, error) {
 
 func GetVEdgesByCenter(uid string) ([]*VEdge, error) {
 	var items = make([]*VEdge, 0, 20)
-	def := new(time.Time)
-	filter := bson.M{"center": uid, "deleteAt": def}
+	filter := bson.M{"center": uid, TimeDeleted: 0}
 	cursor, err1 := findMany(TableEdge, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -103,7 +103,7 @@ func GetVEdgesByCenter(uid string) ([]*VEdge, error) {
 }
 
 func UpdateVEdgeBase(uid, name, relation, operator string, dire uint8, target proxy.VNode) error {
-	msg := bson.M{"name": name, "relation": relation, "target": target, "direction": dire, "operator": operator, "updatedAt": time.Now()}
+	msg := bson.M{"name": name, "relation": relation, "target": target, "direction": dire, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableEdge, uid, msg)
 	return err
 }

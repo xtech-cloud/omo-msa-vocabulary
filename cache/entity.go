@@ -90,7 +90,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo, relations []*pb.VEdgeIn
 	}
 	db := new(nosql.Entity)
 	db.UID = primitive.NewObjectID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.ID = nosql.GetEntityNextID(info.table())
 	db.Name = info.Name
 	db.Description = info.Description
@@ -149,8 +149,8 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	}
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID
-	mine.CreateTime = db.CreatedTime
-	mine.UpdateTime = db.UpdatedTime
+	mine.Created = db.Created
+	mine.Updated = db.Updated
 	mine.Creator = db.Creator
 	mine.Operator = db.Operator
 	mine.Tags = db.Tags
@@ -301,7 +301,7 @@ func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote,
 			mine.Description = desc
 			mine.Summary = sum
 			mine.Operator = operator
-			mine.UpdateTime = time.Now()
+			mine.Updated = time.Now().Unix()
 		}
 	}
 	if name != mine.Name || add != mine.Add || concept != mine.Concept || quote != mine.Quote {
@@ -313,7 +313,7 @@ func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote,
 			mine.Concept = concept
 			mine.Mark = mark
 			mine.Operator = operator
-			mine.UpdateTime = time.Now()
+			mine.Updated = time.Now().Unix()
 		}
 	}
 	return err
@@ -328,7 +328,7 @@ func (mine *EntityInfo) UpdateStatic(info *EntityInfo, relations []*pb.VEdgeInfo
 	if err == nil {
 		mine.Tags = info.Tags
 		mine.Properties = info.Properties
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	if len(info.StaticEvents) > 0 {
 		_ = mine.UpdateStaticEvents(info.Operator, info.StaticEvents)
@@ -347,7 +347,7 @@ func (mine *EntityInfo) UpdateStaticEvents(operator string, events []*proxy.Even
 	if err == nil {
 		mine.Operator = operator
 		mine.StaticEvents = events
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -388,7 +388,7 @@ func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*pb.VEdgeI
 	//if err == nil {
 	//	mine.Operator = operator
 	//mine.StaticRelations = list
-	//	mine.UpdateTime = time.Now()
+	//	mine.Updated = time.Now().Unix()
 	//}
 	return nil
 }
@@ -405,7 +405,7 @@ func (mine *EntityInfo) UpdateCover(cover, operator string) error {
 	if err == nil {
 		mine.Cover = cover
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 		//go Context().graph.UpdateNodeCover(mine.UID, cover)
 	}
 	return err
@@ -419,7 +419,7 @@ func (mine *EntityInfo) setCover(cover, operator string) error {
 	if err == nil {
 		mine.Cover = cover
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -432,7 +432,7 @@ func (mine *EntityInfo) UpdateThumb(thumb, operator string) error {
 	if err == nil {
 		mine.Thumb = thumb
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -445,7 +445,7 @@ func (mine *EntityInfo) UpdateMark(mark, operator string) error {
 	if err == nil {
 		mine.Mark = mark
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -458,7 +458,7 @@ func (mine *EntityInfo) UpdateQuote(quote, operator string) error {
 	if err == nil {
 		mine.Quote = quote
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -485,7 +485,7 @@ func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
 	if err == nil {
 		mine.Tags = tags
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -498,7 +498,7 @@ func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
 	if err == nil {
 		mine.Synonyms = list
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -519,7 +519,7 @@ func (mine *EntityInfo) insertRecord(operator, remark, from, to string, opt Opti
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetRecordNextID()
 	db.Creator = operator
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.Entity = mine.UID
 	db.From = from
 	db.To = to
@@ -572,7 +572,7 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator, remark strin
 		}
 	}
 	mine.Status = status
-	mine.UpdateTime = time.Now()
+	mine.Updated = time.Now().Unix()
 	return nil
 }
 
@@ -595,7 +595,7 @@ func (mine *EntityInfo) UpdatePushTime(operator string) error {
 	}
 	mine.Operator = operator
 	mine.Pushed = time.Now().Unix()
-	mine.UpdateTime = time.Now()
+	mine.Updated = time.Now().Unix()
 	return nil
 }
 
@@ -613,7 +613,7 @@ func (mine *EntityInfo) UpdateRelates(operator string, list []string) error {
 	}
 	mine.Operator = operator
 	mine.Relates = list
-	mine.UpdateTime = time.Now()
+	mine.Updated = time.Now().Unix()
 	return nil
 }
 
@@ -628,7 +628,7 @@ func (mine *EntityInfo) UpdateLinks(operator string, list []string) error {
 
 	mine.Operator = operator
 	mine.Links = list
-	mine.UpdateTime = time.Now()
+	mine.Updated = time.Now().Unix()
 	return nil
 }
 
@@ -644,7 +644,7 @@ func (mine *EntityInfo) UpdateAccess(operator string, acc uint8) error {
 
 	info.Operator = operator
 	info.Access = acc
-	//mine.UpdateTime = time.Now()
+	//mine.Updated = time.Now().Unix()
 	return nil
 }
 
@@ -657,7 +657,7 @@ func (mine *EntityInfo) CreateVEdge(source, name, relation, operator string, dir
 	db := new(nosql.VEdge)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetEventNextID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.Creator = operator
 	db.Name = name
 	db.Source = source
@@ -820,7 +820,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	db := new(nosql.Event)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetEventNextID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.Creator = operator
 	db.Name = name
 	db.Date = date
@@ -907,7 +907,7 @@ func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
 				break
 			}
 		}
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -949,7 +949,7 @@ func (mine *EntityInfo) AddProperty(key string, words []proxy.WordInfo) error {
 	err := nosql.AppendEntityProperty(mine.table(), mine.UID, pair)
 	if err == nil {
 		mine.Properties = append(mine.Properties, &pair)
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -961,7 +961,7 @@ func (mine *EntityInfo) UpdateProperties(array []*proxy.PropertyInfo, operator s
 	err := nosql.UpdateEntityProperties(mine.table(), mine.UID, operator, array)
 	if err == nil {
 		mine.Properties = array
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -1013,7 +1013,7 @@ func (mine *EntityInfo) RemoveProperty(attribute string) error {
 				break
 			}
 		}
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }

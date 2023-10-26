@@ -37,7 +37,7 @@ func (mine *cacheContext) CreateRelation(parent, creator string, info *Relations
 	db := new(nosql.Relation)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetRelationNextID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.Creator = creator
 	db.Name = info.Name
 	db.Remark = info.Remark
@@ -136,8 +136,8 @@ func (mine *RelationshipInfo) initInfo(db *nosql.Relation) {
 	mine.ID = db.ID
 	mine.Name = db.Name
 	mine.Remark = db.Remark
-	mine.CreateTime = db.CreatedTime
-	mine.UpdateTime = db.UpdatedTime
+	mine.Created = db.Created
+	mine.Updated = db.Updated
 	mine.Creator = db.Creator
 	mine.Operator = db.Operator
 	mine.Kind = RelationType(db.Type)
@@ -168,7 +168,7 @@ func (mine *RelationshipInfo) UpdateBase(name, remark, operator string, custom b
 		mine.Operator = operator
 		mine.Kind = RelationType(kind)
 		mine.Custom = custom
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -240,7 +240,7 @@ func (mine *RelationshipInfo) RemoveChild(uid, operator string) error {
 	err := nosql.RemoveRelation(uid, operator)
 	if err == nil {
 		mine.deleteChild(uid)
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }

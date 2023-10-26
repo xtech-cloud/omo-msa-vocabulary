@@ -177,7 +177,7 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db := new(nosql.Box)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetBoxNextID()
-	db.CreatedTime = time.Now()
+	db.Created = time.Now().Unix()
 	db.Creator = info.Creator
 	db.Name = info.Name
 	db.Concept = info.Concept
@@ -235,8 +235,8 @@ func (mine *BoxInfo) initInfo(db *nosql.Box) {
 	mine.Remark = db.Remark
 	mine.Concept = db.Concept
 	mine.Cover = db.Cover
-	mine.UpdateTime = db.UpdatedTime
-	mine.CreateTime = db.CreatedTime
+	mine.Updated = db.Updated
+	mine.Created = db.Created
 	mine.Operator = db.Operator
 	mine.Creator = db.Creator
 	mine.Owner = db.Owner
@@ -256,7 +256,7 @@ func (mine *BoxInfo) UpdateKeywords(list []string, operator string) error {
 	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
 	if err == nil {
 		mine.Keywords = list
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -265,7 +265,7 @@ func (mine *BoxInfo) updateOwner(owner string) error {
 	err := nosql.UpdateBoxOwner(mine.UID, owner)
 	if err == nil {
 		mine.Owner = owner
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -288,7 +288,7 @@ func (mine *BoxInfo) UpdateUsers(list []string, operator string, reviewer bool) 
 			mine.Users = list
 		}
 		mine.Operator = operator
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -363,7 +363,7 @@ func (mine *BoxInfo) AppendKeywords(keys []string, operator string) error {
 	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
 	if err == nil {
 		mine.Keywords = list
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -390,7 +390,7 @@ func (mine *BoxInfo) RemoveKeywords(keys []string, operator string) error {
 	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
 	if err == nil {
 		mine.Keywords = list
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
@@ -448,7 +448,7 @@ func (mine *BoxInfo) UpdateBase(name, remark, concept, operator string) error {
 			mine.Remark = remark
 			mine.Operator = operator
 			mine.Concept = concept
-			mine.UpdateTime = time.Now()
+			mine.Updated = time.Now().Unix()
 		}
 		return err
 	}
@@ -467,7 +467,7 @@ func (mine *BoxInfo) UpdateCover(cover string) error {
 	err := nosql.UpdateBoxCover(mine.UID, cover)
 	if err == nil {
 		mine.Cover = cover
-		mine.UpdateTime = time.Now()
+		mine.Updated = time.Now().Unix()
 	}
 	return err
 }

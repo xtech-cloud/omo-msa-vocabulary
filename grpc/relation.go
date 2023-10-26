@@ -19,7 +19,7 @@ func switchRelation(info *cache.RelationshipInfo) *pb.RelationInfo {
 	tmp.Remark = info.Remark
 	tmp.Custom = info.Custom
 	tmp.Parent = info.Parent
-	tmp.Time = info.CreateTime.Unix()
+	tmp.Time = info.Created
 	num := len(info.Children)
 	if num > 0 {
 		tmp.Children = make([]*pb.RelationInfo, 0, num)
