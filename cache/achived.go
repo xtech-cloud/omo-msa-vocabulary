@@ -30,7 +30,8 @@ func (mine *cacheContext) CreateArchived(info *EntityInfo) error {
 	db := new(nosql.Archived)
 	db.UID = primitive.NewObjectID()
 	db.Created = time.Now().Unix()
-	db.ID = nosql.GetEntityNextID(info.table())
+	db.CreatedTime = time.Now()
+	db.ID = nosql.GetArchivedNextID()
 	db.Name = fmt.Sprintf("%s(%s)", info.Name, info.Add)
 	db.Concept = info.Concept
 	db.Entity = info.UID
@@ -72,13 +73,16 @@ func (mine *cacheContext) GetPublicEntity(entity string) (*EntityInfo, error) {
 		info.initInfo(db)
 		return info.Decode()
 	}
-	db2, err1 := nosql.GetEntity(UserEntityTable, entity)
-	if err1 == nil && db2 != nil {
-		info := new(EntityInfo)
-		info.initInfo(db2)
-		return info, nil
+	for _, table := range mine.entityTables {
+		db2, err1 := nosql.GetEntity(table, entity)
+		if err1 == nil && db2 != nil && db2.Scene != DefaultOwner {
+			info := new(EntityInfo)
+			info.initInfo(db2)
+			return info, nil
+		}
 	}
-	return nil, err1
+
+	return nil, errors.New("not found the public entity of entity = " + entity)
 }
 
 func (mine *cacheContext) HadArchivedByEntity(entity string) bool {

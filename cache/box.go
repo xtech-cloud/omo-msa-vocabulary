@@ -178,6 +178,7 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetBoxNextID()
 	db.Created = time.Now().Unix()
+	db.CreatedTime = time.Now()
 	db.Creator = info.Creator
 	db.Name = info.Name
 	db.Concept = info.Concept

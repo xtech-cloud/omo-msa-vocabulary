@@ -9,6 +9,7 @@ import (
 
 type VEdgeInfo struct {
 	BaseInfo
+	Remark    string      `json:"remark"`
 	Center    string      `json:"center"`    //中心实体或者根节点
 	Direction uint8       `json:"direction"` // 方向
 	Weight    uint32      `json:"weight"`
@@ -82,9 +83,10 @@ func (mine *VEdgeInfo) initInfo(db *nosql.VEdge) {
 	mine.Weight = db.Weight
 	mine.Direction = db.Direction
 	mine.Relation = db.Catalog
+	mine.Remark = db.Remark
 }
 
-func (mine *VEdgeInfo) UpdateBase(name, relation, operator string, dire uint8, target proxy.VNode) error {
+func (mine *VEdgeInfo) UpdateBase(name, remark, relation, operator string, dire uint8, target proxy.VNode) error {
 	//if name == "" {
 	//	name = mine.Name
 	//}
@@ -92,7 +94,7 @@ func (mine *VEdgeInfo) UpdateBase(name, relation, operator string, dire uint8, t
 		relation = mine.Relation
 	}
 
-	err := nosql.UpdateVEdgeBase(mine.UID, name, relation, operator, dire, target)
+	err := nosql.UpdateVEdgeBase(mine.UID, name, remark, relation, operator, dire, target)
 	if err == nil {
 		mine.Name = name
 		mine.Relation = relation

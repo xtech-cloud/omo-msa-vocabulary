@@ -33,6 +33,10 @@ func switchVEdge(info *cache.VEdgeInfo) *pb.VEdgeInfo {
 	tmp.Category = info.Relation
 	tmp.Weight = info.Weight
 	tmp.Center = info.Center
+	tmp.Remark = info.Remark
+	if tmp.Source == "" {
+		tmp.Source = tmp.Center
+	}
 	return tmp
 }
 
@@ -46,7 +50,7 @@ func (mine *VEdgeService) AddOne(ctx context.Context, in *pb.ReqVEdgeAdd, out *p
 		out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
-	info, err := entity.CreateVEdge(in.Source, in.Name, in.Relation, in.Operator, in.Direction, in.Weight, proxy.VNode{Entity: in.Target, Name: in.Label})
+	info, err := entity.CreateVEdge(in.Source, in.Name, in.Remark, in.Relation, in.Operator, in.Direction, in.Weight, proxy.VNode{Entity: in.Target, Name: in.Label})
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
@@ -131,7 +135,7 @@ func (mine *VEdgeService) UpdateInfo(ctx context.Context, in *pb.ReqVEdgeUpdate,
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
-	err = info.UpdateBase(in.Name, in.Relation, in.Operator, uint8(in.Direction), proxy.VNode{UID: info.Target.UID, Name: in.Label, Entity: in.Target, Thumb: in.Thumb})
+	err = info.UpdateBase(in.Name, in.Remark, in.Relation, in.Operator, uint8(in.Direction), proxy.VNode{UID: info.Target.UID, Name: in.Label, Entity: in.Target, Thumb: in.Thumb})
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil

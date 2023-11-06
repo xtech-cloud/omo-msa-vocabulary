@@ -38,6 +38,7 @@ func (mine *cacheContext) CreateRelation(parent, creator string, info *Relations
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetRelationNextID()
 	db.Created = time.Now().Unix()
+	db.CreatedTime = time.Now()
 	db.Creator = creator
 	db.Name = info.Name
 	db.Remark = info.Remark

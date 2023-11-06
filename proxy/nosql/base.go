@@ -137,49 +137,67 @@ func CheckTimes() {
 	dbs := make([]*Concept, 0, 5000)
 	dbs = GetAll(TableConcept, dbs)
 	for _, db := range dbs {
-		UpdateItemTime(TableConcept, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime(TableConcept, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 	dbs1 := make([]*Attribute, 0, 5000)
 	dbs1 = GetAll(TableAttribute, dbs1)
 	for _, db := range dbs1 {
-		UpdateItemTime(TableAttribute, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime(TableAttribute, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 	dbs2 := make([]*Relation, 0, 5000)
 	dbs2 = GetAll(TableRelation, dbs2)
 	for _, db := range dbs2 {
-		UpdateItemTime(TableRelation, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime(TableRelation, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 	dbs4 := make([]*Event, 0, 5000)
 	dbs4 = GetAll(TableEvent, dbs4)
 	for _, db := range dbs4 {
-		UpdateItemTime(TableEvent, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime(TableEvent, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 	dbs7 := make([]*Box, 0, 500)
 	dbs7 = GetAll(TableBox, dbs7)
 	for _, db := range dbs7 {
-		UpdateItemTime(TableBox, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime(TableBox, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 	dbs5 := make([]*Archived, 0, 1000)
 	dbs5 = GetAll(TableArchived, dbs5)
 	for _, db := range dbs5 {
-		UpdateItemTime(TableArchived, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime(TableArchived, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 	dbs6 := make([]*VEdge, 0, 5000)
 	dbs6 = GetAll(TableEdge, dbs6)
 	for _, db := range dbs6 {
-		UpdateItemTime(TableEdge, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime(TableEdge, db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 
 	dbs8 := make([]*Entity, 0, 5000)
 	dbs8 = GetAll("entities", dbs8)
 	for _, db := range dbs8 {
-		UpdateItemTime("entities", db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime("entities", db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 
 	dbs9 := make([]*Entity, 0, 5000)
 	dbs9 = GetAll("entities_school", dbs9)
 	for _, db := range dbs9 {
-		UpdateItemTime("entities_school", db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		if db.Created < 1 {
+			UpdateItemTime("entities_school", db.UID.Hex(), db.CreatedTime, db.UpdatedTime, db.DeleteTime)
+		}
 	}
 }
 

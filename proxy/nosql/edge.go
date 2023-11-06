@@ -24,6 +24,7 @@ type VEdge struct {
 	Direction uint8       `json:"direction" bson:"direction"`
 	Weight    uint32      `json:"weight" bson:"weight"`
 	Center    string      `json:"center" bson:"center"`
+	Remark    string      `json:"remark" bson:"remark"`
 	Catalog   string      `json:"catalog" bson:"catalog"` //关系类型
 	Source    string      `json:"source" bson:"source"`   //实体UID或者临时UID
 	Target    proxy.VNode `json:"target" bson:"target"`
@@ -35,6 +36,23 @@ func CreateVEdge(info *VEdge) error {
 		return err
 	}
 	return nil
+}
+
+func GetAllVEdges() ([]*VEdge, error) {
+	cursor, err1 := findAllEnable(TableEdge, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*VEdge, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(VEdge)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
 }
 
 func GetVEdgeNextID() uint64 {
@@ -102,8 +120,14 @@ func GetVEdgesByCenter(uid string) ([]*VEdge, error) {
 	return items, nil
 }
 
-func UpdateVEdgeBase(uid, name, relation, operator string, dire uint8, target proxy.VNode) error {
-	msg := bson.M{"name": name, "relation": relation, "target": target, "direction": dire, "operator": operator, TimeUpdated: time.Now().Unix()}
+func UpdateVEdgeBase(uid, name, remark, relation, operator string, dire uint8, target proxy.VNode) error {
+	msg := bson.M{"name": name, "remark": remark, "relation": relation, "target": target, "direction": dire, "operator": operator, TimeUpdated: time.Now().Unix()}
+	_, err := updateOne(TableEdge, uid, msg)
+	return err
+}
+
+func UpdateVEdgeTarget(uid, name, entity, thumb, operator string) error {
+	msg := bson.M{"target.name": name, "target.entity": entity, "target.thumb": entity, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableEdge, uid, msg)
 	return err
 }

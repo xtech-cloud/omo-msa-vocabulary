@@ -133,7 +133,8 @@ func InitData() error {
 	}
 	logger.Infof("init concepts!!! number = %d", len(cacheCtx.concepts))
 	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
-	nosql.CheckTimes()
+	//nosql.CheckTimes()
+	//checkVEdges()
 	return nil
 }
 
@@ -149,6 +150,15 @@ func switchAttributes() {
 	list := cacheCtx.getEntitiesByAttribute("60a4e2e36956c7f1bbe32414")
 	for _, item := range list {
 		item.replaceAttribute("60a4e2e36956c7f1bbe32414", "60b9908fa0449d245dbde674")
+	}
+}
+
+func checkVEdges() {
+	all, _ := nosql.GetAllVEdges()
+	for _, edge := range all {
+		if edge.Name == edge.Target.Name {
+			_ = nosql.UpdateVEdgeTarget(edge.UID.Hex(), edge.Target.Entity, "", edge.Target.Thumb, edge.Operator)
+		}
 	}
 }
 

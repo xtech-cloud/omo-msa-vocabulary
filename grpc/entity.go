@@ -976,6 +976,12 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 		err = entity.UpdateMark(in.Value, in.Operator)
 	} else if in.Key == "quote" {
 		err = entity.UpdateQuote(in.Value, in.Operator)
+	} else if in.Key == "property" {
+		if len(in.Values) > 0 {
+			err = entity.UpdateProperty(in.Value, in.Values[0], in.Operator)
+		} else {
+			err = errors.New("the values is empty when update property")
+		}
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

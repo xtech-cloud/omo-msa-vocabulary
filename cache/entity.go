@@ -10,6 +10,7 @@ import (
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
+	"strconv"
 	"time"
 )
 
@@ -91,6 +92,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo, relations []*pb.VEdgeIn
 	db := new(nosql.Entity)
 	db.UID = primitive.NewObjectID()
 	db.Created = time.Now().Unix()
+	db.CreatedTime = time.Now()
 	db.ID = nosql.GetEntityNextID(info.table())
 	db.Name = info.Name
 	db.Description = info.Description
@@ -182,7 +184,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 		mine.Published = false
 	}
 
-	if db.Relations == nil {
+	if len(db.Relations) > 0 {
 		mine.relationsToVEdges(db.Relations)
 	}
 	//mine.StaticRelations = mine.GetVEdges()
@@ -256,6 +258,7 @@ func (mine *EntityInfo) relationsToVEdges(list []*proxy.RelationCaseInfo) {
 	if len(list) < 1 {
 		return
 	}
+	logger.Warn("relationsToVEdges...uid = " + mine.UID + "; edges count = " + strconv.Itoa(len(list)))
 	for _, item := range list {
 		target := proxy.VNode{Name: "", Entity: "", UID: "", Thumb: ""}
 		if hadChinese(item.Entity) {
@@ -265,8 +268,7 @@ func (mine *EntityInfo) relationsToVEdges(list []*proxy.RelationCaseInfo) {
 			target.Name = ""
 			target.Entity = item.Entity
 		}
-
-		_, _ = mine.CreateVEdge(mine.UID, item.Name, item.Category, mine.Operator, uint32(item.Direction), item.Weight, target)
+		_, _ = mine.CreateVEdge(mine.UID, item.Name, "", item.Category, mine.Operator, uint32(item.Direction), item.Weight, target)
 	}
 	_ = nosql.UpdateEntityRelations(mine.table(), mine.UID, mine.Operator, make([]*proxy.RelationCaseInfo, 0, 1))
 }
@@ -373,12 +375,12 @@ func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*pb.VEdgeI
 			UID:    brief.Target.Uid,
 		}
 		if brief.Uid != "" {
-			err := nosql.UpdateVEdgeBase(brief.Uid, brief.Name, brief.Category, operator, uint8(brief.Direction), target)
+			err := nosql.UpdateVEdgeBase(brief.Uid, brief.Name, brief.Remark, brief.Category, operator, uint8(brief.Direction), target)
 			if err != nil {
 				return err
 			}
 		} else {
-			_, err := mine.CreateVEdge(brief.Source, brief.Name, brief.Category, operator, brief.Direction, brief.Weight, target)
+			_, err := mine.CreateVEdge(brief.Source, brief.Name, brief.Remark, brief.Category, operator, brief.Direction, brief.Weight, target)
 			if err != nil {
 				return err
 			}
@@ -461,6 +463,33 @@ func (mine *EntityInfo) UpdateQuote(quote, operator string) error {
 		mine.Updated = time.Now().Unix()
 	}
 	return err
+}
+
+func (mine *EntityInfo) UpdateProperty(uid, val, operator string) error {
+	arr := make([]*proxy.PropertyInfo, 0, len(mine.Properties))
+	arr = append(arr, mine.Properties...)
+	had := false
+	for _, info := range arr {
+		if info.Key == uid {
+			if len(info.Words) > 0 {
+				info.Words[0].Name = val
+			} else {
+				info.Words = make([]proxy.WordInfo, 0, 1)
+				info.Words = append(info.Words, proxy.WordInfo{Name: val, UID: ""})
+			}
+			had = true
+			break
+		}
+	}
+	if !had {
+		info := new(proxy.PropertyInfo)
+		info.Key = uid
+		info.Words = make([]proxy.WordInfo, 0, 1)
+		info.Words = append(info.Words, proxy.WordInfo{Name: val, UID: ""})
+		arr = append(arr, info)
+	}
+
+	return mine.UpdateProperties(arr, operator)
 }
 
 func (mine *EntityInfo) GetRecords() ([]*nosql.Record, error) {
@@ -649,7 +678,7 @@ func (mine *EntityInfo) UpdateAccess(operator string, acc uint8) error {
 }
 
 //region VEdge fun
-func (mine *EntityInfo) CreateVEdge(source, name, relation, operator string, dire, weight uint32, target proxy.VNode) (*VEdgeInfo, error) {
+func (mine *EntityInfo) CreateVEdge(source, name, remark, relation, operator string, dire, weight uint32, target proxy.VNode) (*VEdgeInfo, error) {
 	if target.Name == "" {
 		return nil, errors.New("the target is empty")
 	}
@@ -666,6 +695,10 @@ func (mine *EntityInfo) CreateVEdge(source, name, relation, operator string, dir
 	db.Target = target
 	db.Direction = uint8(dire)
 	db.Weight = weight
+	db.Remark = remark
+	if db.Source == "" {
+		db.Source = mine.UID
+	}
 	err := nosql.CreateVEdge(db)
 	if err != nil {
 		return nil, err
@@ -698,7 +731,7 @@ func (mine *EntityInfo) initEvents() {
 			mine.events = append(mine.events, tmp)
 		}
 	} else {
-		mine.events = make([]*EventInfo, 0, 1)
+		mine.events = make([]*EventInfo, 0, 10)
 	}
 	if len(mine.StaticEvents) > 0 {
 		for _, event := range mine.StaticEvents {
@@ -784,20 +817,18 @@ func (mine *EntityInfo) GetEventsByAccess(tp, access uint8) []*EventInfo {
 }
 
 func (mine *EntityInfo) GetPublicEvents() []*EventInfo {
-	var arr []*nosql.Event
-	var err error
 	var list = make([]*EventInfo, 0, 50)
-	arr, err = nosql.GetEventsByEntity(mine.UID)
-	if err == nil {
-		for _, event := range arr {
-			if event.Access == AccessPublic || event.Access == AccessWR {
-				info := new(EventInfo)
-				info.initInfo(event)
-				list = append(list, info)
-			}
-		}
-	} else {
-		logger.Warn("get public events failed that error = " + err.Error() + " of " + mine.UID)
+	arr, _ := nosql.GetEventsByAccess(mine.UID, AccessPublic)
+	for _, event := range arr {
+		info := new(EventInfo)
+		info.initInfo(event)
+		list = append(list, info)
+	}
+	arr2, _ := nosql.GetEventsByAccess(mine.UID, AccessWR)
+	for _, event := range arr2 {
+		info := new(EventInfo)
+		info.initInfo(event)
+		list = append(list, info)
 	}
 
 	if len(mine.StaticEvents) > 0 {
@@ -820,6 +851,7 @@ func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, nam
 	db := new(nosql.Event)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetEventNextID()
+	db.CreatedTime = time.Now()
 	db.Created = time.Now().Unix()
 	db.Creator = operator
 	db.Name = name

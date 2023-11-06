@@ -201,6 +201,7 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetConceptNextID()
 	db.Created = time.Now().Unix()
+	db.CreatedTime = time.Now()
 	db.Creator = info.Creator
 	db.Name = info.Name
 	db.Table = ""

@@ -38,6 +38,7 @@ func (mine *cacheContext) CreateAttribute(info *AttributeInfo) error {
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetAttributeNextID()
 	db.Created = time.Now().Unix()
+	db.CreatedTime = time.Now()
 	db.Creator = info.Creator
 	db.Key = info.Key
 	db.Name = info.Name

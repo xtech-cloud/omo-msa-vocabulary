@@ -36,7 +36,7 @@ func (mine *AttributeService) AddOne(ctx context.Context, in *pb.ReqAttributeAdd
 		return nil
 	}
 	key := strings.ToLower(in.Key)
-	if len(in.Key) > 1 && cache.Context().HadAttributeByKey(key) {
+	if len(in.Key) > 0 && cache.Context().HadAttributeByKey(key) {
 		out.Status = outError(path, "the key of attribute is repeated", pbstaus.ResultStatus_Empty)
 		return nil
 	}
