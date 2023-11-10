@@ -44,7 +44,7 @@ func switchDynamicEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
 		events := cache.Context().GetEventsByEntity(info.UID, cache.EventCustom)
 		tmp.Events = make([]*pb.EventInfo, 0, len(events))
 		for _, event := range events {
-			if event.Access == cache.AccessPublic || event.Access == cache.AccessWR {
+			if event.Access == cache.AccessRead || event.Access == cache.AccessWR {
 				tmp.Events = append(tmp.Events, switchEntityEvent(event))
 			}
 		}
@@ -207,7 +207,8 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 	path := "entity.addOne"
 	inLog(path, in)
 	in.Name = strings.TrimSpace(in.Name)
-	if in.Name == "" {
+	in.Add = strings.TrimSpace(in.Add)
+	if len(in.Name) < 1 {
 		out.Status = outError(path, "the entity name is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}

@@ -96,13 +96,13 @@ func (mine *VEdgeService) GetAll(ctx context.Context, in *pb.RequestFilter, out 
 	path := "vedge.getAll"
 	inLog(path, in)
 	var array []*cache.VEdgeInfo
-	if in.Key == "" {
-		array = cache.Context().GetVEdgesByCenter(in.Parent)
-	} else if in.Key == "public" {
+	if in.Key == "public" {
 		entity, _ := cache.Context().GetPublicEntity(in.Parent)
 		if entity != nil {
 			array = entity.GetPublicEdges()
 		}
+	} else {
+		array = cache.Context().GetVEdgesByCenter(in.Parent)
 	}
 
 	out.List = make([]*pb.VEdgeInfo, 0, len(array))

@@ -49,49 +49,80 @@ func (mine *cacheContext) CreateAttribute(info *AttributeInfo) error {
 	err := nosql.CreateAttribute(db)
 	if err == nil {
 		info.initInfo(db)
-		mine.attributes = append(mine.attributes, info)
 	}
 	return err
 }
 
 func (mine *cacheContext) AllAttributes() []*AttributeInfo {
-	return mine.attributes
+	dbs, er := nosql.GetAllAttributes()
+	if er == nil {
+		all := make([]*AttributeInfo, 0, len(dbs))
+		for _, db := range dbs {
+			info := new(AttributeInfo)
+			info.initInfo(db)
+			all = append(all, info)
+		}
+		return all
+	} else {
+		return make([]*AttributeInfo, 0, 1)
+	}
 }
 
 func (mine *cacheContext) HadAttributeByName(name string) bool {
-	for i := 0; i < len(mine.attributes); i += 1 {
-		if mine.attributes[i].Name == name {
-			return true
-		}
+	if name == "" {
+		return true
 	}
-	return false
+	db, err := nosql.GetAttributeByName(strings.ToLower(name))
+	if err != nil {
+		return true
+	}
+	if db == nil {
+		return false
+	}
+	return true
 }
 
 func (mine *cacheContext) HadAttributeByKey(key string) bool {
-	for i := 0; i < len(mine.attributes); i += 1 {
-		if mine.attributes[i].Key == key {
-			return true
-		}
+	if key == "" {
+		return true
 	}
-	return false
+	db, err := nosql.GetAttributeByKey(strings.ToLower(key))
+	if err != nil {
+		return true
+	}
+	if db == nil {
+		return false
+	}
+	return true
 }
 
 func (mine *cacheContext) GetAttribute(uid string) *AttributeInfo {
-	for _, value := range mine.attributes {
-		if value.UID == uid {
-			return value
-		}
+	if uid == "" {
+		return nil
 	}
-	return nil
+	db, err := nosql.GetAttribute(uid)
+	if err != nil {
+		return nil
+	}
+	tmp := new(AttributeInfo)
+	tmp.initInfo(db)
+	return tmp
 }
 
 func (mine *cacheContext) GetAttributeByKey(key string) *AttributeInfo {
-	for _, value := range mine.attributes {
-		if strings.ToLower(value.Key) == strings.ToLower(key) {
-			return value
-		}
+	if key == "" {
+		return nil
 	}
-	return nil
+	db, err := nosql.GetAttributeByKey(strings.ToLower(key))
+	if err != nil {
+		return nil
+	}
+	if db == nil {
+		return nil
+	}
+	tmp := new(AttributeInfo)
+	tmp.initInfo(db)
+	return tmp
 }
 
 func (mine *cacheContext) RemoveAttribute(uid, operator string) error {
@@ -99,14 +130,6 @@ func (mine *cacheContext) RemoveAttribute(uid, operator string) error {
 		return errors.New("the attribute uid is empty")
 	}
 	err := nosql.RemoveAttribute(uid, operator)
-	if err == nil {
-		for i := 0; i < len(mine.attributes); i += 1 {
-			if mine.attributes[i].UID == uid {
-				mine.attributes = append(mine.attributes[:i], mine.attributes[i+1:]...)
-				break
-			}
-		}
-	}
 	return err
 }
 

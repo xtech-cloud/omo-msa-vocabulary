@@ -71,6 +71,20 @@ func GetRelation(uid string) (*Relation, error) {
 	return model, nil
 }
 
+func GetRelationByName(name string) (*Relation, error) {
+	msg := bson.M{"name": name, TimeDeleted: 0}
+	result, err := findOneBy(TableRelation, msg)
+	if err != nil {
+		return nil, err
+	}
+	model := new(Relation)
+	err1 := result.Decode(model)
+	if err1 != nil {
+		return nil, err1
+	}
+	return model, nil
+}
+
 func GetTopRelations() ([]*Relation, error) {
 	var items = make([]*Relation, 0, 100)
 	filter := bson.M{"parent": "", TimeDeleted: 0}

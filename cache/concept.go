@@ -39,17 +39,19 @@ type ConceptInfo struct {
 //region Global Fun
 
 func (mine *cacheContext) GetTopConcept(uid string) *ConceptInfo {
-	for i := 0; i < len(mine.concepts); i += 1 {
-		if mine.concepts[i].HadChild(uid) {
-			return mine.concepts[i]
+	tops := mine.GetTopConcepts()
+	for i := 0; i < len(tops); i += 1 {
+		if tops[i].HadChild(uid) {
+			return tops[i]
 		}
 	}
 	return nil
 }
 
 func (mine *cacheContext) GetConceptByName(name string) *ConceptInfo {
-	for i := 0; i < len(mine.concepts); i += 1 {
-		child := mine.concepts[i].GetChildByName(name)
+	tops := mine.GetTopConcepts()
+	for i := 0; i < len(tops); i += 1 {
+		child := tops[i].GetChildByName(name)
 		if child != nil {
 			return child
 		}
@@ -71,17 +73,27 @@ func (mine *cacheContext) GetConceptsByAttribute(uid string) []*ConceptInfo {
 }
 
 func (mine *cacheContext) GetConcept(uid string) *ConceptInfo {
-	for i := 0; i < len(mine.concepts); i += 1 {
-		child := mine.concepts[i].GetChild(uid)
-		if child != nil {
-			return child
-		}
+	if uid == "" {
+		return nil
+	}
+	db, _ := nosql.GetConcept(uid)
+	if db != nil {
+		tmp := new(ConceptInfo)
+		tmp.initInfo(db)
+		return tmp
 	}
 	return nil
 }
 
 func (mine *cacheContext) GetTopConcepts() []*ConceptInfo {
-	return mine.concepts
+	dbs, _ := nosql.GetTopConcepts()
+	all := make([]*ConceptInfo, 0, len(dbs))
+	for _, db := range dbs {
+		tmp := new(ConceptInfo)
+		tmp.initInfo(db)
+		all = append(all, tmp)
+	}
+	return all
 }
 
 func (mine *cacheContext) CreateTopConcept(info *ConceptInfo) error {
@@ -100,34 +112,36 @@ func (mine *cacheContext) CreateTopConcept(info *ConceptInfo) error {
 	db.Parent = ""
 	db.Scene = info.Scene
 	db.Type = info.Type
-	db.Attributes = make([]string, 0, 5)
 	db.Attributes = make([]string, 0, 1)
 	err := nosql.CreateConcept(db)
 	if err == nil {
 		info.initInfo(db)
-		mine.concepts = append(mine.concepts, info)
 	}
 	return err
 }
 
 func (mine *cacheContext) RemoveConcept(uid, operator string) error {
+	if uid == "" {
+		return errors.New("the concept uid is empty")
+	}
 	err := nosql.RemoveConcept(uid, operator)
 	if err == nil {
-		for i := 0; i < len(mine.concepts); i += 1 {
-			if mine.concepts[i].UID == uid {
-				mine.concepts = append(mine.concepts[:i], mine.concepts[i+1:]...)
-				break
-			} else if mine.concepts[i].HadChild(uid) {
-				_ = mine.concepts[i].RemoveChild(uid)
-			}
-		}
+		//for i := 0; i < len(mine.concepts); i += 1 {
+		//	if mine.concepts[i].UID == uid {
+		//		mine.concepts = append(mine.concepts[:i], mine.concepts[i+1:]...)
+		//		break
+		//	} else if mine.concepts[i].HadChild(uid) {
+		//		_ = mine.concepts[i].RemoveChild(uid)
+		//	}
+		//}
 	}
 	return err
 }
 
 func (mine *cacheContext) HadConceptByTable(table string) bool {
-	for i := 0; i < len(mine.concepts); i += 1 {
-		if mine.concepts[i].Table == table {
+	dbs, _ := nosql.GetTopConcepts()
+	for _, db := range dbs {
+		if db.Table == table {
 			return true
 		}
 	}
@@ -136,8 +150,9 @@ func (mine *cacheContext) HadConceptByTable(table string) bool {
 
 func (mine *cacheContext) HadConceptByName(name, parent string) bool {
 	if parent == "" {
-		for i := 0; i < len(mine.concepts); i += 1 {
-			if mine.concepts[i].Name == name {
+		dbs, _ := nosql.GetTopConcepts()
+		for i := 0; i < len(dbs); i += 1 {
+			if dbs[i].Name == name {
 				return true
 			}
 		}
@@ -153,9 +168,12 @@ func (mine *cacheContext) HadConceptByName(name, parent string) bool {
 
 func (mine *cacheContext) HadConceptProperty(uid, key string) bool {
 	var had = false
-	for i := 0; i < len(mine.concepts); i += 1 {
-		if mine.concepts[i].HadChild(uid) {
-			had = mine.concepts[i].HadAttribute(key)
+	dbs, _ := nosql.GetTopConcepts()
+	for i := 0; i < len(dbs); i += 1 {
+		tmp := new(ConceptInfo)
+		tmp.initInfo(dbs[i])
+		if tmp.HadChild(uid) {
+			had = tmp.HadAttribute(key)
 			break
 		}
 	}

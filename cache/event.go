@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	AccessPublic  = 0 //可读
+	AccessRead    = 0 //可读
 	AccessPrivate = 1 //
 	AccessWR      = 2 //可读写
 )
@@ -184,7 +184,7 @@ func (mine *EventInfo) initByBrief(entity string, info *proxy.EventBrief) {
 	mine.Cover = ""
 	mine.Quote = info.Quote
 	mine.Assets = info.Assets
-	mine.Access = AccessPublic
+	mine.Access = AccessRead
 	mine.Tags = info.Tags
 	mine.Relations = make([]proxy.RelationCaseInfo, 0, 1)
 }

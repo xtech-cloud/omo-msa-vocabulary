@@ -792,19 +792,18 @@ func (mine *EntityInfo) GetEventsByAccess(tp, access uint8) []*EventInfo {
 	var arr []*nosql.Event
 	var err error
 	var list = make([]*EventInfo, 0, 50)
-	if tp > 0 {
+	if tp > EventCustom {
 		arr, err = nosql.GetEventsByTypeAndAccess(mine.UID, tp, access)
 	} else {
 		arr, err = nosql.GetEventsByAccess(mine.UID, access)
-		if len(mine.StaticEvents) > 0 {
-			for _, event := range mine.StaticEvents {
-				tmp := new(EventInfo)
-				tmp.initByBrief(mine.UID, event)
-				list = append(list, tmp)
-			}
+	}
+	if len(mine.StaticEvents) > 0 {
+		for _, event := range mine.StaticEvents {
+			tmp := new(EventInfo)
+			tmp.initByBrief(mine.UID, event)
+			list = append(list, tmp)
 		}
 	}
-
 	if err == nil {
 		for _, db := range arr {
 			info := new(EventInfo)
@@ -818,7 +817,7 @@ func (mine *EntityInfo) GetEventsByAccess(tp, access uint8) []*EventInfo {
 
 func (mine *EntityInfo) GetPublicEvents() []*EventInfo {
 	var list = make([]*EventInfo, 0, 50)
-	arr, _ := nosql.GetEventsByAccess(mine.UID, AccessPublic)
+	arr, _ := nosql.GetEventsByAccess(mine.UID, AccessRead)
 	for _, event := range arr {
 		info := new(EventInfo)
 		info.initInfo(event)

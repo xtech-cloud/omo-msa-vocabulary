@@ -77,9 +77,6 @@ type CountMap struct {
 type cacheContext struct {
 	graph        *GraphInfo
 	entityTables []string
-	concepts     []*ConceptInfo
-	attributes   []*AttributeInfo
-	relations    []*RelationshipInfo
 	nodesMap     *CountMap
 	linkMap      *CountMap
 }
@@ -107,34 +104,34 @@ func InitData() error {
 		return err1
 	}
 
-	attributes, _ := nosql.GetAllAttributes()
-	cacheCtx.attributes = make([]*AttributeInfo, 0, len(attributes))
-	for i := 0; i < len(attributes); i += 1 {
-		info := new(AttributeInfo)
-		info.initInfo(attributes[i])
-		cacheCtx.attributes = append(cacheCtx.attributes, info)
-	}
-	logger.Infof("init attribute!!! number = %d", len(cacheCtx.attributes))
-
-	relations, _ := nosql.GetTopRelations()
-	cacheCtx.relations = make([]*RelationshipInfo, 0, len(relations))
-	for i := 0; i < len(relations); i += 1 {
-		info := new(RelationshipInfo)
-		info.initInfo(relations[i])
-		cacheCtx.relations = append(cacheCtx.relations, info)
-	}
-	logger.Infof("init relation!!! number = %d", len(cacheCtx.relations))
-	concerts, _ := nosql.GetTopConcepts()
-	cacheCtx.concepts = make([]*ConceptInfo, 0, len(concerts)*5)
-	for i := 0; i < len(concerts); i += 1 {
-		info := new(ConceptInfo)
-		info.initInfo(concerts[i])
-		cacheCtx.concepts = append(cacheCtx.concepts, info)
-	}
-	logger.Infof("init concepts!!! number = %d", len(cacheCtx.concepts))
+	//attributes, _ := nosql.GetAllAttributes()
+	//cacheCtx.attributes = make([]*AttributeInfo, 0, len(attributes))
+	//for i := 0; i < len(attributes); i += 1 {
+	//	info := new(AttributeInfo)
+	//	info.initInfo(attributes[i])
+	//	cacheCtx.attributes = append(cacheCtx.attributes, info)
+	//}
+	//logger.Infof("init attribute!!! number = %d", len(cacheCtx.attributes))
+	//
+	//relations, _ := nosql.GetTopRelations()
+	//cacheCtx.relations = make([]*RelationshipInfo, 0, len(relations))
+	//for i := 0; i < len(relations); i += 1 {
+	//	info := new(RelationshipInfo)
+	//	info.initInfo(relations[i])
+	//	cacheCtx.relations = append(cacheCtx.relations, info)
+	//}
+	//logger.Infof("init relation!!! number = %d", len(cacheCtx.relations))
+	//concerts, _ := nosql.GetTopConcepts()
+	//cacheCtx.concepts = make([]*ConceptInfo, 0, len(concerts)*5)
+	//for i := 0; i < len(concerts); i += 1 {
+	//	info := new(ConceptInfo)
+	//	info.initInfo(concerts[i])
+	//	cacheCtx.concepts = append(cacheCtx.concepts, info)
+	//}
+	//logger.Infof("init concepts!!! number = %d", len(cacheCtx.concepts))
 	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
 	//nosql.CheckTimes()
-	//checkVEdges()
+	checkVEdges()
 	return nil
 }
 
@@ -163,9 +160,10 @@ func checkVEdges() {
 }
 
 func CheckRepeatedAttribute() {
-	list := make([]*AttributeInfo, 0, 100)
-	repeats := make([]*AttributeInfo, 0, 100)
-	for _, item := range cacheCtx.attributes {
+	all, _ := nosql.GetAllAttributes()
+	list := make([]*nosql.Attribute, 0, 100)
+	repeats := make([]*nosql.Attribute, 0, 100)
+	for _, item := range all {
 		if !hadOne(strings.TrimSpace(item.Name), list) {
 			list = append(list, item)
 		} else {
@@ -177,43 +175,35 @@ func CheckRepeatedAttribute() {
 	for _, repeat := range repeats {
 		news := getAttributeUID(strings.TrimSpace(repeat.Name), list)
 		if news != "" {
-			arr := cacheCtx.getEntitiesByAttribute(repeat.UID)
+			uid := repeat.UID.Hex()
+			arr := cacheCtx.getEntitiesByAttribute(uid)
 			for _, entity := range arr {
-				_ = entity.replaceAttribute(repeat.UID, news)
+				_ = entity.replaceAttribute(uid, news)
 			}
-			arr1 := cacheCtx.getArchivedEntitiesByAttribute(repeat.UID)
+			arr1 := cacheCtx.getArchivedEntitiesByAttribute(uid)
 			for _, arch := range arr1 {
-				_ = arch.replaceAttribute(repeat.UID, news)
+				_ = arch.replaceAttribute(uid, news)
 			}
-			arr2 := cacheCtx.GetConceptsByAttribute(repeat.UID)
+			arr2 := cacheCtx.GetConceptsByAttribute(uid)
 			for _, item := range arr2 {
-				_ = item.ReplaceAttributes(repeat.UID, news)
+				_ = item.ReplaceAttributes(uid, news)
 			}
-			_ = cacheCtx.RemoveAttribute(repeat.UID, repeat.Operator)
-		}
-	}
-	if num > 0 {
-		concerts, _ := nosql.GetTopConcepts()
-		cacheCtx.concepts = make([]*ConceptInfo, 0, len(concerts)*5)
-		for i := 0; i < len(concerts); i += 1 {
-			info := new(ConceptInfo)
-			info.initInfo(concerts[i])
-			cacheCtx.concepts = append(cacheCtx.concepts, info)
+			_ = cacheCtx.RemoveAttribute(uid, repeat.Operator)
 		}
 	}
 }
 
-func getAttributeUID(name string, list []*AttributeInfo) string {
+func getAttributeUID(name string, list []*nosql.Attribute) string {
 	for _, info := range list {
 		n := strings.TrimSpace(info.Name)
 		if n == name {
-			return info.UID
+			return info.UID.Hex()
 		}
 	}
 	return ""
 }
 
-func hadOne(name string, list []*AttributeInfo) bool {
+func hadOne(name string, list []*nosql.Attribute) bool {
 	for _, info := range list {
 		n := strings.TrimSpace(info.Name)
 		if n == name {

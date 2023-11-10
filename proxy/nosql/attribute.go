@@ -56,6 +56,34 @@ func GetAttribute(uid string) (*Attribute, error) {
 	return model, nil
 }
 
+func GetAttributeByName(name string) (*Attribute, error) {
+	msg := bson.M{"name": name, TimeDeleted: 0}
+	result, err := findOneBy(TableAttribute, msg)
+	if err != nil {
+		return nil, err
+	}
+	model := new(Attribute)
+	err1 := result.Decode(model)
+	if err1 != nil {
+		return nil, err1
+	}
+	return model, nil
+}
+
+func GetAttributeByKey(key string) (*Attribute, error) {
+	msg := bson.M{"key": key, TimeDeleted: 0}
+	result, err := findOneBy(TableAttribute, msg)
+	if err != nil {
+		return nil, err
+	}
+	model := new(Attribute)
+	err1 := result.Decode(model)
+	if err1 != nil {
+		return nil, err1
+	}
+	return model, nil
+}
+
 func GetAllAttributes() ([]*Attribute, error) {
 	var items = make([]*Attribute, 0, 100)
 	cursor, err1 := findAllEnable(TableAttribute, 0)

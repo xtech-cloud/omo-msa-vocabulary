@@ -26,7 +26,14 @@ type RelationshipInfo struct {
 }
 
 func (mine *cacheContext) AllRelations() []*RelationshipInfo {
-	return mine.relations
+	dbs, _ := nosql.GetTopRelations()
+	all := make([]*RelationshipInfo, 0, len(dbs))
+	for _, db := range dbs {
+		tmp := new(RelationshipInfo)
+		tmp.initInfo(db)
+		all = append(all, tmp)
+	}
+	return all
 }
 
 //创建关系类型
@@ -52,36 +59,35 @@ func (mine *cacheContext) CreateRelation(parent, creator string, info *Relations
 	if len(parent) > 0 {
 		top := mine.GetRelation(parent)
 		top.Children = append(top.Children, info)
-	} else {
-		mine.relations = append(mine.relations, info)
 	}
 
 	return err
 }
 
 func (mine *cacheContext) HadRelation(uid string) bool {
-	for i := 0; i < len(mine.relations); i += 1 {
-		if mine.relations[i].UID == uid {
-			return true
-		}
+	db, _ := nosql.GetRelation(uid)
+	if db == nil {
+		return false
+	} else {
+		return true
 	}
-	return false
 }
 
 func (mine *cacheContext) GetRelationByName(name string) *RelationshipInfo {
-	for i := 0; i < len(mine.relations); i += 1 {
-		child := mine.relations[i].GetChildByName(name)
-		if child != nil {
-			return child
-		}
+	db, _ := nosql.GetRelationByName(name)
+	if db != nil {
+		tmp := new(RelationshipInfo)
+		tmp.initInfo(db)
+		return tmp
 	}
 	return nil
 }
 
 func (mine *cacheContext) HadRelationByName(name, parent string) bool {
 	if parent == "" {
-		for i := 0; i < len(mine.relations); i += 1 {
-			if mine.relations[i].Name == name {
+		tops, _ := nosql.GetTopRelations()
+		for i := 0; i < len(tops); i += 1 {
+			if tops[i].Name == name {
 				return true
 			}
 		}
@@ -108,26 +114,32 @@ func switchRelationToLink(kind RelationType) LinkType {
 }
 
 func (mine *cacheContext) RemoveRelation(uid, operator string) error {
+	if uid == "" {
+		return errors.New("the relation uid is empty")
+	}
 	err := nosql.RemoveRelation(uid, operator)
 	if err == nil {
-		for i := 0; i < len(mine.relations); i += 1 {
-			if mine.relations[i].UID == uid {
-				mine.relations = append(mine.relations[:i], mine.relations[i+1:]...)
-				break
-			} else if mine.relations[i].HadChild(uid) {
-				_ = mine.relations[i].RemoveChild(uid, operator)
-			}
-		}
+		//for i := 0; i < len(mine.relations); i += 1 {
+		//	if mine.relations[i].UID == uid {
+		//		mine.relations = append(mine.relations[:i], mine.relations[i+1:]...)
+		//		break
+		//	} else if mine.relations[i].HadChild(uid) {
+		//		_ = mine.relations[i].RemoveChild(uid, operator)
+		//	}
+		//}
 	}
 	return err
 }
 
 func (mine *cacheContext) GetRelation(uid string) *RelationshipInfo {
-	for i := 0; i < len(mine.relations); i += 1 {
-		child := mine.relations[i].GetChild(uid)
-		if child != nil {
-			return child
-		}
+	if uid == "" {
+		return nil
+	}
+	db, _ := nosql.GetRelation(uid)
+	if db != nil {
+		tmp := new(RelationshipInfo)
+		tmp.initInfo(db)
+		return tmp
 	}
 	return nil
 }

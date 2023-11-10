@@ -103,16 +103,16 @@ func (mine *EventService) GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 	if in.Uid == "" {
 		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
 	}
-	if in.Key == "" {
-		info := cache.Context().GetEvent(in.Uid)
+	if in.Key == "asset" {
+		info := cache.Context().GetEventByAsset(in.Uid)
 		if info == nil {
 			out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchEntityEvent(info)
 		out.Status = outLog(path, out)
-	} else if in.Key == "asset" {
-		info := cache.Context().GetEventByAsset(in.Uid)
+	} else {
+		info := cache.Context().GetEvent(in.Uid)
 		if info == nil {
 			out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
 			return nil
@@ -139,43 +139,42 @@ func (mine *EventService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out
 func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyEventList) error {
 	path := "event.getList"
 	inLog(path, in)
-	info := cache.Context().GetEntity(in.Uid)
+	var info *cache.EntityInfo
+	public := false
+	if in.Key == "public" {
+		public = true
+		info, _ = cache.Context().GetPublicEntity(in.Uid)
+	} else {
+		public = false
+		info = cache.Context().GetEntity(in.Uid)
+	}
+	var list []*cache.EventInfo
 	out.List = make([]*pb.EventInfo, 0, 10)
 	if info == nil {
-		//out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
-		//return nil
-		list := cache.Context().GetEventsByQuote(in.Key)
-		for _, value := range list {
-			out.List = append(out.List, switchEntityEvent(value))
-		}
+		list = cache.Context().GetEventsByQuote(in.Key)
 	} else {
-		if in.Operator != "" {
+		if in.Key == "quote" {
+			list = info.GetEventsByQuote(in.Operator)
+		} else if in.Key == "access" {
+			//根据类型和访问权限获取事件
 			acc, er := strconv.ParseUint(in.Operator, 10, 32)
 			if er == nil {
-				list := info.GetEventsByAccess(uint8(in.Id), uint8(acc))
-				for _, value := range list {
-					out.List = append(out.List, switchEntityEvent(value))
-				}
+				list = info.GetEventsByAccess(uint8(in.Id), uint8(acc))
 			}
-		} else if in.Id > 0 {
-			list := info.GetEventsByType(uint8(in.Id), in.Key)
-			for _, value := range list {
-				out.List = append(out.List, switchEntityEvent(value))
-			}
+		} else if in.Key == "type" {
+			//根据事件类型和引用
+			list = info.GetEventsByType(uint8(in.Id), in.Operator)
 		} else {
-			if len(in.Key) > 1 {
-				list := info.GetEventsByQuote(in.Key)
-				for _, value := range list {
-					out.List = append(out.List, switchEntityEvent(value))
-				}
+			if public {
+				list = info.GetPublicEvents()
 			} else {
-				for _, value := range info.AllEvents() {
-					out.List = append(out.List, switchEntityEvent(value))
-				}
+				list = info.AllEvents()
 			}
 		}
 	}
-
+	for _, value := range list {
+		out.List = append(out.List, switchEntityEvent(value))
+	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }

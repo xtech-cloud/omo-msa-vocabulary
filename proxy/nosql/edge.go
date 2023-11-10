@@ -39,7 +39,7 @@ func CreateVEdge(info *VEdge) error {
 }
 
 func GetAllVEdges() ([]*VEdge, error) {
-	cursor, err1 := findAllEnable(TableEdge, 0)
+	cursor, err1 := findAll(TableEdge, 0)
 	if err1 != nil {
 		return nil, err1
 	}
