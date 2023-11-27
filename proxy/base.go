@@ -53,6 +53,7 @@ type VNode struct {
 	Name   string `json:"name" bson:"name"`
 	Entity string `json:"entity" bson:"entity"`
 	Thumb  string `json:"thumb" bson:"thumb"`
+	Desc   string `json:"desc" bson:"desc"`
 }
 
 type Date struct {

@@ -14,43 +14,25 @@ import (
 
 type EntityService struct{}
 
-func switchStaticEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
+func switchEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
 	tmp := new(pb.EntityInfo)
 	tmp.Brief = switchEntityBrief(info)
 	if all {
-		tmp.Events = make([]*pb.EventInfo, 0, len(info.StaticEvents))
-		for i, event := range info.StaticEvents {
-			tmp.Events = append(tmp.Events, switchEventBriefToPB(fmt.Sprintf("static_%s-%d", info.UID, i), event))
-		}
-
-		edges := info.GetVEdges()
-		tmp.Relations = make([]*pb.VEdgeInfo, 0, len(edges))
-		for _, item := range edges {
-			tmp.Relations = append(tmp.Relations, switchVEdge(item))
-		}
-	}
-	length := len(info.Properties)
-	tmp.Properties = make([]*pb.PropertyInfo, 0, length)
-	for _, value := range info.Properties {
-		tmp.Properties = append(tmp.Properties, switchPropertyToPB(value))
-	}
-	return tmp
-}
-
-func switchDynamicEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
-	tmp := new(pb.EntityInfo)
-	tmp.Brief = switchEntityBrief(info)
-	if all {
-		events := cache.Context().GetEventsByEntity(info.UID, cache.EventCustom)
-		tmp.Events = make([]*pb.EventInfo, 0, len(events))
+		events := cache.Context().GetEventsByEntity(info.UID, "", cache.EventCustom)
+		events2 := cache.Context().GetEventsByEntity(info.UID, "", cache.EventActivity)
+		tmp.Events = make([]*pb.EventInfo, 0, len(info.StaticEvents)+len(events)+len(events2))
 		for _, event := range events {
 			if event.Access == cache.AccessRead || event.Access == cache.AccessWR {
 				tmp.Events = append(tmp.Events, switchEntityEvent(event))
 			}
 		}
-		events2 := cache.Context().GetEventsByEntity(info.UID, cache.EventActivity)
+
 		for _, event := range events2 {
 			tmp.Events = append(tmp.Events, switchEntityEvent(event))
+		}
+
+		for i, event := range info.StaticEvents {
+			tmp.Events = append(tmp.Events, switchEventBriefToPB(fmt.Sprintf("static_%s-%d", info.UID, i), event))
 		}
 
 		edges := info.GetVEdges()
@@ -261,7 +243,7 @@ func (mine *EntityService) AddOne(ctx context.Context, in *pb.ReqEntityAdd, out 
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Info = switchStaticEntity(info, true)
+	out.Info = switchEntity(info, true)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -273,12 +255,17 @@ func (mine *EntityService) GetOne(ctx context.Context, in *pb.RequestInfo, out *
 		out.Status = outError(path, "the entity uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
-	info := cache.Context().GetEntity(in.Uid)
+	var info *cache.EntityInfo
+	if in.Key == "public" {
+		info, _ = cache.Context().GetPublicEntity(in.Uid)
+	} else {
+		info = cache.Context().GetEntity(in.Uid)
+	}
 	if info == nil {
 		out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
-	out.Info = switchStaticEntity(info, false)
+	out.Info = switchEntity(info, false)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -312,7 +299,7 @@ func (mine *EntityService) GetByName(ctx context.Context, in *pb.RequestInfo, ou
 		out.Status = outError(path, "not found the entity by name", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
-	out.Info = switchStaticEntity(info, false)
+	out.Info = switchEntity(info, false)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -329,7 +316,7 @@ func (mine *EntityService) GetByMark(ctx context.Context, in *pb.RequestInfo, ou
 		out.Status = outError(path, "not found the entity by mark", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
-	out.Info = switchStaticEntity(info, false)
+	out.Info = switchEntity(info, false)
 	out.Status = outLog(path, out)
 	return nil
 }
@@ -351,24 +338,21 @@ func (mine *EntityService) GetAllByOwner(ctx context.Context, in *pb.ReqEntityBy
 	path := "entity.getByOwner"
 	inLog(path, in)
 	out.Flag = in.Owner
+	var all []*cache.EntityInfo
 	if len(in.Owner) > 1 {
-		array := cache.Context().GetEntitiesByOwnerStatus(in.Owner, in.Concept, cache.EntityStatus(in.Status))
-		total, _, list := cache.CheckPage(in.Page, in.Number, array)
-		out.List = make([]*pb.EntityInfo, 0, in.Number)
-		out.Total = uint32(total)
-		for _, value := range list {
-			out.List = append(out.List, switchStaticEntity(value, false))
-		}
+		all = cache.Context().GetEntitiesByOwnerStatus(in.Owner, in.Concept, cache.EntityStatus(in.Status))
 	} else {
-		array := cache.Context().GetEntitiesByStatus(cache.EntityStatus(in.Status), in.Concept)
-		total, _, list := cache.CheckPage(in.Page, in.Number, array)
-		out.List = make([]*pb.EntityInfo, 0, in.Number)
-		out.Total = uint32(total)
-		for _, value := range list {
-			out.List = append(out.List, switchStaticEntity(value, false))
-		}
+		all = cache.Context().GetEntitiesByStatus(cache.EntityStatus(in.Status), in.Concept)
+
 	}
-	out.Page = uint32(in.Page)
+	total, pages, list := cache.CheckPage(in.Page, in.Number, all)
+	out.List = make([]*pb.EntityInfo, 0, in.Number)
+	out.Total = uint32(total)
+	for _, value := range list {
+		out.List = append(out.List, switchEntity(value, false))
+	}
+	out.Total = uint32(total)
+	out.Page = uint32(pages)
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
@@ -386,7 +370,7 @@ func (mine *EntityService) GetListByBox(ctx context.Context, in *pb.RequestPage,
 	out.List = make([]*pb.EntityInfo, 0, in.Number)
 	out.Total = uint32(total)
 	for _, value := range list {
-		out.List = append(out.List, switchStaticEntity(value, false))
+		out.List = append(out.List, switchEntity(value, false))
 	}
 	out.Page = uint32(in.Page)
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
@@ -405,7 +389,7 @@ func (mine *EntityService) GetListByName(ctx context.Context, in *pb.RequestList
 		array, err := cache.Context().GetEntitiesByName(in.List[i])
 		if err == nil {
 			for _, info := range array {
-				out.List = append(out.List, switchStaticEntity(info, false))
+				out.List = append(out.List, switchEntity(info, false))
 			}
 		}
 	}
@@ -429,7 +413,7 @@ func (mine *EntityService) GetByList(ctx context.Context, in *pb.RequestList, ou
 	out.List = make([]*pb.EntityInfo, 0, len(array))
 	out.Total = uint32(len(array))
 	for _, value := range array {
-		out.List = append(out.List, switchStaticEntity(value, false))
+		out.List = append(out.List, switchEntity(value, false))
 	}
 	out.Page = 0
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
@@ -450,14 +434,14 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 		array, err := cache.Context().GetEntitiesByList(cache.EntityStatusUsable, in.List)
 		if err == nil {
 			for _, value := range array {
-				out.Systems = append(out.Systems, switchStaticEntity(value, all))
+				out.Systems = append(out.Systems, switchEntity(value, all))
 			}
 		}
 	} else if in.Status == 2 { //获取动态实体数据，非软件采集数据，一般是用户实体数据
 		list, err := cache.Context().GetCustomEntitiesByList(in.List)
 		if err == nil {
 			for _, value := range list {
-				out.Users = append(out.Users, switchDynamicEntity(value, all))
+				out.Users = append(out.Users, switchEntity(value, all))
 			}
 		}
 	} else {
@@ -468,7 +452,7 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 		}
 		if err == nil {
 			for _, value := range array {
-				out.Systems = append(out.Systems, switchStaticEntity(value, all))
+				out.Systems = append(out.Systems, switchEntity(value, all))
 				for i := 0; i < len(rest); i += 1 {
 					if rest[i] == value.UID {
 						rest = append(rest[:i], rest[i+1:]...)
@@ -480,7 +464,7 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 		list, err := cache.Context().GetCustomEntitiesByList(rest)
 		if err == nil {
 			for _, value := range list {
-				out.Users = append(out.Users, switchDynamicEntity(value, all))
+				out.Users = append(out.Users, switchEntity(value, all))
 			}
 		}
 	}
@@ -530,7 +514,7 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 	out.Page = uint32(pages)
 	out.List = make([]*pb.EntityInfo, 0, len(list))
 	for _, info := range list {
-		out.List = append(out.List, switchStaticEntity(info, !in.Brief))
+		out.List = append(out.List, switchEntity(info, !in.Brief))
 	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
@@ -568,16 +552,19 @@ func (mine *EntityService) SearchPublic(ctx context.Context, in *pb.ReqEntitySea
 	out.List = make([]*pb.EntityInfo, 0, 200)
 	list := cache.Context().GetArchivedList(in.Name)
 	for _, value := range list {
-		out.List = append(out.List, switchStaticEntity(value, false))
+		out.List = append(out.List, switchEntity(value, false))
 	}
-	arr := cache.Context().SearchPersonalEntities(in.Name)
-	for _, info := range arr {
-		out.List = append(out.List, switchStaticEntity(info, false))
+	if in.Number == 0 {
+		arr := cache.Context().SearchPersonalEntities(in.Name)
+		for _, info := range arr {
+			out.List = append(out.List, switchEntity(info, false))
+		}
+		arr2 := cache.Context().SearchDefaultEntities(in.Owner, in.Name)
+		for _, info1 := range arr2 {
+			out.List = append(out.List, switchEntity(info1, false))
+		}
 	}
-	arr2 := cache.Context().SearchDefaultEntities(in.Owner, in.Name)
-	for _, info1 := range arr2 {
-		out.List = append(out.List, switchStaticEntity(info1, false))
-	}
+
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }
@@ -590,7 +577,7 @@ func (mine *EntityService) SearchMatch(ctx context.Context, in *pb.ReqEntityMatc
 	total, _, list := cache.CheckPage(in.Page, in.Number, array)
 	out.List = make([]*pb.EntityInfo, 0, total)
 	for _, value := range list {
-		out.List = append(out.List, switchStaticEntity(value, false))
+		out.List = append(out.List, switchEntity(value, false))
 	}
 	out.Page = uint32(in.Page)
 	out.Total = uint32(total)
@@ -834,7 +821,7 @@ func (mine *EntityService) GetByProperty(ctx context.Context, in *pb.ReqEntityBy
 	list := cache.Context().GetEntitiesByProp(in.Key, in.Value)
 	out.List = make([]*pb.EntityInfo, 0, 5)
 	for _, value := range list {
-		out.List = append(out.List, switchStaticEntity(value, false))
+		out.List = append(out.List, switchEntity(value, false))
 	}
 
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))

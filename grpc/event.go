@@ -35,6 +35,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Tags = info.Tags
 	tmp.Cover = info.Cover
 	tmp.Owner = info.Owner
+	tmp.Targets = info.Targets
 	tmp.Access = uint32(info.Access)
 	tmp.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
 	for i := 0; i < len(info.Relations); i += 1 {
@@ -73,21 +74,8 @@ func (mine *EventService) AddOne(ctx context.Context, in *pb.ReqEventAdd, out *p
 	//	}
 	//	return nil
 	//}
-	begin := proxy.Date{}
-	end := proxy.Date{}
-	if in.Date != nil {
-		_ = begin.Parse(in.Date.Begin)
-		_ = end.Parse(in.Date.End)
-	}
 
-	date := proxy.DateInfo{UID: in.Date.Uid, Name: in.Date.Name, Begin: begin, End: end}
-	place := proxy.PlaceInfo{UID: in.Place.Uid, Name: in.Place.Name, Location: in.Place.Location}
-	relations := make([]proxy.RelationCaseInfo, 0, len(in.Relations))
-	for _, value := range in.Relations {
-		relations = append(relations, proxy.RelationCaseInfo{UID: value.Uid, Direction: uint8(value.Direction),
-			Name: value.Name, Category: value.Category, Entity: value.Entity})
-	}
-	event, err := info.AddEvent(date, place, in.Name, in.Description, in.Cover, in.Quote, in.Owner, in.Operator, uint8(in.Type), uint8(in.Access), relations, in.Tags, in.Assets)
+	event, err := info.AddEvent(in)
 	if err == nil {
 		out.Info = switchEntityEvent(event)
 		out.Status = outLog(path, out)
@@ -102,15 +90,22 @@ func (mine *EventService) GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 	inLog(path, in)
 	if in.Uid == "" {
 		out.Status = outError(path, "the uid is empty", pbstaus.ResultStatus_Empty)
+		return nil
 	}
 	if in.Key == "asset" {
 		info := cache.Context().GetEventByAsset(in.Uid)
 		if info == nil {
-			out.Status = outError(path, "not found the event by uid", pbstaus.ResultStatus_NotExisted)
+			out.Status = outError(path, "not found the event by asset", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
 		out.Info = switchEntityEvent(info)
-		out.Status = outLog(path, out)
+	} else if in.Key == "target" {
+		info, er := cache.Context().GetEventByTarget(in.Operator, in.Uid, uint8(in.Id))
+		if er != nil {
+			out.Status = outError(path, er.Error(), pbstaus.ResultStatus_NotExisted)
+			return nil
+		}
+		out.Info = switchEntityEvent(info)
 	} else {
 		info := cache.Context().GetEvent(in.Uid)
 		if info == nil {
@@ -118,8 +113,9 @@ func (mine *EventService) GetOne(ctx context.Context, in *pb.RequestInfo, out *p
 			return nil
 		}
 		out.Info = switchEntityEvent(info)
-		out.Status = outLog(path, out)
+
 	}
+	out.Status = outLog(path, out)
 	return nil
 }
 
@@ -190,7 +186,7 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 	if in.Key == "entities_sys" {
 		all := make([]*cache.EventInfo, 0, 200)
 		for _, uid := range in.Values {
-			arr := cache.Context().GetEventsByEntity(uid, 1)
+			arr := cache.Context().GetEventsByEntity(uid, in.Value, cache.EventActivity)
 			all = append(all, arr...)
 		}
 		total, pages, list = cache.CheckPage(in.Page, in.Number, all)
@@ -230,6 +226,16 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		}
 	} else if in.Key == "regex" {
 		list = cache.Context().GetEventsByRegex(in.Value, in.Values[0], in.Values[1])
+	} else if in.Key == "owner_target" {
+		list = cache.Context().GetEventsByOwnerTarget(in.Parent, in.Value)
+	} else if in.Key == "owners_target" {
+		list = make([]*cache.EventInfo, 0, 20)
+		for _, val := range in.Values {
+			arr := cache.Context().GetEventsByOwnerTarget(val, in.Value)
+			if len(arr) > 0 {
+				list = append(list, arr...)
+			}
+		}
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -310,6 +316,8 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 		for _, info := range list {
 			out.List = append(out.List, &pb.StatisticInfo{Key: info.Key, Count: uint32(info.Count)})
 		}
+	} else if in.Key == "entity_target" {
+		out.Count = cache.Context().GetEventCountByEntityTarget(in.Value, in.Values)
 	}
 
 	out.Owner = in.Value
@@ -536,6 +544,8 @@ func (mine *EventService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFi
 	var err error
 	if in.Key == "owner" {
 		err = info.UpdateOwner(in.Value, in.Operator)
+	} else if in.Key == "targets" {
+
 	} else {
 		err = errors.New("not define the key")
 	}

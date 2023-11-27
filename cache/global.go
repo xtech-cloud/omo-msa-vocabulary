@@ -70,6 +70,9 @@ func (mine *cacheContext) SearchPersonalEntities(key string) []*EntityInfo {
 }
 
 func (mine *cacheContext) SearchDefaultEntities(owner, key string) []*EntityInfo {
+	if owner == "" || key == "" {
+		return make([]*EntityInfo, 0, 1)
+	}
 	array, err := nosql.GetEntitiesByOwnMatch(DefaultEntityTable, key, owner)
 	if err != nil {
 		return make([]*EntityInfo, 0, 0)
@@ -239,10 +242,17 @@ func (mine *cacheContext) getEntitiesByAttribute(uid string) []*EntityInfo {
 func (mine *cacheContext) GetEntitiesByStatus(status EntityStatus, concept string) []*EntityInfo {
 	list := make([]*EntityInfo, 0, 100)
 	if status == EntityStatusUsable {
-		return mine.GetArchivedEntities("", concept)
+		return mine.GetArchivedEntities(DefaultOwner, concept)
 	} else {
 		for _, tb := range mine.EntityTables() {
-			array, err := nosql.GetEntitiesByStatus(tb, uint8(status))
+			var array []*nosql.Entity
+			var err error
+			if status == EntityStatusAll {
+				array, err = nosql.GetEntitiesByConcept2(tb, concept)
+			} else {
+				array, err = nosql.GetEntitiesByStatus(tb, uint8(status))
+			}
+
 			if err == nil {
 				for _, entity := range array {
 					if concept != "" {
@@ -269,7 +279,14 @@ func (mine *cacheContext) GetEntitiesByOwnerStatus(owner, concept string, status
 		return mine.GetArchivedEntities(owner, concept)
 	} else {
 		for _, tb := range mine.EntityTables() {
-			array, err := nosql.GetEntitiesByOwnerAndStatus(tb, owner, uint8(status))
+			var array []*nosql.Entity
+			var err error
+			if status == EntityStatusAll {
+				array, err = nosql.GetEntitiesByOwner(tb, owner)
+			} else {
+				array, err = nosql.GetEntitiesByOwnerAndStatus(tb, owner, uint8(status))
+			}
+
 			if err == nil {
 				for _, entity := range array {
 					if concept != "" {
@@ -586,6 +603,19 @@ func (mine *cacheContext) GetEventsByQuote(quote string) []*EventInfo {
 	return list
 }
 
+func (mine *cacheContext) GetEventByTarget(entity, target string, tp uint8) (*EventInfo, error) {
+	if entity == "" || target == "" {
+		return nil, errors.New("the entity or target is empty")
+	}
+	db, err := nosql.GetEventByTarget(entity, target)
+	if err != nil {
+		return nil, err
+	}
+	info := new(EventInfo)
+	info.initInfo(db)
+	return info, nil
+}
+
 func hadEvent(list []*EventInfo, uid string) bool {
 	for _, item := range list {
 		if item.UID == uid {
@@ -683,6 +713,26 @@ func (mine *cacheContext) GetEventsByRegex(quote, key, value string) []*EventInf
 	return list
 }
 
+func (mine *cacheContext) GetEventsByOwnerTarget(owner, target string) []*EventInfo {
+	if owner == "" || target == "" {
+		return nil
+	}
+	dbs, err := nosql.GetEventsByTarget(owner, target)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(dbs))
+		for _, db := range dbs {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetAllSystemEvents(page, number int32) (int32, int32, []*EventInfo) {
 	arr, err := nosql.GetEventsAllByType(1)
 	var list []*EventInfo
@@ -738,8 +788,18 @@ func (mine *cacheContext) GetEventsByEntityType(entity string, tp, page, number 
 	}
 }
 
-func (mine *cacheContext) GetEventsByEntity(entity string, tp uint8) []*EventInfo {
-	arr, err := nosql.GetEventsByType(entity, tp)
+func (mine *cacheContext) GetEventsByEntity(entity, quote string, tp uint8) []*EventInfo {
+	if entity == "" {
+		return make([]*EventInfo, 0, 1)
+	}
+	var arr []*nosql.Event
+	var err error
+	if quote == "" {
+		arr, err = nosql.GetEventsByType(entity, tp)
+	} else {
+		arr, err = nosql.GetEventsByQuoteType(entity, quote, tp)
+	}
+
 	var list []*EventInfo
 	if err == nil {
 		list = make([]*EventInfo, 0, len(arr))

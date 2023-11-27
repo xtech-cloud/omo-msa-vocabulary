@@ -1,10 +1,8 @@
 package cache
 
 import (
-	"fmt"
 	"github.com/micro/go-micro/v2/logger"
 	"github.com/mozillazg/go-pinyin"
-	"mime/multipart"
 	"omo.msa.vocabulary/config"
 	"omo.msa.vocabulary/proxy/graph"
 	"omo.msa.vocabulary/proxy/nosql"
@@ -130,8 +128,7 @@ func InitData() error {
 	//}
 	//logger.Infof("init concepts!!! number = %d", len(cacheCtx.concepts))
 	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
-	//nosql.CheckTimes()
-	checkVEdges()
+
 	return nil
 }
 
@@ -388,12 +385,6 @@ func convertExcelDays(days int64) (year uint16, month uint8) {
 	return year, month
 }
 
-func TestPages() {
-	slice := []int{1, 2, 4, 5, 8, 9, 10, 11, 22}
-	num := len(slice)
-	fmt.Printf("print = %v\n", slice[4:num-1])
-}
-
 func parseDate(date string) (year uint16, month uint8) {
 	if strings.Contains(date, "年") {
 		array := strings.Split(date, "年")
@@ -420,10 +411,6 @@ func parseDate(date string) (year uint16, month uint8) {
 		}
 	}
 	return year, month
-}
-
-func ImportDatabase(table string, file multipart.File) error {
-	return nosql.ImportDatabase(table, file)
 }
 
 func firstLetter(name string) string {

@@ -33,6 +33,7 @@ type Event struct {
 	Place       proxy.PlaceInfo          `json:"place" bson:"place"`
 	Tags        []string                 `json:"tags" bson:"tags"`
 	Assets      []string                 `json:"assets" bson:"assets"`
+	Targets     []string                 `json:"targets" bson:"targets"`
 	Relations   []proxy.RelationCaseInfo `json:"relations" bson:"relations"`
 }
 
@@ -81,8 +82,31 @@ func GetEventByAsset(uid string) (*Event, error) {
 	return model, nil
 }
 
+func GetEventByTarget(entity, target string) (*Event, error) {
+	filter := bson.M{"entity": entity, "targets": target, TimeDeleted: 0}
+	result, err := findOneBy(TableEvent, filter)
+	if err != nil {
+		return nil, err
+	}
+	model := new(Event)
+	err1 := result.Decode(model)
+	if err1 != nil {
+		return nil, err1
+	}
+	return model, nil
+}
+
 func GetEventCountByEntity(entity string) uint32 {
 	filter := bson.M{"entity": entity, TimeDeleted: 0}
+	count, err := getCountBy(TableEvent, filter)
+	if err != nil {
+		return 0
+	}
+	return uint32(count)
+}
+
+func GetEventCountByEntityTarget(entity, target string) uint32 {
+	filter := bson.M{"entity": entity, "targets": target, TimeDeleted: 0}
 	count, err := getCountBy(TableEvent, filter)
 	if err != nil {
 		return 0
@@ -177,7 +201,7 @@ func GetEventsByQuote(entity, quote string) ([]*Event, error) {
 
 func GetEventsByOwner(owner string) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
-	filter := bson.M{"owner": owner}
+	filter := bson.M{"owner": owner, TimeDeleted: 0}
 	cursor, err1 := findMany(TableEvent, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -289,6 +313,25 @@ func GetEventsByType(entity string, tp uint8) ([]*Event, error) {
 	return items, nil
 }
 
+func GetEventsByQuoteType(entity, quote string, tp uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"entity": entity, "quote": quote, "type": tp, TimeDeleted: 0}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEventsByType2(tp uint8) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	filter := bson.M{"type": tp, TimeDeleted: 0}
@@ -311,6 +354,44 @@ func GetEventsByType2(tp uint8) ([]*Event, error) {
 func GetEventsByTypeQuote(entity, quote string, tp uint8) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	filter := bson.M{"entity": entity, "quote": quote, "type": tp, TimeDeleted: 0}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsByTypeTarget(entity, target string, tp uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"entity": entity, "targets": target, "type": tp, TimeDeleted: 0}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsByTarget(entity, target string) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"entity": entity, "targets": target, TimeDeleted: 0}
 	cursor, err1 := findMany(TableEvent, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -353,6 +434,12 @@ func UpdateEventOwner(uid, owner, operator string) error {
 
 func UpdateEventQuote(uid, quote, operator string) error {
 	msg := bson.M{"quote": quote, "operator": operator, TimeUpdated: time.Now().Unix()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
+func UpdateEventTargets(uid, operator string, targets []string) error {
+	msg := bson.M{"targets": targets, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }

@@ -21,6 +21,7 @@ const (
 	EntityStatusSpecial EntityStatus = 3
 	EntityStatusUsable  EntityStatus = 4 //审核通过
 	EntityStatusFailed  EntityStatus = 10
+	EntityStatusAll     EntityStatus = 99
 )
 
 const (
@@ -685,7 +686,7 @@ func (mine *EntityInfo) CreateVEdge(source, name, remark, relation, operator str
 	target.UID = "temp-" + primitive.NewObjectID().Hex()
 	db := new(nosql.VEdge)
 	db.UID = primitive.NewObjectID()
-	db.ID = nosql.GetEventNextID()
+	db.ID = nosql.GetVEdgeNextID()
 	db.Created = time.Now().Unix()
 	db.Creator = operator
 	db.Name = name
@@ -841,49 +842,65 @@ func (mine *EntityInfo) GetPublicEvents() []*EventInfo {
 	return list
 }
 
-func (mine *EntityInfo) AddEvent(date proxy.DateInfo, place proxy.PlaceInfo, name, desc, cover, quote, owner, operator string, tp, access uint8, links []proxy.RelationCaseInfo, tags, assets []string) (*EventInfo, error) {
+func (mine *EntityInfo) AddEvent(data *pb.ReqEventAdd) (*EventInfo, error) {
 	if mine.Status == EntityStatusUsable {
 		return nil, errors.New("the entity had published so can not update")
 	}
 	mine.initEvents()
+	begin := proxy.Date{}
+	end := proxy.Date{}
+	if data.Date != nil {
+		_ = begin.Parse(data.Date.Begin)
+		_ = end.Parse(data.Date.End)
+	}
 
+	date := proxy.DateInfo{UID: data.Date.Uid, Name: data.Date.Name, Begin: begin, End: end}
+	place := proxy.PlaceInfo{UID: data.Place.Uid, Name: data.Place.Name, Location: data.Place.Location}
+	relations := make([]proxy.RelationCaseInfo, 0, len(data.Relations))
+	for _, value := range data.Relations {
+		relations = append(relations, proxy.RelationCaseInfo{UID: value.Uid, Direction: uint8(value.Direction),
+			Name: value.Name, Category: value.Category, Entity: value.Entity})
+	}
 	db := new(nosql.Event)
 	db.UID = primitive.NewObjectID()
 	db.ID = nosql.GetEventNextID()
 	db.CreatedTime = time.Now()
 	db.Created = time.Now().Unix()
-	db.Creator = operator
-	db.Name = name
+	db.Creator = data.Operator
+	db.Name = data.Name
 	db.Date = date
 	db.Place = place
-	db.Type = tp
+	db.Type = uint8(data.Type)
 	db.Entity = mine.UID
 	db.Parent = ""
-	db.Quote = quote
-	db.Description = desc
-	db.Relations = links
-	db.Cover = cover
-	db.Tags = tags
-	db.Access = access
-	db.Owner = owner
+	db.Quote = data.Quote
+	db.Description = data.Description
+	db.Relations = relations
+	db.Cover = data.Cover
+	db.Tags = data.Tags
+	db.Access = uint8(data.Access)
+	db.Owner = data.Owner
 	if db.Tags == nil {
 		db.Tags = make([]string, 0, 1)
 	}
-	db.Assets = assets
+	db.Assets = data.Assets
 	if db.Assets == nil {
 		db.Assets = make([]string, 0, 1)
 	}
+	db.Targets = data.Targets
+	if db.Targets == nil {
+		db.Targets = make([]string, 0, 1)
+	}
 	err := nosql.CreateEvent(db)
 	if err == nil {
-		mine.initEvents()
 		info := new(EventInfo)
 		info.initInfo(db)
 		mine.events = append(mine.events, info)
 
-		for i := 0; i < len(links); i += 1 {
-			relationKind := Context().GetRelation(links[i].Category)
+		for i := 0; i < len(relations); i += 1 {
+			relationKind := Context().GetRelation(relations[i].Category)
 			if relationKind != nil {
-				Context().addSyncLink(mine.UID, links[i].Entity, relationKind.UID, links[i].Name, switchRelationToLink(relationKind.Kind), links[i].Direction)
+				Context().addSyncLink(mine.UID, relations[i].Entity, relationKind.UID, relations[i].Name, switchRelationToLink(relationKind.Kind), relations[i].Direction)
 			}
 		}
 

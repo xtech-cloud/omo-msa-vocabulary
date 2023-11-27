@@ -18,7 +18,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/tidwall/gjson v1.6.1
 	github.com/xtech-cloud/omo-msp-status v1.0.2
-	github.com/xtech-cloud/omo-msp-vocabulary v1.9.4
+	github.com/xtech-cloud/omo-msp-vocabulary v1.9.6
 	go.mongodb.org/mongo-driver v1.4.6
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

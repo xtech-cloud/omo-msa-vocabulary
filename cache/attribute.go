@@ -72,8 +72,11 @@ func (mine *cacheContext) HadAttributeByName(name string) bool {
 	if name == "" {
 		return true
 	}
-	db, err := nosql.GetAttributeByName(strings.ToLower(name))
+	db, err := nosql.GetAttributeByName(name)
 	if err != nil {
+		if strings.Contains(err.Error(), "no documents") {
+			return false
+		}
 		return true
 	}
 	if db == nil {
@@ -86,8 +89,11 @@ func (mine *cacheContext) HadAttributeByKey(key string) bool {
 	if key == "" {
 		return true
 	}
-	db, err := nosql.GetAttributeByKey(strings.ToLower(key))
+	db, err := nosql.GetAttributeByKey(key)
 	if err != nil {
+		if strings.Contains(err.Error(), "no documents") {
+			return false
+		}
 		return true
 	}
 	if db == nil {
