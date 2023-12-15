@@ -131,6 +131,20 @@ func (mine *cacheContext) GetAttributeByKey(key string) *AttributeInfo {
 	return tmp
 }
 
+func (mine *cacheContext) GetAttributeByName(key string) *AttributeInfo {
+	k := strings.TrimSpace(key)
+	if k == "" {
+		return nil
+	}
+	db, err := nosql.GetAttributeByName(k)
+	if err != nil {
+		return nil
+	}
+	tmp := new(AttributeInfo)
+	tmp.initInfo(db)
+	return tmp
+}
+
 func (mine *cacheContext) RemoveAttribute(uid, operator string) error {
 	if len(uid) < 1 {
 		return errors.New("the attribute uid is empty")

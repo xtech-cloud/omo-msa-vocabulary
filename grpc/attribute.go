@@ -61,16 +61,28 @@ func (mine *AttributeService) AddOne(ctx context.Context, in *pb.ReqAttributeAdd
 func (mine *AttributeService) GetOne(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyAttributeInfo) error {
 	path := "attribute.getOne"
 	inLog(path, in)
-	if len(in.Uid) > 0 {
-		info := cache.Context().GetAttribute(in.Uid)
-		if info == nil {
-			out.Status = outError(path, "not found the attribute by uid", pbstaus.ResultStatus_NotExisted)
-			return nil
+	if len(in.Operator) < 2 {
+		if len(in.Uid) > 0 {
+			info := cache.Context().GetAttribute(in.Uid)
+			if info == nil {
+				out.Status = outError(path, "not found the attribute by uid", pbstaus.ResultStatus_NotExisted)
+				return nil
+			}
+			out.Info = switchAttribute(info)
+			out.Status = outLog(path, out)
+		} else if len(in.Key) > 0 {
+			info := cache.Context().GetAttributeByKey(in.Key)
+			if info == nil {
+				out.Status = outError(path, "not found the attribute by key", pbstaus.ResultStatus_NotExisted)
+				return nil
+			}
+			out.Info = switchAttribute(info)
+			out.Status = outLog(path, out)
+		} else {
+			out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
 		}
-		out.Info = switchAttribute(info)
-		out.Status = outLog(path, out)
-	} else if len(in.Key) > 0 {
-		info := cache.Context().GetAttributeByKey(in.Key)
+	} else if in.Operator == "name" {
+		info := cache.Context().GetAttributeByName(in.Key)
 		if info == nil {
 			out.Status = outError(path, "not found the attribute by key", pbstaus.ResultStatus_NotExisted)
 			return nil
@@ -80,6 +92,7 @@ func (mine *AttributeService) GetOne(ctx context.Context, in *pb.RequestInfo, ou
 	} else {
 		out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
 	}
+
 	return nil
 }
 
