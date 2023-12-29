@@ -335,6 +335,20 @@ func (mine *cacheContext) GetEntity(uid string) *EntityInfo {
 	return nil
 }
 
+func (mine *cacheContext) GetEntityByProp(name, key, val string) *EntityInfo {
+	array, err := nosql.GetEntitiesByProp(UserEntityTable, key, val)
+	if err == nil {
+		for _, entity := range array {
+			if entity.Name == name {
+				info := new(EntityInfo)
+				info.initInfo(entity)
+				return info
+			}
+		}
+	}
+	return nil
+}
+
 func (mine *cacheContext) GetEntitiesByRegex(key, val string, page, num int32) (int32, int32, []*EntityInfo, error) {
 	list := make([]*EntityInfo, 0, 200)
 	all := make([]*nosql.Entity, 0, 200)
@@ -546,15 +560,13 @@ func (mine *cacheContext) GetEntityCountByScene(scene string) uint32 {
 	}
 	count := nosql.GetEntityCountByScene(DefaultEntityTable, scene)
 	count1 := nosql.GetEntityCountByScene(UserEntityTable, scene)
-	count2 := nosql.GetEntityCountByScene(MuseumEntityTable, scene)
-	return count + count1 + count2
+	return count + count1
 }
 
 func (mine *cacheContext) GetEntityCount() uint32 {
 	count := nosql.GetEntityCount(DefaultEntityTable)
 	count1 := nosql.GetEntityCount(UserEntityTable)
-	count2 := nosql.GetEntityCount(MuseumEntityTable)
-	return count + count1 + count2
+	return count + count1
 }
 
 //endregion

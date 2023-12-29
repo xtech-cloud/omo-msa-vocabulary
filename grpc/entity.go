@@ -501,6 +501,14 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 		list = cache.Context().GetEntitiesByRank(in.Parent, num)
 	} else if in.Key == "regex" {
 		total, pages, list, _ = cache.Context().GetEntitiesByRegex(in.Parent, in.Value, in.Page, in.Number)
+	} else if in.Key == "prop" {
+		if len(in.Values) == 2 {
+			entity := cache.Context().GetEntityByProp(in.Value, in.Values[0], in.Values[1])
+			list = make([]*cache.EntityInfo, 0, 1)
+			if entity != nil {
+				list = append(list, entity)
+			}
+		}
 	} else {
 		err = errors.New("not define the key")
 	}

@@ -9,10 +9,10 @@ import (
 
 const (
 	ConceptTypeUnknown  = 0
-	ConceptTypePersonal = 1
+	ConceptTypePersonal = 1  //人物
 	ConceptTypeUtensil  = 2  // 器物
 	ConceptTypeEvent    = 3  //事件
-	ConceptTypeOrganize = 4  // 组织
+	ConceptTypeOrganize = 4  // 组织机构
 	ConceptTypeIdea     = 5  //思想理论
 	ConceptTypeBook     = 6  //经籍著作
 	ConceptTypeCulture  = 7  //文化
@@ -30,7 +30,8 @@ type ConceptInfo struct {
 	Remark     string
 	Table      string
 	Parent     string
-	Scene      uint8    //针对的场景类型
+	Scene      uint8 //针对的场景类型
+	Count      int
 	attributes []string //所有支持的属性
 	privates   []string //隐藏属性
 	Children   []*ConceptInfo
@@ -201,7 +202,10 @@ func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
 	mine.attributes = db.Attributes
 	mine.Scene = db.Scene
 	mine.privates = db.Privates
-
+	mine.Count = cacheCtx.GetEntitiesCountByConcept(mine.UID)
+	if len(mine.Table) < 2 && len(mine.Parent) < 2 {
+		mine.Table = DefaultEntityTable
+	}
 	array, err := nosql.GetConceptsByParent(mine.UID)
 	num := len(array)
 	mine.Children = make([]*ConceptInfo, 0, 5)

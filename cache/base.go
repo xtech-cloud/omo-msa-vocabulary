@@ -87,7 +87,6 @@ func InitData() error {
 	cacheCtx.entityTables = make([]string, 0, 3)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, DefaultEntityTable)
 	cacheCtx.entityTables = append(cacheCtx.entityTables, UserEntityTable)
-	cacheCtx.entityTables = append(cacheCtx.entityTables, MuseumEntityTable)
 	cacheCtx.graph = new(GraphInfo)
 	cacheCtx.nodesMap = new(CountMap)
 	cacheCtx.linkMap = new(CountMap)

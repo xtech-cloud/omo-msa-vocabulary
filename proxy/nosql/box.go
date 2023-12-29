@@ -205,14 +205,20 @@ func GetBoxesByConcept(concept string) ([]*Box, error) {
 	return items, nil
 }
 
-func UpdateBoxBase(uid, name, desc, concept, operator string) error {
-	msg := bson.M{"name": name, "remark": desc, "operator": operator, "concept": concept, TimeUpdated: time.Now().Unix()}
+func UpdateBoxBase(uid, name, desc, operator string) error {
+	msg := bson.M{"name": name, "remark": desc, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }
 
 func UpdateBoxCover(uid string, icon string) error {
 	msg := bson.M{"cover": icon, TimeUpdated: time.Now().Unix()}
+	_, err := updateOne(TableBox, uid, msg)
+	return err
+}
+
+func UpdateBoxConcept(uid, operator, concept string) error {
+	msg := bson.M{"operator": operator, "concept": concept, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }

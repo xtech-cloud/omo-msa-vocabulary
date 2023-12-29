@@ -15,6 +15,7 @@ const (
 	EventCustom   = 0
 	EventActivity = 1
 	EventHonor    = 2
+	EventCert     = 3
 )
 
 const (

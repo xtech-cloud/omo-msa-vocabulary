@@ -300,6 +300,8 @@ func (mine *BoxService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFilt
 	var err error
 	if in.Key == "reviewers" {
 		err = box.UpdateUsers(in.Values, in.Operator, true)
+	} else if in.Key == "concept" {
+		err = box.UpdateConcept(in.Value, in.Operator)
 	} else {
 		err = errors.New("not defined the key")
 	}

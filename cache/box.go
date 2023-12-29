@@ -294,6 +294,22 @@ func (mine *BoxInfo) UpdateUsers(list []string, operator string, reviewer bool) 
 	return err
 }
 
+func (mine *BoxInfo) UpdateConcept(con, operator string) error {
+	if mine.Concept == con {
+		return nil
+	}
+	er := nosql.UpdateBoxConcept(mine.UID, operator, con)
+	if er != nil {
+		return er
+	}
+	for _, keyword := range mine.Keywords {
+		if !hadChinese(keyword) {
+			_ = mine.updateEntityConcept(keyword, con, operator)
+		}
+	}
+	return nil
+}
+
 func (mine *BoxInfo) HadUser(key string) bool {
 	if mine.Users == nil {
 		return false
@@ -435,28 +451,24 @@ func (mine *BoxInfo) RemoveKeyword(key string) error {
 }
 
 func (mine *BoxInfo) UpdateBase(name, remark, concept, operator string) error {
-	if mine.Name != name || mine.Remark != remark || mine.Concept != concept {
-		err := nosql.UpdateBoxBase(mine.UID, name, remark, concept, operator)
-		if err == nil {
-			if mine.Concept != concept {
-				for _, keyword := range mine.Keywords {
-					if !hadChinese(keyword) {
-						mine.updateEntity(keyword, concept, operator)
-					}
-				}
-			}
-			mine.Name = name
-			mine.Remark = remark
-			mine.Operator = operator
-			mine.Concept = concept
-			mine.Updated = time.Now().Unix()
+	if mine.Name != name || mine.Remark != remark {
+		err := nosql.UpdateBoxBase(mine.UID, name, remark, operator)
+		if err != nil {
+			return err
 		}
+		mine.Name = name
+		mine.Remark = remark
+		mine.Operator = operator
+		mine.Updated = time.Now().Unix()
+	}
+	err := mine.UpdateConcept(concept, operator)
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (mine *BoxInfo) updateEntity(uid, concept, operator string) error {
+func (mine *BoxInfo) updateEntityConcept(uid, concept, operator string) error {
 	info := cacheCtx.GetEntity(uid)
 	if info != nil {
 		return info.updateConcept(concept, operator)

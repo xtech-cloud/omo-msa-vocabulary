@@ -27,7 +27,6 @@ const (
 const (
 	DefaultEntityTable = "entities"
 	UserEntityTable    = "entities_school"
-	MuseumEntityTable  = "entities_museum"
 )
 
 const (
