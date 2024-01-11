@@ -227,11 +227,19 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 	} else if in.Key == "regex" {
 		list = cache.Context().GetEventsByRegex(in.Value, in.Values[0], in.Values[1])
 	} else if in.Key == "owner_target" {
-		list = cache.Context().GetEventsByOwnerTarget(in.Parent, in.Value)
+		list = cache.Context().GetEventsByEntityTarget(in.Parent, in.Value)
 	} else if in.Key == "owners_target" {
 		list = make([]*cache.EventInfo, 0, 20)
 		for _, val := range in.Values {
-			arr := cache.Context().GetEventsByOwnerTarget(val, in.Value)
+			arr := cache.Context().GetEventsByEntityTarget(val, in.Value)
+			if len(arr) > 0 {
+				list = append(list, arr...)
+			}
+		}
+	} else if in.Key == "owner_targets" {
+		list = make([]*cache.EventInfo, 0, 20)
+		for _, val := range in.Values {
+			arr := cache.Context().GetEventsByOwnerTarget(in.Value, val)
 			if len(arr) > 0 {
 				list = append(list, arr...)
 			}

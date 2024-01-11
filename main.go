@@ -81,7 +81,7 @@ func checkTimer() {
 
 func delayCall() {
 	time.Sleep(5 * time.Second)
-	cache.CheckRepeatedAttribute()
+	//cache.CheckRepeatedAttribute()
 }
 
 func md5hex(_file string) string {

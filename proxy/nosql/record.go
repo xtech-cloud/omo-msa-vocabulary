@@ -39,6 +39,24 @@ func GetRecordNextID() uint64 {
 	return num
 }
 
+func GetAllRecords() ([]*Record, error) {
+	var items = make([]*Record, 0, 100)
+	cursor, err1 := findAllEnable(TableRecord, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Record)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetRecord(uid string) (*Record, error) {
 	result, err := findOne(TableRecord, uid)
 	if err != nil {
@@ -107,4 +125,10 @@ func GetRecordsByRelate(to string, tp uint8) ([]*Record, error) {
 		}
 	}
 	return items, nil
+}
+
+func UpdateRecordBase(uid, from, to string) error {
+	msg := bson.M{"from": from, "to": to}
+	_, err := updateOne(TableRecord, uid, msg)
+	return err
 }

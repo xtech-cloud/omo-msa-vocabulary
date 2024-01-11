@@ -101,33 +101,7 @@ func InitData() error {
 		return err1
 	}
 
-	//attributes, _ := nosql.GetAllAttributes()
-	//cacheCtx.attributes = make([]*AttributeInfo, 0, len(attributes))
-	//for i := 0; i < len(attributes); i += 1 {
-	//	info := new(AttributeInfo)
-	//	info.initInfo(attributes[i])
-	//	cacheCtx.attributes = append(cacheCtx.attributes, info)
-	//}
-	//logger.Infof("init attribute!!! number = %d", len(cacheCtx.attributes))
-	//
-	//relations, _ := nosql.GetTopRelations()
-	//cacheCtx.relations = make([]*RelationshipInfo, 0, len(relations))
-	//for i := 0; i < len(relations); i += 1 {
-	//	info := new(RelationshipInfo)
-	//	info.initInfo(relations[i])
-	//	cacheCtx.relations = append(cacheCtx.relations, info)
-	//}
-	//logger.Infof("init relation!!! number = %d", len(cacheCtx.relations))
-	//concerts, _ := nosql.GetTopConcepts()
-	//cacheCtx.concepts = make([]*ConceptInfo, 0, len(concerts)*5)
-	//for i := 0; i < len(concerts); i += 1 {
-	//	info := new(ConceptInfo)
-	//	info.initInfo(concerts[i])
-	//	cacheCtx.concepts = append(cacheCtx.concepts, info)
-	//}
-	//logger.Infof("init concepts!!! number = %d", len(cacheCtx.concepts))
 	logger.Infof("init graph!!! node number = %d,link number = %d", len(cacheCtx.graph.nodes), len(cacheCtx.graph.links))
-
 	return nil
 }
 

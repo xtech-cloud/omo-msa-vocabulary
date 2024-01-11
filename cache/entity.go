@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/micro/go-micro/v2/logger"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -396,10 +397,6 @@ func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*pb.VEdgeI
 }
 
 func (mine *EntityInfo) UpdateCover(cover, operator string) error {
-	//if mine.Status == EntityStatusUsable {
-	//	return errors.New("the entity had published so can not update")
-	//}
-
 	if cover == "" || cover == mine.Cover {
 		return nil
 	}
@@ -540,7 +537,7 @@ func (mine *EntityInfo) createRecord(operator, remark string, from, to EntitySta
 		opt = OptionRefuse
 	}
 
-	_ = mine.insertRecord(operator, remark, string(from), string(to), opt)
+	_ = mine.insertRecord(operator, remark, fmt.Sprintf("%d", from), fmt.Sprintf("%d", to), opt)
 }
 
 func (mine *EntityInfo) insertRecord(operator, remark, from, to string, opt OptionType) error {

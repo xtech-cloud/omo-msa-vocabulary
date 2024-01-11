@@ -725,11 +725,31 @@ func (mine *cacheContext) GetEventsByRegex(quote, key, value string) []*EventInf
 	return list
 }
 
+func (mine *cacheContext) GetEventsByEntityTarget(entity, target string) []*EventInfo {
+	if entity == "" || target == "" {
+		return nil
+	}
+	dbs, err := nosql.GetEventsByEntityTarget(entity, target)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(dbs))
+		for _, db := range dbs {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetEventsByOwnerTarget(owner, target string) []*EventInfo {
 	if owner == "" || target == "" {
 		return nil
 	}
-	dbs, err := nosql.GetEventsByTarget(owner, target)
+	dbs, err := nosql.GetEventsByOwnerTarget(owner, target)
 	var list []*EventInfo
 	if err == nil {
 		list = make([]*EventInfo, 0, len(dbs))
