@@ -24,6 +24,7 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	tmp.Cover = info.Cover
 	tmp.Parent = info.Parent
 	tmp.Scene = uint32(info.Scene)
+	tmp.Count = cache.Context().GetEntitiesCountByConcept(info.Table, info.UID)
 	tmp.Attributes = info.Attributes()
 	tmp.Privates = info.Privates()
 	length := len(info.Children)
@@ -129,9 +130,14 @@ func (mine *ConceptService) RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 		out.Status = outError(path, "the concept uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
-	num := cache.Context().GetEntitiesCountByConcept(in.Uid)
+	info := cache.Context().GetConcept(in.Uid)
+	if info == nil {
+		out.Status = outError(path, "the concept not found ", pbstaus.ResultStatus_NotExisted)
+		return nil
+	}
+	num := cache.Context().GetEntitiesCountByConcept(info.Table, in.Uid)
 	if num > 0 {
-		out.Status = outError(path, "the concept have entities used that num = "+strconv.Itoa(num), pbstaus.ResultStatus_Prohibition)
+		out.Status = outError(path, "the concept have entities used that num = "+strconv.Itoa(int(num)), pbstaus.ResultStatus_Prohibition)
 		return nil
 	}
 	err := cache.Context().RemoveConcept(in.Uid, in.Operator)

@@ -7,6 +7,7 @@ import (
 	pbstaus "github.com/xtech-cloud/omo-msp-status/proto/status"
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
+	"omo.msa.vocabulary/proxy"
 	"strings"
 )
 
@@ -24,7 +25,13 @@ func switchBox(info *cache.BoxInfo) *pb.BoxInfo {
 	tmp.Type = uint32(info.Type)
 	tmp.Count = 0
 	tmp.Owner = info.Owner
-	tmp.Keywords = info.Keywords
+	tmp.Keywords = make([]string, 0, len(info.Contents))
+	tmp.Contents = make([]*pb.ContentInfo, 0, len(info.Contents))
+	for _, content := range info.Contents {
+		tmp.Keywords = append(tmp.Keywords, content.Keyword)
+		tmp.Contents = append(tmp.Contents, &pb.ContentInfo{Keywords: content.Keyword,
+			Name: content.Name, Status: uint32(content.Status), Count: content.Count})
+	}
 	tmp.Workflow = info.Workflow
 	tmp.Users = info.Users
 	tmp.Reviewers = info.Reviewers
@@ -50,6 +57,12 @@ func (mine *BoxService) AddOne(ctx context.Context, in *pb.ReqBoxAdd, out *pb.Re
 	info.Creator = in.Operator
 	info.Workflow = in.Workflow
 	info.Owner = in.Owner
+	info.Contents = make([]*proxy.ContentInfo, 0, len(in.Keywords))
+	for _, key := range in.Keywords {
+		info.Contents = append(info.Contents, &proxy.ContentInfo{
+			Name: key, Keyword: "", Count: 0, Status: 0,
+		})
+	}
 	err := cache.Context().CreateBox(info)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
@@ -86,7 +99,7 @@ func (mine *BoxService) RemoveOne(ctx context.Context, in *pb.RequestInfo, out *
 		out.Status = outError(path, "not found the box by uid", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
-	if len(info.Keywords) > 0 {
+	if len(info.Contents) > 0 {
 		out.Status = outError(path, "the box is not empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
@@ -142,6 +155,10 @@ func (mine *BoxService) GetByFilter(ctx context.Context, in *pb.RequestFilter, o
 		} else {
 			list = cache.Context().GetBoxesByConcept(in.Value)
 		}
+	} else if in.Key == "entities" {
+		list = cache.Context().GetBoxesByEntities(in.Values)
+	} else if in.Key == "name" {
+		list = cache.Context().GetBoxesByName(in.Value)
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -179,7 +196,7 @@ func (mine *BoxService) UpdateBase(ctx context.Context, in *pb.ReqBoxUpdate, out
 		return nil
 	}
 	if len(in.Keywords) > 0 {
-		err = info.UpdateKeywords(in.Keywords, in.Operator)
+		err = info.UpdateContents(in.Keywords, in.Operator)
 		if err != nil {
 			out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 			return nil
@@ -302,8 +319,14 @@ func (mine *BoxService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFilt
 		err = box.UpdateUsers(in.Values, in.Operator, true)
 	} else if in.Key == "concept" {
 		err = box.UpdateConcept(in.Value, in.Operator)
+	} else if in.Key == "fill" {
+		if len(in.Values) == 2 {
+			err = box.FillContent(in.Values[0], in.Values[1], in.Operator)
+		} else {
+			err = errors.New("the values is limit when fill box")
+		}
 	} else {
-		err = errors.New("not defined the key")
+		err = errors.New("not defined the key when update by filter")
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

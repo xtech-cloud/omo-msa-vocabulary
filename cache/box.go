@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/micro/go-micro/v2/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
 	"time"
@@ -14,14 +15,15 @@ const DefaultOwner = "system"
 type BoxInfo struct {
 	Type uint8
 	BaseInfo
-	Cover     string
-	Remark    string
-	Concept   string // 针对的实体类型
-	Workflow  string
-	Owner     string
-	Keywords  []string
-	Users     []string //采集人
-	Reviewers []string //审核人
+	Cover    string
+	Remark   string
+	Concept  string // 针对的实体类型
+	Workflow string
+	Owner    string
+
+	Users     []string             //采集人
+	Reviewers []string             //审核人
+	Contents  []*proxy.ContentInfo //内容
 }
 
 //region Global Fun
@@ -94,6 +96,39 @@ func (mine *cacheContext) GetBoxesByConcept(concept string) []*BoxInfo {
 	return list
 }
 
+func (mine *cacheContext) GetAllBoxes() []*BoxInfo {
+	dbs, _ := nosql.GetBoxes()
+	list := make([]*BoxInfo, 0, len(dbs))
+	for _, db := range dbs {
+		box := new(BoxInfo)
+		box.initInfo(db)
+		list = append(list, box)
+	}
+	return list
+}
+
+func (mine *cacheContext) GetBoxesByEntities(arr []string) []*BoxInfo {
+	all := mine.GetAllBoxes()
+	list := make([]*BoxInfo, 0, len(all))
+	for _, item := range all {
+		if item.hadEntities(arr) {
+			list = append(list, item)
+		}
+	}
+	return list
+}
+
+func (mine *cacheContext) GetBoxesByName(val string) []*BoxInfo {
+	dbs, _ := nosql.GetBoxesByRegex("name", val)
+	list := make([]*BoxInfo, 0, len(dbs))
+	for _, db := range dbs {
+		box := new(BoxInfo)
+		box.initInfo(db)
+		list = append(list, box)
+	}
+	return list
+}
+
 func (mine *cacheContext) GetBoxesByKeyword(key string) []*BoxInfo {
 	dbs, _ := nosql.GetBoxesByKeyword(key)
 	list := make([]*BoxInfo, 0, len(dbs))
@@ -122,23 +157,23 @@ func (mine *cacheContext) GetEntitiesByBox(uid string, st EntityStatus) ([]*Enti
 		return nil, errors.New("not found the box that uid = " + uid)
 	}
 
-	if box.Keywords == nil || len(box.Keywords) < 1 {
-		return nil, errors.New("the box keywords is empty")
+	if len(box.Contents) < 1 {
+		return nil, errors.New("the box contents is empty")
 	}
-	list := make([]*EntityInfo, 0, len(box.Keywords))
-	for _, item := range box.Keywords {
+	list := make([]*EntityInfo, 0, len(box.Contents))
+	for _, item := range box.Contents {
 		if st == EntityStatusUsable {
-			info := mine.GetArchivedByEntity(item)
+			info := mine.GetArchivedByEntity(item.Keyword)
 			if info != nil {
 				tmp, er := info.Decode()
 				if er == nil {
 					list = append(list, tmp)
 				} else {
-					logger.Warn("decode archive entity failed that uid = " + item + " and error = " + er.Error())
+					logger.Warn("decode archive entity failed that uid = " + item.Keyword + " and error = " + er.Error())
 				}
 			}
 		} else {
-			info := mine.GetEntity(item)
+			info := mine.GetEntity(item.Keyword)
 			if info != nil {
 				list = append(list, info)
 			}
@@ -173,6 +208,43 @@ func (mine *cacheContext) GetEntitiesByName(name string) ([]*EntityInfo, error) 
 	return list, nil
 }
 
+func (mine *cacheContext) GetEntitiesByAdditional(add string) ([]*EntityInfo, error) {
+	if len(add) < 1 {
+		return nil, errors.New("the entity add is empty")
+	}
+	array, err := nosql.GetEntitiesByAdditional(DefaultEntityTable, add)
+	if err != nil {
+		return nil, err
+	}
+	list := make([]*EntityInfo, 0, len(array))
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+	array1, err1 := nosql.GetEntitiesByAdditional(UserEntityTable, add)
+	if err1 == nil {
+		for _, entity := range array1 {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
+	}
+
+	return list, nil
+}
+
+func (mine *cacheContext) UpdateBoxContentStatus(entity string, st EntityStatus, publish bool) {
+	boxes := mine.GetBoxesByKeyword(entity)
+	var pub uint32 = 0
+	if publish {
+		pub = 1
+	}
+	for _, box := range boxes {
+		_ = box.updateContentStatus(entity, st, pub)
+	}
+}
+
 func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db := new(nosql.Box)
 	db.UID = primitive.NewObjectID()
@@ -187,8 +259,12 @@ func (mine *cacheContext) CreateBox(info *BoxInfo) error {
 	db.Type = info.Type
 	db.Owner = info.Owner
 	db.Workflow = info.Workflow
-	db.Keywords = make([]string, 0, 5)
+	//db.Keywords = make([]string, 0, 5)
 	db.Users = make([]string, 0, 5)
+	db.Contents = info.Contents
+	if db.Contents == nil {
+		db.Contents = make([]*proxy.ContentInfo, 0, 1)
+	}
 	err := nosql.CreateBox(db)
 	if err == nil {
 		info.initInfo(db)
@@ -242,21 +318,81 @@ func (mine *BoxInfo) initInfo(db *nosql.Box) {
 	mine.Creator = db.Creator
 	mine.Owner = db.Owner
 	mine.Workflow = db.Workflow
-	mine.Keywords = db.Keywords
 	mine.Users = db.Users
 	if len(mine.Owner) < 1 {
 		_ = mine.updateOwner(DefaultOwner)
 	}
+	mine.Contents = db.Contents
+	if len(db.Contents) < 1 && len(db.Keywords) > 0 {
+		contents := make([]*proxy.ContentInfo, 0, len(db.Keywords))
+		for _, key := range db.Keywords {
+			if hadChinese(key) {
+				contents = append(contents, &proxy.ContentInfo{Keyword: "", Name: key, Count: 0, Status: uint8(EntityStatusDraft)})
+			} else {
+				entity := cacheCtx.GetEntity(key)
+				if entity == nil {
+					contents = append(contents, &proxy.ContentInfo{Keyword: key, Name: "", Count: 0, Status: 0})
+				} else {
+					var pub uint32 = 0
+					if entity.Published {
+						pub = 1
+					}
+					contents = append(contents, &proxy.ContentInfo{Keyword: key, Name: entity.Name, Count: pub, Status: uint8(entity.Status)})
+				}
+			}
+		}
+		_ = mine.updateContents(contents, mine.Operator)
+	}
 }
 
-func (mine *BoxInfo) UpdateKeywords(list []string, operator string) error {
+func (mine *BoxInfo) hadEntities(arr []string) bool {
+	for _, content := range mine.Contents {
+		if tool.HasItem(arr, content.Keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+func (mine *BoxInfo) updateContents(list []*proxy.ContentInfo, operator string) error {
 	if list == nil {
 		return errors.New("the list is nil when update")
 	}
 
-	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
+	err := nosql.UpdateBoxContents(mine.UID, operator, list)
 	if err == nil {
-		mine.Keywords = list
+		mine.Contents = list
+		mine.Updated = time.Now().Unix()
+	}
+	return err
+}
+
+func (mine *BoxInfo) updateContentStatus(entity string, st EntityStatus, publish uint32) error {
+	list := make([]*proxy.ContentInfo, 0, len(mine.Contents))
+	list = append(list, mine.Contents...)
+	for _, info := range list {
+		if info.Keyword == entity {
+			info.Status = uint8(st)
+			info.Count = publish
+			break
+		}
+	}
+	return mine.updateContents(list, mine.Operator)
+}
+
+func (mine *BoxInfo) UpdateContents(arr []string, operator string) error {
+	if arr == nil {
+		return errors.New("the arr is nil when update")
+	}
+	list := make([]*proxy.ContentInfo, 0, len(arr))
+	for _, item := range arr {
+		list = append(list, &proxy.ContentInfo{
+			Keyword: item, Name: "", Count: 0, Status: 0,
+		})
+	}
+	err := nosql.UpdateBoxContents(mine.UID, operator, list)
+	if err == nil {
+		mine.Contents = list
 		mine.Updated = time.Now().Unix()
 	}
 	return err
@@ -302,9 +438,9 @@ func (mine *BoxInfo) UpdateConcept(con, operator string) error {
 	if er != nil {
 		return er
 	}
-	for _, keyword := range mine.Keywords {
-		if !hadChinese(keyword) {
-			_ = mine.updateEntityConcept(keyword, con, operator)
+	for _, item := range mine.Contents {
+		if !hadChinese(item.Keyword) {
+			_ = mine.updateEntityConcept(item.Keyword, con, operator)
 		}
 	}
 	return nil
@@ -370,60 +506,85 @@ func (mine *BoxInfo) RemoveUsers(keys []string, operator string, review bool) er
 }
 
 func (mine *BoxInfo) AppendKeywords(keys []string, operator string) error {
-	list := make([]string, 0, len(keys)+len(mine.Keywords))
-	list = append(list, mine.Keywords...)
+	list := make([]*proxy.ContentInfo, 0, len(keys)+len(mine.Contents))
+	list = append(list, mine.Contents...)
 	for i := 0; i < len(keys); i += 1 {
-		if !mine.HadKeyword(keys[i]) {
-			list = append(list, keys[i])
+		if !mine.HadContent(keys[i]) {
+			key := ""
+			name := ""
+			if hadChinese(keys[i]) {
+				name = keys[i]
+			} else {
+				key = keys[i]
+			}
+			list = append(list, &proxy.ContentInfo{
+				Keyword: key,
+				Name:    name,
+				Count:   0,
+				Status:  0,
+			})
 		}
 	}
-	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
+	err := nosql.UpdateBoxContents(mine.UID, operator, list)
 	if err == nil {
-		mine.Keywords = list
+		mine.Contents = list
 		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
 
-func (mine *BoxInfo) HadKeyword(key string) bool {
-	if mine.Keywords == nil {
+func (mine *BoxInfo) HadContent(key string) bool {
+	if mine.Contents == nil {
 		return false
 	}
-	for i := 0; i < len(mine.Keywords); i += 1 {
-		if mine.Keywords[i] == key {
+	for _, content := range mine.Contents {
+		if content.Keyword == key || content.Name == key {
 			return true
 		}
 	}
 	return false
 }
 
-func (mine *BoxInfo) RemoveKeywords(keys []string, operator string) error {
-	list := make([]string, 0, len(mine.Keywords))
-	for _, keyword := range mine.Keywords {
-		if !tool.HasItem(keys, keyword) {
-			list = append(list, keyword)
+func (mine *BoxInfo) FillContent(name, entity, operator string) error {
+	list := make([]*proxy.ContentInfo, 0, len(mine.Contents))
+	list = append(list, mine.Contents...)
+	for _, content := range mine.Contents {
+		if content.Name == name {
+			content.Keyword = entity
+			content.Status = uint8(EntityStatusDraft)
+			break
 		}
 	}
-	err := nosql.UpdateBoxKeywords(mine.UID, operator, list)
+	return mine.updateContents(list, operator)
+}
+
+func (mine *BoxInfo) RemoveKeywords(keys []string, operator string) error {
+	list := make([]*proxy.ContentInfo, 0, len(mine.Contents))
+	for _, item := range mine.Contents {
+		if !tool.HasItem(keys, item.Keyword) || !tool.HasItem(keys, item.Name) {
+			list = append(list, item)
+		}
+	}
+	err := nosql.UpdateBoxContents(mine.UID, operator, list)
 	if err == nil {
-		mine.Keywords = list
+		mine.Contents = list
 		mine.Updated = time.Now().Unix()
 	}
 	return err
 }
 
 func (mine *BoxInfo) AppendKeyword(key string) error {
-	if mine.Keywords == nil {
+	if mine.Contents == nil {
 		return errors.New("must call construct fist")
 	}
-	if !mine.HadKeyword(key) {
+	if !mine.HadContent(key) {
 		return errors.New("not found the property when remove")
 	}
 	err := nosql.AppendBoxKeyword(mine.UID, key)
 	if err == nil {
-		for i := 0; i < len(mine.Keywords); i += 1 {
-			if mine.Keywords[i] == key {
-				mine.Keywords = append(mine.Keywords[:i], mine.Keywords[i+1:]...)
+		for i := 0; i < len(mine.Contents); i += 1 {
+			if mine.Contents[i].Keyword == key {
+				mine.Contents = append(mine.Contents[:i], mine.Contents[i+1:]...)
 				break
 			}
 		}
@@ -432,17 +593,17 @@ func (mine *BoxInfo) AppendKeyword(key string) error {
 }
 
 func (mine *BoxInfo) RemoveKeyword(key string) error {
-	if mine.Keywords == nil {
+	if mine.Contents == nil {
 		return errors.New("must call construct fist")
 	}
-	if !mine.HadKeyword(key) {
+	if !mine.HadContent(key) {
 		return errors.New("not found the property when remove")
 	}
 	err := nosql.SubtractBoxKeyword(mine.UID, key)
 	if err == nil {
-		for i := 0; i < len(mine.Keywords); i += 1 {
-			if mine.Keywords[i] == key {
-				mine.Keywords = append(mine.Keywords[:i], mine.Keywords[i+1:]...)
+		for i := 0; i < len(mine.Contents); i += 1 {
+			if mine.Contents[i].Keyword == key {
+				mine.Contents = append(mine.Contents[:i], mine.Contents[i+1:]...)
 				break
 			}
 		}

@@ -205,14 +205,8 @@ func (mine *cacheContext) GetEntitiesByConcept2(concept string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext) GetEntitiesCountByConcept(concept string) int {
-	num := 0
-	for _, table := range mine.entityTables {
-		array, _ := nosql.GetEntitiesByConcept2(table, concept)
-		num += len(array)
-	}
-
-	return num
+func (mine *cacheContext) GetEntitiesCountByConcept(tb, concept string) uint32 {
+	return uint32(nosql.GetEntitiesCountByConcept(tb, concept))
 }
 
 func (mine *cacheContext) GetEntitiesCountByAttribute(attr string) int {
@@ -745,7 +739,7 @@ func (mine *cacheContext) GetEventsByEntityTarget(entity, target string) []*Even
 	return list
 }
 
-func (mine *cacheContext) GetEventsByOwnerTarget(owner, target string) []*EventInfo {
+func (mine *cacheContext) GetEventsBySceneTarget(owner, target string) []*EventInfo {
 	if owner == "" || target == "" {
 		return nil
 	}
@@ -763,6 +757,19 @@ func (mine *cacheContext) GetEventsByOwnerTarget(owner, target string) []*EventI
 	}
 
 	return list
+}
+
+func (mine *cacheContext) GetEventAssetCountBySceneTarget(owner, target string) uint32 {
+	dbs, _ := nosql.GetEventsByOwnerTarget(owner, target)
+	list := make([]string, 0, len(dbs)*2)
+	for _, db := range dbs {
+		for _, asset := range db.Assets {
+			if !tool.HasItem(list, asset) {
+				list = append(list, asset)
+			}
+		}
+	}
+	return uint32(len(list))
 }
 
 func (mine *cacheContext) GetAllSystemEvents(page, number int32) (int32, int32, []*EventInfo) {

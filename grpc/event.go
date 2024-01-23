@@ -228,7 +228,7 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		list = cache.Context().GetEventsByRegex(in.Value, in.Values[0], in.Values[1])
 	} else if in.Key == "owner_target" {
 		list = cache.Context().GetEventsByEntityTarget(in.Parent, in.Value)
-	} else if in.Key == "owners_target" {
+	} else if in.Key == "owners_target" || in.Key == "entities_target" {
 		list = make([]*cache.EventInfo, 0, 20)
 		for _, val := range in.Values {
 			arr := cache.Context().GetEventsByEntityTarget(val, in.Value)
@@ -236,10 +236,10 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 				list = append(list, arr...)
 			}
 		}
-	} else if in.Key == "owner_targets" {
+	} else if in.Key == "scene_targets" {
 		list = make([]*cache.EventInfo, 0, 20)
 		for _, val := range in.Values {
-			arr := cache.Context().GetEventsByOwnerTarget(in.Value, val)
+			arr := cache.Context().GetEventsBySceneTarget(in.Value, val)
 			if len(arr) > 0 {
 				list = append(list, arr...)
 			}
@@ -326,6 +326,13 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 		}
 	} else if in.Key == "entity_target" {
 		out.Count = cache.Context().GetEventCountByEntityTarget(in.Value, in.Values)
+	} else if in.Key == "scene_targets" {
+		var num uint32 = 0
+		for _, val := range in.Values {
+			n := cache.Context().GetEventAssetCountBySceneTarget(in.Value, val)
+			num += n
+		}
+		out.Count = num
 	}
 
 	out.Owner = in.Value

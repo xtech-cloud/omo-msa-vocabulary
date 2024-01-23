@@ -30,8 +30,7 @@ type ConceptInfo struct {
 	Remark     string
 	Table      string
 	Parent     string
-	Scene      uint8 //针对的场景类型
-	Count      int
+	Scene      uint8    //针对的场景类型
 	attributes []string //所有支持的属性
 	privates   []string //隐藏属性
 	Children   []*ConceptInfo
@@ -66,7 +65,7 @@ func (mine *cacheContext) GetConceptsByAttribute(uid string) []*ConceptInfo {
 	if err == nil {
 		for _, db := range dbs {
 			info := new(ConceptInfo)
-			info.initInfo(db)
+			info.initInfo(db, db.Table)
 			list = append(list, info)
 		}
 	}
@@ -80,7 +79,7 @@ func (mine *cacheContext) GetConcept(uid string) *ConceptInfo {
 	db, _ := nosql.GetConcept(uid)
 	if db != nil {
 		tmp := new(ConceptInfo)
-		tmp.initInfo(db)
+		tmp.initInfo(db, "")
 		return tmp
 	}
 	return nil
@@ -91,7 +90,7 @@ func (mine *cacheContext) GetTopConcepts() []*ConceptInfo {
 	all := make([]*ConceptInfo, 0, len(dbs))
 	for _, db := range dbs {
 		tmp := new(ConceptInfo)
-		tmp.initInfo(db)
+		tmp.initInfo(db, "")
 		all = append(all, tmp)
 	}
 	return all
@@ -116,7 +115,7 @@ func (mine *cacheContext) CreateTopConcept(info *ConceptInfo) error {
 	db.Attributes = make([]string, 0, 1)
 	err := nosql.CreateConcept(db)
 	if err == nil {
-		info.initInfo(db)
+		info.initInfo(db, db.Table)
 	}
 	return err
 }
@@ -172,7 +171,7 @@ func (mine *cacheContext) HadConceptProperty(uid, key string) bool {
 	dbs, _ := nosql.GetTopConcepts()
 	for i := 0; i < len(dbs); i += 1 {
 		tmp := new(ConceptInfo)
-		tmp.initInfo(dbs[i])
+		tmp.initInfo(dbs[i], dbs[i].Table)
 		if tmp.HadChild(uid) {
 			had = tmp.HadAttribute(key)
 			break
@@ -184,7 +183,7 @@ func (mine *cacheContext) HadConceptProperty(uid, key string) bool {
 //endregion
 
 //region Base Fun
-func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
+func (mine *ConceptInfo) initInfo(db *nosql.Concept, tb string) {
 	if db == nil {
 		return
 	}
@@ -202,19 +201,20 @@ func (mine *ConceptInfo) initInfo(db *nosql.Concept) {
 	mine.attributes = db.Attributes
 	mine.Scene = db.Scene
 	mine.privates = db.Privates
-	mine.Count = cacheCtx.GetEntitiesCountByConcept(mine.UID)
-	if len(mine.Table) < 2 && len(mine.Parent) < 2 {
-		mine.Table = DefaultEntityTable
-	}
-	array, err := nosql.GetConceptsByParent(mine.UID)
-	num := len(array)
-	mine.Children = make([]*ConceptInfo, 0, 5)
-	if err == nil && num > 0 {
-		for i := 0; i < num; i += 1 {
-			tmp := ConceptInfo{}
-			tmp.initInfo(array[i])
-			mine.Children = append(mine.Children, &tmp)
+	if len(mine.Table) < 2 {
+		if len(tb) < 2 {
+			mine.Table = DefaultEntityTable
+		} else {
+			mine.Table = tb
 		}
+	}
+
+	dbs, _ := nosql.GetConceptsByParent(mine.UID)
+	mine.Children = make([]*ConceptInfo, 0, len(dbs))
+	for _, concept := range dbs {
+		tmp := ConceptInfo{}
+		tmp.initInfo(concept, mine.Table)
+		mine.Children = append(mine.Children, &tmp)
 	}
 }
 
@@ -226,7 +226,7 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 	db.CreatedTime = time.Now()
 	db.Creator = info.Creator
 	db.Name = info.Name
-	db.Table = ""
+	db.Table = mine.Table
 	db.Cover = info.Cover
 	db.Remark = info.Remark
 	db.Parent = mine.UID
@@ -235,7 +235,7 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 	db.Privates = make([]string, 0, 1)
 	err := nosql.CreateConcept(db)
 	if err == nil {
-		info.initInfo(db)
+		info.initInfo(db, mine.Table)
 		mine.Children = append(mine.Children, info)
 	}
 	return err

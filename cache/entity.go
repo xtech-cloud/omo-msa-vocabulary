@@ -49,19 +49,20 @@ type EntityInfo struct {
 	Status EntityStatus `json:"-"`
 	Pushed int64        `json:"-"`
 	BaseInfo
-	FirstLetters string   `json:"letters"` //名称首字母
-	Concept      string   `json:"concept"`
-	Summary      string   `json:"summary"`
-	Description  string   `json:"description"`
-	Cover        string   `json:"cover"`
-	Add          string   `json:"add"`   //消歧义
-	Owner        string   `json:"owner"` //所属单位
-	Mark         string   `json:"mark"`  // 标记采集来源
-	Quote        string   `json:"quote"` // 引用外部链接，或者群晖路径
-	Published    bool     `json:"published"`
-	Thumb        string   `json:"thumb"` //图谱头像
-	Access       uint8    `json:"-"`     //是否可被第三方访问，默认0是可以被访问的
-	Score        uint32   `json:"-"`
+	FirstLetters string `json:"letters"` //名称首字母
+	Concept      string `json:"concept"`
+	Summary      string `json:"summary"`
+	Description  string `json:"description"`
+	Cover        string `json:"cover"`
+	Add          string `json:"add"`   //消歧义
+	Owner        string `json:"owner"` //所属单位
+	Mark         string `json:"mark"`  // 标记采集来源
+	Quote        string `json:"quote"` // 引用外部链接，或者群晖路径
+	Published    bool   `json:"published"`
+	Thumb        string `json:"thumb"` //图谱头像
+	Access       uint8  `json:"-"`     //是否可被第三方访问，默认0是可以被访问的
+	Score        uint32 `json:"-"`
+	dbTable      string
 	Links        []string `json:"links" bson:"links"` //可与其他实体链接
 	Synonyms     []string `json:"synonyms"`           //同义词
 	Tags         []string `json:"tags"`               //标签
@@ -172,6 +173,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Summary = db.Summary
 	mine.Thumb = db.Thumb
 	mine.Links = db.Links
+	mine.dbTable = db.Table
 	if mine.Links == nil {
 		mine.Links = make([]string, 0, 1)
 	}
@@ -211,6 +213,10 @@ func (mine *EntityInfo) clear() {
 }
 
 func (mine *EntityInfo) table() string {
+	if len(mine.dbTable) > 0 {
+		return mine.dbTable
+	}
+
 	if len(mine.Concept) < 2 {
 		return DefaultEntityTable
 	} else {
@@ -597,6 +603,7 @@ func (mine *EntityInfo) UpdateStatus(status EntityStatus, operator, remark strin
 			//cacheCtx.checkRelations(old, mine)
 		}
 	}
+	cacheCtx.UpdateBoxContentStatus(mine.UID, status, mine.Published)
 	mine.Status = status
 	mine.Updated = time.Now().Unix()
 	return nil

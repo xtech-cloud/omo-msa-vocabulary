@@ -22,6 +22,13 @@ type WordInfo struct {
 	Name string `json:"name" bson:"name"`
 }
 
+type ContentInfo struct {
+	Keyword string `json:"keyword" bson:"keyword"`
+	Count   uint32 `json:"count" bson:"count"`
+	Name    string `json:"name" bson:"name"`
+	Status  uint8  `json:"status" bson:"status"`
+}
+
 type PairInfo struct {
 	UID   string `json:"uid" bson:"uid"`
 	Key   string `json:"key" bson:"key"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"omo.msa.vocabulary/proxy"
 	"time"
 )
 
@@ -19,16 +20,17 @@ type Box struct {
 	Creator     string             `json:"creator" bson:"creator"`
 	Operator    string             `json:"operator" bson:"operator"`
 
-	Name      string   `json:"name" bson:"name"`
-	Type      uint8    `json:"type" bson:"type"`
-	Cover     string   `json:"cover" bson:"cover"`
-	Remark    string   `json:"remark" bson:"remark"`
-	Owner     string   `json:"owner" bson:"owner"`
-	Concept   string   `json:"concept" bson:"concept"`
-	Workflow  string   `json:"workflow" bson:"workflow"`
-	Keywords  []string `json:"keywords" bson:"keywords"`
-	Users     []string `json:"users" bson:"users"`
-	Reviewers []string `json:"reviewers" bson:"reviewers"`
+	Name      string               `json:"name" bson:"name"`
+	Type      uint8                `json:"type" bson:"type"`
+	Cover     string               `json:"cover" bson:"cover"`
+	Remark    string               `json:"remark" bson:"remark"`
+	Owner     string               `json:"owner" bson:"owner"`
+	Concept   string               `json:"concept" bson:"concept"`
+	Workflow  string               `json:"workflow" bson:"workflow"`
+	Keywords  []string             `json:"keywords" bson:"keywords"`
+	Users     []string             `json:"users" bson:"users"`
+	Reviewers []string             `json:"reviewers" bson:"reviewers"`
+	Contents  []*proxy.ContentInfo `json:"contents" bson:"contents"`
 }
 
 func CreateBox(info *Box) error {
@@ -167,9 +169,27 @@ func GetBoxesByReviewer(user string) ([]*Box, error) {
 	return items, nil
 }
 
+func GetBoxesByRegex(key, val string) ([]*Box, error) {
+	msg := bson.M{key: bson.M{"$regex": val}, TimeDeleted: 0}
+	cursor, err1 := findMany(TableBox, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Box, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Box)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetBoxesByKeyword(key string) ([]*Box, error) {
 	var items = make([]*Box, 0, 20)
-	filter := bson.M{"keywords": key, TimeDeleted: 0}
+	filter := bson.M{"contents.keyword": key, TimeDeleted: 0}
 	cursor, err1 := findMany(TableBox, filter, 0)
 	if err1 != nil {
 		return nil, err1
@@ -229,8 +249,8 @@ func UpdateBoxOwner(uid, owner string) error {
 	return err
 }
 
-func UpdateBoxKeywords(uid, operator string, list []string) error {
-	msg := bson.M{"keywords": list, "operator": operator, TimeUpdated: time.Now().Unix()}
+func UpdateBoxContents(uid, operator string, list []*proxy.ContentInfo) error {
+	msg := bson.M{"contents": list, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableBox, uid, msg)
 	return err
 }

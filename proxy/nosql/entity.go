@@ -35,6 +35,7 @@ type Entity struct {
 	Quote        string                    `json:"quote" bson:"quote"`
 	Pushed       int64                     `json:"pushed" bson:"pushed"`
 	Access       uint8                     `json:"access" bson:"access"`
+	Table        string                    `json:"_" bson:"_"`
 	Synonyms     []string                  `json:"synonyms" bson:"synonyms"`
 	Tags         []string                  `json:"tags" bson:"tags"`
 	Relates      []string                  `json:"relates" bson:"relates"`
@@ -63,6 +64,7 @@ func GetEntities(table string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -99,6 +101,7 @@ func GetEntity(table, uid string) (*Entity, error) {
 	if err1 != nil {
 		return nil, err1
 	}
+	model.Table = table
 	if model.DeleteTime.UnixNano() > 100 {
 		return nil, errors.New("the entity had deleted")
 	}
@@ -133,6 +136,7 @@ func GetEntityByName(table, name, add string) (*Entity, error) {
 	if err1 != nil {
 		return nil, err1
 	}
+	model.Table = table
 	return model, nil
 }
 
@@ -148,6 +152,7 @@ func GetEntityByFirstLetter(table, relate, letter string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -165,6 +170,7 @@ func GetEntityByMark(table, mark string) (*Entity, error) {
 	if err1 != nil {
 		return nil, err1
 	}
+	model.Table = table
 	return model, nil
 }
 
@@ -180,6 +186,7 @@ func GetEntitiesByProp(table, key, value string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -198,6 +205,7 @@ func GetEntitiesByOwnerAndStatus(table, owner string, st uint8) ([]*Entity, erro
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -216,6 +224,7 @@ func GetEntitiesByConcept(table, owner, concept string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -234,10 +243,20 @@ func GetEntitiesByConcept2(table, concept string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
 	return items, nil
+}
+
+func GetEntitiesCountByConcept(table, concept string) int64 {
+	msg := bson.M{"concept": concept, TimeDeleted: 0}
+	num, err1 := getCountByFilter(table, msg)
+	if err1 != nil {
+		return 0
+	}
+	return num
 }
 
 func GetEntitiesByAttribute(table, attr string) ([]*Entity, error) {
@@ -252,6 +271,7 @@ func GetEntitiesByAttribute(table, attr string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -270,6 +290,26 @@ func GetEntitiesByName(table, name string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEntitiesByAdditional(table, add string) ([]*Entity, error) {
+	msg := bson.M{"add": add, TimeDeleted: 0}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 10)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -288,6 +328,7 @@ func GetEntitiesByOwnName(table, name, owner string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -306,6 +347,7 @@ func GetEntitiesByOwner(table, owner string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -324,6 +366,7 @@ func GetEntitiesByRelate(table, relate string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -342,6 +385,7 @@ func GetEntitiesByRegex(table, key, val string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -360,6 +404,7 @@ func GetEntitiesByMatch(table, name string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -378,6 +423,7 @@ func GetEntitiesByOwnMatch(table, name, owner string) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}
@@ -396,6 +442,7 @@ func GetEntitiesByStatus(table string, st uint8) ([]*Entity, error) {
 		if err := cursor.Decode(node); err != nil {
 			return nil, err
 		} else {
+			node.Table = table
 			items = append(items, node)
 		}
 	}

@@ -408,6 +408,12 @@ func GetEventsByEntityTarget(entity, target string) ([]*Event, error) {
 	return items, nil
 }
 
+func GetEventsCountByOwnerTarget(owner, target string) uint32 {
+	filter := bson.M{"owner": owner, "targets": target, TimeDeleted: 0}
+	num, _ := getCountByFilter(TableEvent, filter)
+	return uint32(num)
+}
+
 func GetEventsByOwnerTarget(owner, target string) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	filter := bson.M{"owner": owner, "targets": target, TimeDeleted: 0}

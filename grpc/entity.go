@@ -509,6 +509,8 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 				list = append(list, entity)
 			}
 		}
+	} else if in.Key == "additional" {
+		list, err = cache.Context().GetEntitiesByAdditional(in.Value)
 	} else {
 		err = errors.New("not define the key")
 	}

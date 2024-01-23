@@ -120,12 +120,11 @@ func switchAttributes() {
 	}
 }
 
-func checkVEdges() {
-	all, _ := nosql.GetAllVEdges()
-	for _, edge := range all {
-		if edge.Name == edge.Target.Name {
-			_ = nosql.UpdateVEdgeTarget(edge.UID.Hex(), edge.Target.Entity, "", edge.Target.Thumb, edge.Operator)
-		}
+func CheckBoxes() {
+	all, _ := nosql.GetBoxes()
+	for _, db := range all {
+		tmp := new(BoxInfo)
+		tmp.initInfo(db)
 	}
 }
 
