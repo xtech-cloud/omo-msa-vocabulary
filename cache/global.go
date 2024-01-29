@@ -720,10 +720,17 @@ func (mine *cacheContext) GetEventsByRegex(quote, key, value string) []*EventInf
 }
 
 func (mine *cacheContext) GetEventsByEntityTarget(entity, target string) []*EventInfo {
-	if entity == "" || target == "" {
+	if target == "" {
 		return nil
 	}
-	dbs, err := nosql.GetEventsByEntityTarget(entity, target)
+	var dbs []*nosql.Event
+	var err error
+	if len(entity) > 0 {
+		dbs, err = nosql.GetEventsByEntityTarget(entity, target)
+	} else {
+		dbs, err = nosql.GetEventsByTarget(target)
+	}
+
 	var list []*EventInfo
 	if err == nil {
 		list = make([]*EventInfo, 0, len(dbs))

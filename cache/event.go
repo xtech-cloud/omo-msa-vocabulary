@@ -33,7 +33,7 @@ type EventInfo struct {
 	Parent      string //父级事件
 	Cover       string //封面
 	Quote       string // 引用或者备注，活动，超链接
-	Owner       string //
+	Owner       string //所属场景或者组织机构
 
 	Date      proxy.DateInfo
 	Place     proxy.PlaceInfo

@@ -226,7 +226,7 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		}
 	} else if in.Key == "regex" {
 		list = cache.Context().GetEventsByRegex(in.Value, in.Values[0], in.Values[1])
-	} else if in.Key == "owner_target" {
+	} else if in.Key == "owner_target" || in.Key == "entity_target" {
 		list = cache.Context().GetEventsByEntityTarget(in.Parent, in.Value)
 	} else if in.Key == "owners_target" || in.Key == "entities_target" {
 		list = make([]*cache.EventInfo, 0, 20)

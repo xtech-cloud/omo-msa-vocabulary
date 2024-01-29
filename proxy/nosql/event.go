@@ -408,6 +408,25 @@ func GetEventsByEntityTarget(entity, target string) ([]*Event, error) {
 	return items, nil
 }
 
+func GetEventsByTarget(target string) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"targets": target, TimeDeleted: 0}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEventsCountByOwnerTarget(owner, target string) uint32 {
 	filter := bson.M{"owner": owner, "targets": target, TimeDeleted: 0}
 	num, _ := getCountByFilter(TableEvent, filter)
