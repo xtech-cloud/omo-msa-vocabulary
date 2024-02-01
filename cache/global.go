@@ -779,6 +779,11 @@ func (mine *cacheContext) GetEventAssetCountBySceneTarget(owner, target string) 
 	return uint32(len(list))
 }
 
+func (mine *cacheContext) GetEventCountBySceneTarget(owner, target string) uint32 {
+	dbs, _ := nosql.GetEventsByOwnerTarget(owner, target)
+	return uint32(len(dbs))
+}
+
 func (mine *cacheContext) GetAllSystemEvents(page, number int32) (int32, int32, []*EventInfo) {
 	arr, err := nosql.GetEventsAllByType(1)
 	var list []*EventInfo

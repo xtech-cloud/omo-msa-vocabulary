@@ -244,6 +244,14 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 				list = append(list, arr...)
 			}
 		}
+	} else if in.Key == "array" {
+		list = make([]*cache.EventInfo, 0, 20)
+		for _, val := range in.Values {
+			info := cache.Context().GetEvent(val)
+			if info != nil {
+				list = append(list, info)
+			}
+		}
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -329,7 +337,7 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 	} else if in.Key == "scene_targets" {
 		var num uint32 = 0
 		for _, val := range in.Values {
-			n := cache.Context().GetEventAssetCountBySceneTarget(in.Value, val)
+			n := cache.Context().GetEventCountBySceneTarget(in.Value, val)
 			num += n
 		}
 		out.Count = num
