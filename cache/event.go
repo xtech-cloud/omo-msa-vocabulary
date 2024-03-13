@@ -24,9 +24,21 @@ const (
 	AccessWR      = 2 //可读写
 )
 
+const (
+	SubEventCommon     EventSubtype = 0 //通用
+	SubEventRecitation EventSubtype = 1 //朗诵
+	SubEventReading    EventSubtype = 2 //阅读
+	SubEventPlace      EventSubtype = 3 //实践地点
+	SubEventCert       EventSubtype = 4 //证书
+	SubEventWords      EventSubtype = 5 //留言
+)
+
+type EventSubtype uint8
+
 type EventInfo struct {
-	Type   uint8
-	Access uint8 // 可访问对象
+	Type    uint8
+	Access  uint8 // 可访问对象
+	Subtype uint8 //子类型
 	BaseInfo
 	Description string // 描述
 	Entity      string //实体对象
@@ -159,6 +171,7 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.UID = db.UID.Hex()
 	mine.ID = db.ID
 	mine.Type = db.Type
+	mine.Subtype = db.Subtype
 	mine.Created = db.Created
 	mine.Updated = db.Updated
 	mine.Operator = db.Operator

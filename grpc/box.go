@@ -227,7 +227,7 @@ func (mine *BoxService) AppendKeywords(ctx context.Context, in *pb.ReqBoxKeyword
 }
 
 func (mine *BoxService) SubtractKeywords(ctx context.Context, in *pb.ReqBoxKeywords, out *pb.ReplyBoxInfo) error {
-	path := "box.sub"
+	path := "box.subtractKeywords"
 	inLog(path, in)
 	info := cache.Context().GetBox(in.Uid)
 	if info == nil {

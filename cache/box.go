@@ -561,7 +561,7 @@ func (mine *BoxInfo) FillContent(name, entity, operator string) error {
 func (mine *BoxInfo) RemoveKeywords(keys []string, operator string) error {
 	list := make([]*proxy.ContentInfo, 0, len(mine.Contents))
 	for _, item := range mine.Contents {
-		if !tool.HasItem(keys, item.Keyword) || !tool.HasItem(keys, item.Name) {
+		if !tool.HasItem(keys, item.Keyword) && !tool.HasItem(keys, item.Name) {
 			list = append(list, item)
 		}
 	}

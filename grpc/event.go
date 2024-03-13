@@ -28,6 +28,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Name = info.Name
 	tmp.Quote = info.Quote
 	tmp.Type = uint32(info.Type)
+	tmp.Sub = uint32(info.Subtype)
 	tmp.Description = info.Description
 	tmp.Date = &pb.DateInfo{Uid: info.Date.UID, Name: info.Date.Name, Begin: info.Date.Begin.String(), End: info.Date.End.String()}
 	tmp.Place = &pb.PlaceInfo{Uid: info.Place.UID, Name: info.Place.Name, Location: info.Place.Location}
@@ -147,7 +148,11 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 	var list []*cache.EventInfo
 	out.List = make([]*pb.EventInfo, 0, 10)
 	if info == nil {
-		list = cache.Context().GetEventsByQuote(in.Key)
+		if in.Key == "quote" {
+			list = cache.Context().GetEventsByQuote(in.Operator)
+		} else {
+			list = cache.Context().GetEventsByQuote(in.Key)
+		}
 	} else {
 		if in.Key == "quote" {
 			list = info.GetEventsByQuote(in.Operator)
@@ -228,6 +233,8 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		list = cache.Context().GetEventsByRegex(in.Value, in.Values[0], in.Values[1])
 	} else if in.Key == "owner_target" || in.Key == "entity_target" {
 		list = cache.Context().GetEventsByEntityTarget(in.Parent, in.Value)
+	} else if in.Key == "target" {
+		list, err = cache.Context().GetEventsByTarget(in.Value)
 	} else if in.Key == "owners_target" || in.Key == "entities_target" {
 		list = make([]*cache.EventInfo, 0, 20)
 		for _, val := range in.Values {
@@ -244,6 +251,8 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 				list = append(list, arr...)
 			}
 		}
+	} else if in.Key == "quote_target" {
+		list = cache.Context().GetEventsByQuoteTarget(in.Parent, in.Value)
 	} else if in.Key == "array" {
 		list = make([]*cache.EventInfo, 0, 20)
 		for _, val := range in.Values {
@@ -252,6 +261,12 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 				list = append(list, info)
 			}
 		}
+	} else if in.Key == "uni_entity_sub" {
+		sub, _ := strconv.ParseInt(in.Value, 10, 64)
+		list, err = cache.Context().GetUniTargetEventsBySubEntity(in.Parent, uint8(sub))
+	} else if in.Key == "latest_scene_sub" {
+		sub, _ := strconv.ParseInt(in.Value, 10, 64)
+		list, err = cache.Context().GetEventsBySceneAndSub(in.Parent, cache.EventSubtype(sub), in.Number)
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -341,6 +356,15 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 			num += n
 		}
 		out.Count = num
+	} else if in.Key == "quotes_target" {
+		var num uint32 = 0
+		for _, val := range in.Values {
+			n := cache.Context().GetEventCountByQuoteTarget(val, in.Value)
+			num += n
+		}
+		out.Count = num
+	} else if in.Key == "target" {
+		out.Count = cache.Context().GetEventCountByTarget(in.Value)
 	}
 
 	out.Owner = in.Value

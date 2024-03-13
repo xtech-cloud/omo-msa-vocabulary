@@ -622,6 +622,80 @@ func (mine *cacheContext) GetEventByTarget(entity, target string, tp uint8) (*Ev
 	return info, nil
 }
 
+func (mine *cacheContext) GetEventsByTarget(target string) ([]*EventInfo, error) {
+	if target == "" {
+		return nil, errors.New("the entity or target is empty")
+	}
+	dbs, err := nosql.GetEventsByTarget(target)
+	if err != nil {
+		return nil, err
+	}
+	list := make([]*EventInfo, 0, len(dbs))
+	for _, db := range dbs {
+		info := new(EventInfo)
+		info.initInfo(db)
+		list = append(list, info)
+	}
+	return list, nil
+}
+
+func (mine *cacheContext) GetUniTargetEventsBySubEntity(entity string, tp uint8) ([]*EventInfo, error) {
+	if entity == "" {
+		return nil, errors.New("the entity is empty")
+	}
+	dbs, err := nosql.GetEventsBySubtypeEntity(entity, tp)
+	if err != nil {
+		return nil, err
+	}
+	list := make([]*EventInfo, 0, len(dbs))
+	arr := make([]string, 0, 10)
+	for _, db := range dbs {
+		add := false
+		for _, target := range db.Targets {
+			if !tool.HasItem(arr, target) {
+				add = true
+				arr = append(arr, target)
+			}
+		}
+		if add {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	}
+	return list, nil
+}
+
+func (mine *cacheContext) GetEventsBySceneAndSub(scene string, sub EventSubtype, num int32) ([]*EventInfo, error) {
+	if scene == "" {
+		return nil, errors.New("the scene is empty")
+	}
+	if num < 1 {
+		return nil, errors.New("the limit number = 0")
+	}
+	dbs, err := nosql.GetEventsBySceneSubtype(scene, uint8(sub), int64(num))
+	if err != nil {
+		return nil, err
+	}
+	list := make([]*EventInfo, 0, len(dbs))
+	arr := make([]string, 0, 10)
+	for _, db := range dbs {
+		add := false
+		for _, target := range db.Targets {
+			if !tool.HasItem(arr, target) {
+				add = true
+				arr = append(arr, target)
+			}
+		}
+		if add {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	}
+	return list, nil
+}
+
 func hadEvent(list []*EventInfo, uid string) bool {
 	for _, item := range list {
 		if item.UID == uid {
@@ -766,6 +840,26 @@ func (mine *cacheContext) GetEventsBySceneTarget(owner, target string) []*EventI
 	return list
 }
 
+func (mine *cacheContext) GetEventsByQuoteTarget(quote, target string) []*EventInfo {
+	if quote == "" || target == "" {
+		return nil
+	}
+	dbs, err := nosql.GetEventsByQuoteTarget(quote, target)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(dbs))
+		for _, db := range dbs {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetEventAssetCountBySceneTarget(owner, target string) uint32 {
 	dbs, _ := nosql.GetEventsByOwnerTarget(owner, target)
 	list := make([]string, 0, len(dbs)*2)
@@ -780,8 +874,24 @@ func (mine *cacheContext) GetEventAssetCountBySceneTarget(owner, target string) 
 }
 
 func (mine *cacheContext) GetEventCountBySceneTarget(owner, target string) uint32 {
-	dbs, _ := nosql.GetEventsByOwnerTarget(owner, target)
-	return uint32(len(dbs))
+	if owner == "" || target == "" {
+		return 0
+	}
+	return nosql.GetEventsCountByOwnerTarget(owner, target)
+}
+
+func (mine *cacheContext) GetEventCountByQuoteTarget(quote, target string) uint32 {
+	if target == "" || quote == "" {
+		return 0
+	}
+	return nosql.GetEventsCountByQuoteTarget(quote, target)
+}
+
+func (mine *cacheContext) GetEventCountByTarget(target string) uint32 {
+	if target == "" {
+		return 0
+	}
+	return nosql.GetEventsCountByTarget(target)
 }
 
 func (mine *cacheContext) GetAllSystemEvents(page, number int32) (int32, int32, []*EventInfo) {

@@ -874,6 +874,7 @@ func (mine *EntityInfo) AddEvent(data *pb.ReqEventAdd) (*EventInfo, error) {
 	db.Date = date
 	db.Place = place
 	db.Type = uint8(data.Type)
+	db.Subtype = uint8(data.Sub)
 	db.Entity = mine.UID
 	db.Parent = ""
 	db.Quote = data.Quote

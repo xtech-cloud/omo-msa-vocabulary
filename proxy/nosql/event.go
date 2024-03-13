@@ -4,6 +4,7 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"omo.msa.vocabulary/proxy"
 	"time"
 )
@@ -21,6 +22,7 @@ type Event struct {
 	Operator    string             `json:"operator" bson:"operator"`
 
 	Type        uint8                    `json:"type" bson:"type"`
+	Subtype     uint8                    `json:"subtype" bson:"subtype"`
 	Access      uint8                    `json:"access" bson:"access"`
 	Entity      string                   `json:"entity" bson:"entity"`
 	Parent      string                   `json:"parent" bson:"parent"`
@@ -127,6 +129,45 @@ func GetEventsByEntity(parent string) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	filter := bson.M{"entity": parent, TimeDeleted: 0}
 	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsBySubtypeEntity(parent string, tp uint8) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"entity": parent, "subtype": tp, TimeDeleted: 0}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsBySceneSubtype(parent string, tp uint8, num int64) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"owner": parent, "subtype": tp, TimeDeleted: 0}
+	opts := options.Find().SetSort(bson.D{{"created", -1}}).SetLimit(num)
+	cursor, err1 := findManyByOpts(TableEvent, filter, opts)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -433,9 +474,40 @@ func GetEventsCountByOwnerTarget(owner, target string) uint32 {
 	return uint32(num)
 }
 
+func GetEventsCountByQuoteTarget(quote, target string) uint32 {
+	filter := bson.M{"quote": quote, "targets": target, TimeDeleted: 0}
+	num, _ := getCountByFilter(TableEvent, filter)
+	return uint32(num)
+}
+
+func GetEventsCountByTarget(target string) uint32 {
+	filter := bson.M{"targets": target, TimeDeleted: 0}
+	num, _ := getCountByFilter(TableEvent, filter)
+	return uint32(num)
+}
+
 func GetEventsByOwnerTarget(owner, target string) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	filter := bson.M{"owner": owner, "targets": target, TimeDeleted: 0}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEventsByQuoteTarget(quote, target string) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"quote": quote, "targets": target, TimeDeleted: 0}
 	cursor, err1 := findMany(TableEvent, filter, 0)
 	if err1 != nil {
 		return nil, err1
