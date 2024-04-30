@@ -36,6 +36,7 @@ func switchEntityEvent(info *cache.EventInfo) *pb.EventInfo {
 	tmp.Tags = info.Tags
 	tmp.Cover = info.Cover
 	tmp.Owner = info.Owner
+	tmp.Certify = info.Certify
 	tmp.Targets = info.Targets
 	tmp.Access = uint32(info.Access)
 	tmp.Relations = make([]*pb.RelationshipInfo, 0, len(info.Relations))
@@ -150,8 +151,8 @@ func (mine *EventService) GetList(ctx context.Context, in *pb.RequestInfo, out *
 	if info == nil {
 		if in.Key == "quote" {
 			list = cache.Context().GetEventsByQuote(in.Operator)
-		} else {
-			list = cache.Context().GetEventsByQuote(in.Key)
+		} else if in.Key == "type" {
+			list = cache.Context().GetEventsByTypeQuote(uint32(in.Id), in.Operator)
 		}
 	} else {
 		if in.Key == "quote" {
@@ -234,25 +235,39 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 	} else if in.Key == "owner_target" || in.Key == "entity_target" {
 		list = cache.Context().GetEventsByEntityTarget(in.Parent, in.Value)
 	} else if in.Key == "target" {
-		list, err = cache.Context().GetEventsByTarget(in.Value)
+		total, pages, list, err = cache.Context().GetEventsByTarget(in.Value, in.Page, in.Number)
 	} else if in.Key == "owners_target" || in.Key == "entities_target" {
+		array := make([]*cache.EventInfo, 0, 20)
 		list = make([]*cache.EventInfo, 0, 20)
 		for _, val := range in.Values {
 			arr := cache.Context().GetEventsByEntityTarget(val, in.Value)
-			if len(arr) > 0 {
-				list = append(list, arr...)
+			if len(in.Parent) > 0 {
+				for _, info := range arr {
+					if info.Owner == in.Parent {
+						array = append(array, info)
+					}
+				}
+			} else {
+				if len(arr) > 0 {
+					array = append(array, arr...)
+				}
 			}
 		}
+		total, pages, list = cache.CheckPage(in.Page, in.Number, array)
 	} else if in.Key == "scene_targets" {
 		list = make([]*cache.EventInfo, 0, 20)
+		array := make([]*cache.EventInfo, 0, 20)
 		for _, val := range in.Values {
 			arr := cache.Context().GetEventsBySceneTarget(in.Value, val)
 			if len(arr) > 0 {
-				list = append(list, arr...)
+				array = append(array, arr...)
 			}
 		}
+		total, pages, list = cache.CheckPage(in.Page, in.Number, array)
 	} else if in.Key == "quote_target" {
 		list = cache.Context().GetEventsByQuoteTarget(in.Parent, in.Value)
+	} else if in.Key == "quotes_target" {
+		total, pages, list = cache.Context().GetEventsByQuotesTarget(in.Value, in.Values, uint32(in.Page), uint32(in.Number))
 	} else if in.Key == "array" {
 		list = make([]*cache.EventInfo, 0, 20)
 		for _, val := range in.Values {
@@ -310,8 +325,8 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 			}
 		}
 	} else if in.Key == "quote" {
-		//参与人数数量
-		out.Count = uint32(cache.Context().GetEventCountByQuote(in.Value))
+		//参与次数数量
+		out.Count = cache.Context().GetEventCountByQuote(in.Value)
 	} else if in.Key == "opus" {
 		//作品数量
 		assets := cache.Context().GetEventAssetsByQuote(in.Value)
@@ -348,7 +363,7 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 			out.List = append(out.List, &pb.StatisticInfo{Key: info.Key, Count: uint32(info.Count)})
 		}
 	} else if in.Key == "entity_target" {
-		out.Count = cache.Context().GetEventCountByEntityTarget(in.Value, in.Values)
+		out.Count = cache.Context().GetEventCountByEntityTarget(in.Parent, in.Value, in.Values)
 	} else if in.Key == "scene_targets" {
 		var num uint32 = 0
 		for _, val := range in.Values {
@@ -365,6 +380,14 @@ func (mine *EventService) GetStatistic(ctx context.Context, in *pb.RequestFilter
 		out.Count = num
 	} else if in.Key == "target" {
 		out.Count = cache.Context().GetEventCountByTarget(in.Value)
+	} else if in.Key == "scene_user" {
+		tp, _ := strconv.ParseInt(in.Value, 10, 32)
+		out.Count = cache.Context().GetEventUserCountByScene(in.Parent, uint32(tp))
+	} else if in.Key == "quote_assets" {
+		out.Count = cache.Context().GetEventAssetsCountByQuote(in.Value)
+	} else if in.Key == "participant" {
+		//参与人数
+		out.Count = cache.Context().GetEventEntityCountByQuote(in.Value)
 	}
 
 	out.Owner = in.Value
@@ -593,6 +616,8 @@ func (mine *EventService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFi
 		err = info.UpdateOwner(in.Value, in.Operator)
 	} else if in.Key == "targets" {
 
+	} else if in.Key == "certify" {
+		err = info.UpdateCertify(in.Value, in.Operator)
 	} else {
 		err = errors.New("not define the key")
 	}

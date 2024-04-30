@@ -31,6 +31,7 @@ type Event struct {
 	Cover       string                   `json:"cover" bson:"cover"`
 	Quote       string                   `json:"quote" bson:"quote"`
 	Owner       string                   `json:"owner" bson:"owner"`
+	Certify     string                   `json:"certify" bson:"certify"`
 	Date        proxy.DateInfo           `json:"date" bson:"date"`
 	Place       proxy.PlaceInfo          `json:"place" bson:"place"`
 	Tags        []string                 `json:"tags" bson:"tags"`
@@ -109,6 +110,33 @@ func GetEventCountByEntity(entity string) uint32 {
 
 func GetEventCountByEntityTarget(entity, target string) uint32 {
 	filter := bson.M{"entity": entity, "targets": target, TimeDeleted: 0}
+	count, err := getCountBy(TableEvent, filter)
+	if err != nil {
+		return 0
+	}
+	return uint32(count)
+}
+
+func GetEventCountByTarget(target string) uint32 {
+	filter := bson.M{"targets": target, TimeDeleted: 0}
+	count, err := getCountBy(TableEvent, filter)
+	if err != nil {
+		return 0
+	}
+	return uint32(count)
+}
+
+func GetEventCountByQuote(quote string) uint32 {
+	filter := bson.M{"quote": quote, TimeDeleted: 0}
+	count, err := getCountBy(TableEvent, filter)
+	if err != nil {
+		return 0
+	}
+	return uint32(count)
+}
+
+func GetEventCountByEntityTarget2(scene, entity, target string) uint32 {
+	filter := bson.M{"owner": scene, "entity": entity, "targets": target, TimeDeleted: 0}
 	count, err := getCountBy(TableEvent, filter)
 	if err != nil {
 		return 0
@@ -449,10 +477,11 @@ func GetEventsByEntityTarget(entity, target string) ([]*Event, error) {
 	return items, nil
 }
 
-func GetEventsByTarget(target string) ([]*Event, error) {
+func GetEventsByTarget(target string, start, num int64) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	filter := bson.M{"targets": target, TimeDeleted: 0}
-	cursor, err1 := findMany(TableEvent, filter, 0)
+	opts := options.Find().SetSort(bson.D{{TimeCreated, -1}}).SetLimit(num).SetSkip(start)
+	cursor, err1 := findManyByOpts(TableEvent, filter, opts)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -524,6 +553,25 @@ func GetEventsByQuoteTarget(quote, target string) ([]*Event, error) {
 	return items, nil
 }
 
+func GetEventsByTypeQuote2(tp uint8, quote string) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"quote": quote, "type": tp, TimeDeleted: 0}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func RemoveEvent(uid string, operator string) error {
 	_, err := removeOne(TableEvent, uid, operator)
 	return err
@@ -550,6 +598,12 @@ func UpdateEventOwner(uid, owner, operator string) error {
 
 func UpdateEventQuote(uid, quote, operator string) error {
 	msg := bson.M{"quote": quote, "operator": operator, TimeUpdated: time.Now().Unix()}
+	_, err := updateOne(TableEvent, uid, msg)
+	return err
+}
+
+func UpdateEventCertify(uid, quote, operator string) error {
+	msg := bson.M{"certify": quote, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableEvent, uid, msg)
 	return err
 }

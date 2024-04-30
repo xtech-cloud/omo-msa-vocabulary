@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/micro/go-micro/v2/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"math"
 	"omo.msa.vocabulary/proxy"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
@@ -27,7 +28,6 @@ type BoxInfo struct {
 }
 
 //region Global Fun
-
 func (mine *cacheContext) GetBoxByName(name string) *BoxInfo {
 	db, err := nosql.GetBoxByName(name)
 	if err == nil {
@@ -127,6 +127,52 @@ func (mine *cacheContext) GetBoxesByName(val string) []*BoxInfo {
 		list = append(list, box)
 	}
 	return list
+}
+
+func (mine *cacheContext) GetBoxPages(page, number uint32) (uint32, uint32, []*BoxInfo) {
+	if page < 1 {
+		page = 1
+	}
+	if number < 1 {
+		number = 10
+	}
+	start := (page - 1) * number
+	array, err := nosql.GetBoxesByPage(int64(start), int64(number))
+	total := nosql.GetBoxCount()
+	pages := math.Ceil(float64(total) / float64(number))
+	if err == nil {
+		list := make([]*BoxInfo, 0, len(array))
+		for _, item := range array {
+			info := new(BoxInfo)
+			info.initInfo(item)
+			list = append(list, info)
+		}
+		return uint32(total), uint32(pages), list
+	}
+	return 0, 0, make([]*BoxInfo, 0, 1)
+}
+
+func (mine *cacheContext) GetUsableBoxPages(page, number uint32) (uint32, uint32, []*BoxInfo) {
+	if page < 1 {
+		page = 1
+	}
+	if number < 1 {
+		number = 10
+	}
+	array, err := nosql.GetBoxes()
+	if err == nil {
+		list := make([]*BoxInfo, 0, len(array))
+		for _, item := range array {
+			info := new(BoxInfo)
+			info.initInfo(item)
+			if info.HadPublished() {
+				list = append(list, info)
+			}
+		}
+		total, pages, arr := CheckPage(int32(page), int32(number), list)
+		return uint32(total), uint32(pages), arr
+	}
+	return 0, 0, make([]*BoxInfo, 0, 1)
 }
 
 func (mine *cacheContext) GetBoxesByKeyword(key string) []*BoxInfo {
@@ -444,6 +490,15 @@ func (mine *BoxInfo) UpdateConcept(con, operator string) error {
 		}
 	}
 	return nil
+}
+
+func (mine *BoxInfo) HadPublished() bool {
+	for _, content := range mine.Contents {
+		if content.Status == uint8(EntityStatusUsable) {
+			return true
+		}
+	}
+	return false
 }
 
 func (mine *BoxInfo) HadUser(key string) bool {

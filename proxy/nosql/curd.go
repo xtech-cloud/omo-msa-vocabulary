@@ -110,6 +110,23 @@ func getCount(collection string) (int64, error) {
 	return result, nil
 }
 
+func getCount2(collection string, filter bson.M) (int64, error) {
+	if len(collection) < 1 {
+		return 0, errors.New("the collection is empty")
+	}
+	c := noSql.Collection(collection)
+	if c == nil {
+		return 0, errors.New("can not found the collection of" + collection)
+	}
+	ctx, cancel := context.WithTimeout(context.TODO(), timeOut)
+	defer cancel()
+	num, err := c.CountDocuments(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+	return num, nil
+}
+
 func getTotalCount(collection string) (int64, error) {
 	if len(collection) < 1 {
 		return 0, errors.New("the collection is empty")

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"math"
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
 	"sort"
@@ -609,6 +610,39 @@ func (mine *cacheContext) GetEventsByQuote(quote string) []*EventInfo {
 	return list
 }
 
+func (mine *cacheContext) GetEventAssetsCountByQuote(quote string) uint32 {
+	if quote == "" {
+		return 0
+	}
+	arr, _ := nosql.GetEventsByQuote2(quote)
+	count := 0
+	for _, db := range arr {
+		count += len(db.Assets)
+	}
+
+	return uint32(count)
+}
+
+func (mine *cacheContext) GetEventsByTypeQuote(tp uint32, quote string) []*EventInfo {
+	if quote == "" {
+		return make([]*EventInfo, 0, 1)
+	}
+	arr, err := nosql.GetEventsByTypeQuote2(uint8(tp), quote)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+
+	return list
+}
+
 func (mine *cacheContext) GetEventByTarget(entity, target string, tp uint8) (*EventInfo, error) {
 	if entity == "" || target == "" {
 		return nil, errors.New("the entity or target is empty")
@@ -622,13 +656,22 @@ func (mine *cacheContext) GetEventByTarget(entity, target string, tp uint8) (*Ev
 	return info, nil
 }
 
-func (mine *cacheContext) GetEventsByTarget(target string) ([]*EventInfo, error) {
+func (mine *cacheContext) GetEventsByTarget(target string, page, num int32) (int32, int32, []*EventInfo, error) {
 	if target == "" {
-		return nil, errors.New("the entity or target is empty")
+		return 0, 0, nil, errors.New("the target is empty")
 	}
-	dbs, err := nosql.GetEventsByTarget(target)
+	if page < 1 {
+		page = 1
+	}
+	if num < 1 {
+		num = 100
+	}
+	start := (page - 1) * num
+	total := nosql.GetEventCountByTarget(target)
+	pages := math.Ceil(float64(total) / float64(num))
+	dbs, err := nosql.GetEventsByTarget(target, int64(start), int64(num))
 	if err != nil {
-		return nil, err
+		return int32(total), int32(pages), nil, err
 	}
 	list := make([]*EventInfo, 0, len(dbs))
 	for _, db := range dbs {
@@ -636,7 +679,7 @@ func (mine *cacheContext) GetEventsByTarget(target string) ([]*EventInfo, error)
 		info.initInfo(db)
 		list = append(list, info)
 	}
-	return list, nil
+	return int32(total), int32(pages), list, nil
 }
 
 func (mine *cacheContext) GetUniTargetEventsBySubEntity(entity string, tp uint8) ([]*EventInfo, error) {
@@ -802,7 +845,7 @@ func (mine *cacheContext) GetEventsByEntityTarget(entity, target string) []*Even
 	if len(entity) > 0 {
 		dbs, err = nosql.GetEventsByEntityTarget(entity, target)
 	} else {
-		dbs, err = nosql.GetEventsByTarget(target)
+		dbs, err = nosql.GetEventsByTarget(target, 0, 200)
 	}
 
 	var list []*EventInfo
@@ -860,6 +903,26 @@ func (mine *cacheContext) GetEventsByQuoteTarget(quote, target string) []*EventI
 	return list
 }
 
+func (mine *cacheContext) GetEventsByQuotesTarget(target string, quotes []string, page, num uint32) (int32, int32, []*EventInfo) {
+	if len(quotes) < 1 || target == "" {
+		return 0, 0, make([]*EventInfo, 0, 1)
+	}
+	var list = make([]*EventInfo, 0, num)
+	for _, quote := range quotes {
+		dbs, err := nosql.GetEventsByQuoteTarget(quote, target)
+		if err == nil {
+			list = make([]*EventInfo, 0, len(dbs))
+			for _, db := range dbs {
+				info := new(EventInfo)
+				info.initInfo(db)
+				list = append(list, info)
+			}
+		}
+	}
+	total, pages, arr := CheckPage(int32(page), int32(num), list)
+	return total, pages, arr
+}
+
 func (mine *cacheContext) GetEventAssetCountBySceneTarget(owner, target string) uint32 {
 	dbs, _ := nosql.GetEventsByOwnerTarget(owner, target)
 	list := make([]string, 0, len(dbs)*2)
@@ -892,6 +955,23 @@ func (mine *cacheContext) GetEventCountByTarget(target string) uint32 {
 		return 0
 	}
 	return nosql.GetEventsCountByTarget(target)
+}
+
+func (mine *cacheContext) GetEventUserCountByScene(scene string, sub uint32) uint32 {
+	if scene == "" {
+		return 0
+	}
+	dbs, err := nosql.GetEventsBySceneSubtype(scene, uint8(sub), 0)
+	if err != nil {
+		return 0
+	}
+	arr := make([]string, 0, len(dbs))
+	for _, db := range dbs {
+		if !tool.HasItem(arr, db.Entity) {
+			arr = append(arr, db.Entity)
+		}
+	}
+	return uint32(len(arr))
 }
 
 func (mine *cacheContext) GetAllSystemEvents(page, number int32) (int32, int32, []*EventInfo) {

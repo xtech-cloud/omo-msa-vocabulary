@@ -149,6 +149,8 @@ func (mine *BoxService) GetByFilter(ctx context.Context, in *pb.RequestFilter, o
 
 	var err error
 	var list []*cache.BoxInfo
+	var max uint32
+	var pages uint32
 	if in.Key == "concept" {
 		if in.Value == "" {
 			list = cache.Context().GetBoxesByOwner(in.Value)
@@ -159,6 +161,10 @@ func (mine *BoxService) GetByFilter(ctx context.Context, in *pb.RequestFilter, o
 		list = cache.Context().GetBoxesByEntities(in.Values)
 	} else if in.Key == "name" {
 		list = cache.Context().GetBoxesByName(in.Value)
+	} else if in.Key == "pages" {
+		max, pages, list = cache.Context().GetBoxPages(uint32(in.Page), uint32(in.Number))
+	} else if in.Key == "usable" {
+		max, pages, list = cache.Context().GetUsableBoxPages(uint32(in.Page), uint32(in.Number))
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -170,6 +176,8 @@ func (mine *BoxService) GetByFilter(ctx context.Context, in *pb.RequestFilter, o
 	for _, info := range list {
 		out.List = append(out.List, switchBox(info))
 	}
+	out.Total = max
+	out.Pages = pages
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
 }

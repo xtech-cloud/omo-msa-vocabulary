@@ -46,6 +46,7 @@ type EventInfo struct {
 	Cover       string //封面
 	Quote       string // 引用或者备注，活动，超链接
 	Owner       string //所属场景或者组织机构
+	Certify     string //证书实例
 
 	Date      proxy.DateInfo
 	Place     proxy.PlaceInfo
@@ -104,20 +105,32 @@ func (mine *cacheContext) GetActivityCountByDate(entity string, date time.Time) 
 	return count
 }
 
-func (mine *cacheContext) GetEventCountByQuote(quote string) int {
-	count := 0
-	dbs, err := nosql.GetEventsByQuote2(quote)
-	if err != nil {
-		return count
-	}
-	return len(dbs)
+func (mine *cacheContext) GetEventCountByQuote(quote string) uint32 {
+	count := nosql.GetEventCountByQuote(quote)
+	return count
 }
 
-func (mine *cacheContext) GetEventCountByEntityTarget(target string, entities []string) uint32 {
+func (mine *cacheContext) GetEventEntityCountByQuote(quote string) uint32 {
+	dbs, _ := nosql.GetEventsByQuote2(quote)
+	arr := make([]string, 0, 100)
+	for _, db := range dbs {
+		if !tool.HasItem(arr, db.Entity) {
+			arr = append(arr, db.Entity)
+		}
+	}
+	return uint32(len(arr))
+}
+
+func (mine *cacheContext) GetEventCountByEntityTarget(scene, target string, entities []string) uint32 {
 	var count uint32
 	for _, entity := range entities {
-		num := nosql.GetEventCountByEntityTarget(entity, target)
-		count += num
+		if len(scene) > 0 {
+			num := nosql.GetEventCountByEntityTarget2(scene, entity, target)
+			count += num
+		} else {
+			num := nosql.GetEventCountByEntityTarget(entity, target)
+			count += num
+		}
 	}
 
 	return count
@@ -188,6 +201,7 @@ func (mine *EventInfo) initInfo(db *nosql.Event) {
 	mine.Assets = db.Assets
 	mine.Access = db.Access
 	mine.Tags = db.Tags
+	mine.Certify = db.Certify
 	mine.Relations = db.Relations
 	mine.Targets = db.Targets
 	if db.Targets == nil {
@@ -330,6 +344,22 @@ func (mine *EventInfo) UpdateQuote(quote, operator string) error {
 	err := nosql.UpdateEventQuote(mine.UID, quote, operator)
 	if err == nil {
 		mine.Quote = quote
+		mine.Operator = operator
+		mine.Updated = time.Now().Unix()
+	}
+	return err
+}
+
+func (mine *EventInfo) UpdateCertify(uid, operator string) error {
+	if operator == "" {
+		operator = mine.Operator
+	}
+	if mine.Certify == uid {
+		return nil
+	}
+	err := nosql.UpdateEventCertify(mine.UID, uid, operator)
+	if err == nil {
+		mine.Certify = uid
 		mine.Operator = operator
 		mine.Updated = time.Now().Unix()
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"omo.msa.vocabulary/proxy"
 	"time"
 )
@@ -120,6 +121,16 @@ func GetBoxesByOwner(owner string) ([]*Box, error) {
 	return items, nil
 }
 
+func GetBoxCount() int64 {
+	filter := bson.M{TimeDeleted: 0}
+	num, err1 := getCount2(TableBox, filter)
+	if err1 != nil {
+		return num
+	}
+
+	return num
+}
+
 func GetBoxByName(name string) (*Box, error) {
 	filter := bson.M{"name": name, TimeDeleted: 0}
 	result, err1 := findOneBy(TableBox, filter)
@@ -179,6 +190,25 @@ func GetBoxesByRegex(key, val string) ([]*Box, error) {
 	for cursor.Next(context.Background()) {
 		var node = new(Box)
 		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetBoxesByPage(start, num int64) ([]*Box, error) {
+	filter := bson.M{TimeDeleted: 0}
+	opts := options.Find().SetSort(bson.D{{TimeCreated, -1}}).SetLimit(num).SetSkip(start)
+	cursor, err1 := findManyByOpts(TableBox, filter, opts)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Box, 0, 20)
+	for cursor.Next(context.TODO()) {
+		var node = new(Box)
+		if err := cursor.Decode(&node); err != nil {
 			return nil, err
 		} else {
 			items = append(items, node)
