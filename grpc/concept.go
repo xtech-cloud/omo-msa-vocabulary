@@ -12,7 +12,7 @@ import (
 
 type ConceptService struct{}
 
-func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
+func switchConcept(info *cache.ConceptInfo, scene string) *pb.ConceptInfo {
 	tmp := new(pb.ConceptInfo)
 	tmp.Uid = info.UID
 	tmp.Created = info.Created
@@ -24,14 +24,14 @@ func switchConcept(info *cache.ConceptInfo) *pb.ConceptInfo {
 	tmp.Cover = info.Cover
 	tmp.Parent = info.Parent
 	tmp.Scene = uint32(info.Scene)
-	tmp.Count = cache.Context().GetEntitiesCountByConcept(info.Table, info.UID)
+	tmp.Count = cache.Context().GetEntitiesCountByConcept(info.Table, scene, info.UID)
 	tmp.Attributes = info.Attributes()
 	tmp.Privates = info.Privates()
 	length := len(info.Children)
 	if length > 0 {
 		tmp.Children = make([]*pb.ConceptInfo, 0, length)
 		for _, value := range info.Children {
-			tmp.Children = append(tmp.Children, switchConcept(value))
+			tmp.Children = append(tmp.Children, switchConcept(value, scene))
 		}
 	} else {
 		tmp.Children = make([]*pb.ConceptInfo, 0, 1)
@@ -67,7 +67,7 @@ func (mine *ConceptService) AddOne(ctx context.Context, in *pb.ReqConceptAdd, ou
 			out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 			return nil
 		} else {
-			out.Info = switchConcept(info)
+			out.Info = switchConcept(info, "")
 			out.Status = outLog(path, out)
 		}
 	} else {
@@ -89,7 +89,7 @@ func (mine *ConceptService) AddOne(ctx context.Context, in *pb.ReqConceptAdd, ou
 		info.Cover = in.Cover
 		err := cache.Context().CreateTopConcept(info)
 		if err == nil {
-			out.Info = switchConcept(info)
+			out.Info = switchConcept(info, "")
 			out.Status = outLog(path, out)
 		} else {
 			out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
@@ -107,7 +107,7 @@ func (mine *ConceptService) GetOne(ctx context.Context, in *pb.RequestInfo, out 
 			out.Status = outError(path, "not found the concept by uid", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
-		out.Info = switchConcept(info)
+		out.Info = switchConcept(info, in.Operator)
 		out.Status = outLog(path, out)
 	} else if len(in.Key) > 0 {
 		info := cache.Context().GetConceptByName(in.Key)
@@ -115,7 +115,7 @@ func (mine *ConceptService) GetOne(ctx context.Context, in *pb.RequestInfo, out 
 			out.Status = outError(path, "not found the concept by key", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
-		out.Info = switchConcept(info)
+		out.Info = switchConcept(info, in.Operator)
 		out.Status = outLog(path, out)
 	} else {
 		out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
@@ -135,7 +135,7 @@ func (mine *ConceptService) RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 		out.Status = outError(path, "the concept not found ", pbstaus.ResultStatus_NotExisted)
 		return nil
 	}
-	num := cache.Context().GetEntitiesCountByConcept(info.Table, in.Uid)
+	num := cache.Context().GetEntitiesCountByConcept(info.Table, in.Uid, "")
 	if num > 0 {
 		out.Status = outError(path, "the concept have entities used that num = "+strconv.Itoa(int(num)), pbstaus.ResultStatus_Prohibition)
 		return nil
@@ -156,7 +156,7 @@ func (mine *ConceptService) GetAll(ctx context.Context, in *pb.RequestInfo, out 
 	all := cache.Context().GetTopConcepts()
 	out.List = make([]*pb.ConceptInfo, 0, len(all))
 	for _, value := range all {
-		out.List = append(out.List, switchConcept(value))
+		out.List = append(out.List, switchConcept(value, in.Operator))
 	}
 	out.Status = outLog(path, fmt.Sprintf("the length = %d", len(out.List)))
 	return nil
@@ -183,7 +183,7 @@ func (mine *ConceptService) Update(ctx context.Context, in *pb.ReqConceptUpdate,
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
 	}
-	out.Info = switchConcept(info)
+	out.Info = switchConcept(info, "")
 	out.Status = outLog(path, out)
 	return nil
 }

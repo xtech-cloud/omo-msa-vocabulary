@@ -37,7 +37,6 @@ type ConceptInfo struct {
 }
 
 //region Global Fun
-
 func (mine *cacheContext) GetTopConcept(uid string) *ConceptInfo {
 	tops := mine.GetTopConcepts()
 	for i := 0; i < len(tops); i += 1 {

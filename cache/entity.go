@@ -12,6 +12,7 @@ import (
 	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -275,13 +276,31 @@ func (mine *EntityInfo) relationsToVEdges(list []*proxy.RelationCaseInfo) {
 			target.Name = ""
 			target.Entity = item.Entity
 		}
-		_, _ = mine.CreateVEdge(mine.UID, item.Name, "", item.Category, mine.Operator, uint32(item.Direction), item.Weight, target)
+		_, _ = cacheCtx.CreateVEdge(mine.UID, mine.UID, item.Name, "", item.Category, mine.Operator, uint32(item.Direction), item.Weight, target)
 	}
 	_ = nosql.UpdateEntityRelations(mine.table(), mine.UID, mine.Operator, make([]*proxy.RelationCaseInfo, 0, 1))
 }
 
 func (mine *EntityInfo) GetVEdges() []*VEdgeInfo {
 	return cacheCtx.GetVEdgesByCenter(mine.UID)
+}
+
+func (mine *EntityInfo) UpdateAdd(add, operator string) error {
+	if len(add) < 1 {
+		return errors.New("the entity add is empty")
+	}
+	if mine.Add == add || strings.Contains(mine.Add, add) {
+		return nil
+	}
+	if cacheCtx.HadEntityByName(mine.Name, add, "") {
+		return errors.New("the entity name and add repeated")
+	}
+	err := nosql.UpdateEntityAdd(mine.table(), mine.UID, add, operator)
+	if err == nil {
+		mine.Add = add
+		mine.Operator = operator
+	}
+	return err
 }
 
 func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote, sum, operator string) error {
@@ -387,7 +406,7 @@ func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*pb.VEdgeI
 				return err
 			}
 		} else {
-			_, err := mine.CreateVEdge(brief.Source, brief.Name, brief.Remark, brief.Category, operator, brief.Direction, brief.Weight, target)
+			_, err := cacheCtx.CreateVEdge(brief.Uid, brief.Source, brief.Name, brief.Remark, brief.Category, operator, brief.Direction, brief.Weight, target)
 			if err != nil {
 				return err
 			}
@@ -682,7 +701,7 @@ func (mine *EntityInfo) UpdateAccess(operator string, acc uint8) error {
 }
 
 //region VEdge fun
-func (mine *EntityInfo) CreateVEdge(source, name, remark, relation, operator string, dire, weight uint32, target proxy.VNode) (*VEdgeInfo, error) {
+func (mine *cacheContext) CreateVEdge(center, source, name, remark, relation, operator string, dire, weight uint32, target proxy.VNode) (*VEdgeInfo, error) {
 	if target.Name == "" {
 		return nil, errors.New("the target is empty")
 	}
@@ -694,14 +713,14 @@ func (mine *EntityInfo) CreateVEdge(source, name, remark, relation, operator str
 	db.Creator = operator
 	db.Name = name
 	db.Source = source
-	db.Center = mine.UID
+	db.Center = center
 	db.Catalog = relation
 	db.Target = target
 	db.Direction = uint8(dire)
 	db.Weight = weight
 	db.Remark = remark
 	if db.Source == "" {
-		db.Source = mine.UID
+		db.Source = center
 	}
 	err := nosql.CreateVEdge(db)
 	if err != nil {

@@ -46,13 +46,12 @@ func (mine *VEdgeService) AddOne(ctx context.Context, in *pb.ReqVEdgeAdd, out *p
 	inLog(path, in)
 	in.Name = strings.TrimSpace(in.Name)
 
-	entity := cache.Context().GetEntity(in.Center)
-	if entity == nil {
-		out.Status = outError(path, "not found the entity by uid", pbstaus.ResultStatus_NotExisted)
+	if len(in.Center) < 1 {
+		out.Status = outError(path, "the center is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
-	node := proxy.VNode{Entity: in.Target, Name: in.Label, Desc: in.Desc}
-	info, err := entity.CreateVEdge(in.Source, in.Name, in.Remark, in.Relation, in.Operator, in.Direction, in.Weight, node)
+	node := proxy.VNode{Entity: in.Target, Name: in.Label, Desc: in.Desc, Thumb: in.Thumb}
+	info, err := cache.Context().CreateVEdge(in.Center, in.Source, in.Name, in.Remark, in.Relation, in.Operator, in.Direction, in.Weight, node)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil

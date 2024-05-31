@@ -546,8 +546,12 @@ func (mine *EntityService) GetStatistic(ctx context.Context, in *pb.RequestFilte
 			score = score + (i+1)*100
 		}
 		out.Count = uint32(score)
-	} else if in.Key == "" {
-
+	} else if in.Key == "labels" {
+		arr := cache.Context().GetEntityLabelsByScene(in.Value)
+		out.List = make([]*pb.StatisticInfo, 0, len(arr))
+		for _, item := range arr {
+			out.List = append(out.List, &pb.StatisticInfo{Key: item})
+		}
 	}
 	out.Owner = in.Value
 	out.Key = in.Key
@@ -583,7 +587,13 @@ func (mine *EntityService) SearchMatch(ctx context.Context, in *pb.ReqEntityMatc
 	path := "entity.searchMatch"
 	inLog(path, in)
 	out.Flag = ""
-	array := cache.Context().MatchEntities(in.Keywords)
+	var array []*cache.EntityInfo
+	if in.Name == "name" {
+		array = cache.Context().MatchEntitiesByName(in.Owner, in.Keywords)
+	} else {
+		array = cache.Context().MatchEntitiesByProp(in.Owner, in.Keywords)
+	}
+
 	total, _, list := cache.CheckPage(in.Page, in.Number, array)
 	out.List = make([]*pb.EntityInfo, 0, total)
 	for _, value := range list {
@@ -980,6 +990,8 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 		} else {
 			err = errors.New("the values is empty when update property")
 		}
+	} else if in.Key == "add" {
+		err = entity.UpdateAdd(in.Value, in.Operator)
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

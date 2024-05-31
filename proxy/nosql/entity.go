@@ -126,7 +126,7 @@ func GetEntityCountByScene(table, scene string) uint32 {
 }
 
 func GetEntityByName(table, name, add string) (*Entity, error) {
-	msg := bson.M{"name": name, "add": add, TimeDeleted: 0}
+	msg := bson.M{"name": name, "add": bson.M{"$regex": add}, TimeDeleted: 0}
 	result, err := findOneBy(table, msg)
 	if err != nil {
 		return nil, err
@@ -193,8 +193,65 @@ func GetEntitiesByProp(table, key, value string) ([]*Entity, error) {
 	return items, nil
 }
 
+func GetEntitiesByProp2(table, value string) ([]*Entity, error) {
+	msg := bson.M{"props": bson.M{"$elemMatch": bson.M{"values": bson.M{"$elemMatch": bson.M{"name": value}}}}}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			node.Table = table
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEntitiesByOwnerProp(table, scene, value string) ([]*Entity, error) {
+	msg := bson.M{"scene": scene, "props": bson.M{"$elemMatch": bson.M{"values": bson.M{"$elemMatch": bson.M{"name": value}}}}}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			node.Table = table
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEntitiesByOwnerAndStatus(table, owner string, st uint8) ([]*Entity, error) {
 	msg := bson.M{"scene": owner, "status": st, TimeDeleted: 0}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			node.Table = table
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEntitiesByOwner(table, owner string) ([]*Entity, error) {
+	msg := bson.M{"scene": owner, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1
@@ -252,6 +309,15 @@ func GetEntitiesByConcept2(table, concept string) ([]*Entity, error) {
 
 func GetEntitiesCountByConcept(table, concept string) int64 {
 	msg := bson.M{"concept": concept, TimeDeleted: 0}
+	num, err1 := getCountByFilter(table, msg)
+	if err1 != nil {
+		return 0
+	}
+	return num
+}
+
+func GetEntitiesCountByOwnerConcept(table, scene, concept string) int64 {
+	msg := bson.M{"scene": scene, "concept": concept, TimeDeleted: 0}
 	num, err1 := getCountByFilter(table, msg)
 	if err1 != nil {
 		return 0
@@ -335,25 +401,6 @@ func GetEntitiesByOwnName(table, name, owner string) ([]*Entity, error) {
 	return items, nil
 }
 
-func GetEntitiesByOwner(table, owner string) ([]*Entity, error) {
-	msg := bson.M{"scene": owner, TimeDeleted: 0}
-	cursor, err1 := findMany(table, msg, 0)
-	if err1 != nil {
-		return nil, err1
-	}
-	var items = make([]*Entity, 0, 100)
-	for cursor.Next(context.Background()) {
-		var node = new(Entity)
-		if err := cursor.Decode(node); err != nil {
-			return nil, err
-		} else {
-			node.Table = table
-			items = append(items, node)
-		}
-	}
-	return items, nil
-}
-
 func GetEntitiesByRelate(table, relate string) ([]*Entity, error) {
 	msg := bson.M{"relates": relate, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
@@ -394,6 +441,25 @@ func GetEntitiesByRegex(table, key, val string) ([]*Entity, error) {
 
 func GetEntitiesByMatch(table, name string) ([]*Entity, error) {
 	msg := bson.M{"name": bson.M{"$regex": name}, TimeDeleted: 0}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			node.Table = table
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEntitiesByOwnerMatch(table, scene, name string) ([]*Entity, error) {
+	msg := bson.M{"scene": scene, "name": bson.M{"$regex": name}, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
 	if err1 != nil {
 		return nil, err1

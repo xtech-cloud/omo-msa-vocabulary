@@ -34,20 +34,34 @@ func (mine *cacheContext) AllEntities() []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext) MatchEntities(key string) []*EntityInfo {
-	array, err := nosql.GetEntitiesByMatch(DefaultEntityTable, key)
-	if err != nil {
-		return make([]*EntityInfo, 0, 0)
+func (mine *cacheContext) MatchEntitiesByName(scene, key string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 200)
+	for _, tb := range mine.EntityTables() {
+		var array []*nosql.Entity
+		if len(scene) < 1 {
+			array, _ = nosql.GetEntitiesByMatch(tb, key)
+		} else {
+			array, _ = nosql.GetEntitiesByOwnerMatch(tb, scene, key)
+		}
+		for _, entity := range array {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
 	}
-	list := make([]*EntityInfo, 0, len(array))
-	for _, entity := range array {
-		info := new(EntityInfo)
-		info.initInfo(entity)
-		list = append(list, info)
-	}
-	array2, err2 := nosql.GetEntitiesByMatch(UserEntityTable, key)
-	if err2 == nil {
-		for _, entity := range array2 {
+	return list
+}
+
+func (mine *cacheContext) MatchEntitiesByProp(scene, key string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 200)
+	for _, tb := range mine.EntityTables() {
+		var array []*nosql.Entity
+		if len(scene) < 1 {
+			array, _ = nosql.GetEntitiesByProp2(tb, key)
+		} else {
+			array, _ = nosql.GetEntitiesByOwnerProp(tb, scene, key)
+		}
+		for _, entity := range array {
 			info := new(EntityInfo)
 			info.initInfo(entity)
 			list = append(list, info)
@@ -159,7 +173,6 @@ func (mine *cacheContext) GetEntitiesByOwner(owner string, page, num int32) (int
 		array, err := nosql.GetEntitiesByOwner(tb, owner)
 		if err == nil {
 			dbs = append(dbs, array...)
-
 		}
 	}
 	total, pages, arr := CheckPage(page, num, dbs)
@@ -206,7 +219,10 @@ func (mine *cacheContext) GetEntitiesByConcept2(concept string) []*EntityInfo {
 	return list
 }
 
-func (mine *cacheContext) GetEntitiesCountByConcept(tb, concept string) uint32 {
+func (mine *cacheContext) GetEntitiesCountByConcept(tb, scene, concept string) uint32 {
+	if len(scene) > 0 {
+		return uint32(nosql.GetEntitiesCountByOwnerConcept(tb, scene, concept))
+	}
 	return uint32(nosql.GetEntitiesCountByConcept(tb, concept))
 }
 
@@ -521,6 +537,22 @@ func (mine *cacheContext) GetEntityCountByRelate(relate string) uint32 {
 		}
 	}
 	return uint32(len(arr))
+}
+
+func (mine *cacheContext) GetEntityLabelsByScene(owner string) []string {
+	list := make([]string, 0, 300)
+	for _, tb := range mine.EntityTables() {
+		dbs, _ := nosql.GetEntitiesByOwner(tb, owner)
+		for _, db := range dbs {
+			for _, tag := range db.Tags {
+				if !tool.HasItem(list, tag) {
+					list = append(list, tag)
+				}
+			}
+
+		}
+	}
+	return list
 }
 
 func (mine *cacheContext) GetUserEntitiesByLetter(relate, first string) []*EntityInfo {
