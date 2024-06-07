@@ -17,7 +17,7 @@ func switchVEdge(info *cache.VEdgeInfo) *pb.VEdgeInfo {
 	tmp.Uid = info.UID
 	tmp.Name = info.Name
 	tmp.Id = int64(info.ID)
-	tmp.Uid = info.UID
+	tmp.Type = uint32(info.Type)
 	tmp.Operator = info.Operator
 	tmp.Creator = info.Creator
 	tmp.Created = info.Created
@@ -51,7 +51,7 @@ func (mine *VEdgeService) AddOne(ctx context.Context, in *pb.ReqVEdgeAdd, out *p
 		return nil
 	}
 	node := proxy.VNode{Entity: in.Target, Name: in.Label, Desc: in.Desc, Thumb: in.Thumb}
-	info, err := cache.Context().CreateVEdge(in.Center, in.Source, in.Name, in.Remark, in.Relation, in.Operator, in.Direction, in.Weight, node)
+	info, err := cache.Context().CreateVEdge(in.Center, in.Source, in.Name, in.Remark, in.Relation, in.Operator, in.Direction, in.Weight, in.Type, node)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil

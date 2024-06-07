@@ -276,7 +276,7 @@ func (mine *EntityInfo) relationsToVEdges(list []*proxy.RelationCaseInfo) {
 			target.Name = ""
 			target.Entity = item.Entity
 		}
-		_, _ = cacheCtx.CreateVEdge(mine.UID, mine.UID, item.Name, "", item.Category, mine.Operator, uint32(item.Direction), item.Weight, target)
+		_, _ = cacheCtx.CreateVEdge(mine.UID, mine.UID, item.Name, "", item.Category, mine.Operator, uint32(item.Direction), item.Weight, 0, target)
 	}
 	_ = nosql.UpdateEntityRelations(mine.table(), mine.UID, mine.Operator, make([]*proxy.RelationCaseInfo, 0, 1))
 }
@@ -406,7 +406,7 @@ func (mine *EntityInfo) UpdateStaticRelations(operator string, list []*pb.VEdgeI
 				return err
 			}
 		} else {
-			_, err := cacheCtx.CreateVEdge(brief.Uid, brief.Source, brief.Name, brief.Remark, brief.Category, operator, brief.Direction, brief.Weight, target)
+			_, err := cacheCtx.CreateVEdge(brief.Uid, brief.Source, brief.Name, brief.Remark, brief.Category, operator, brief.Direction, brief.Weight, brief.Type, target)
 			if err != nil {
 				return err
 			}
@@ -701,7 +701,7 @@ func (mine *EntityInfo) UpdateAccess(operator string, acc uint8) error {
 }
 
 //region VEdge fun
-func (mine *cacheContext) CreateVEdge(center, source, name, remark, relation, operator string, dire, weight uint32, target proxy.VNode) (*VEdgeInfo, error) {
+func (mine *cacheContext) CreateVEdge(center, source, name, remark, relation, operator string, dire, weight, tp uint32, target proxy.VNode) (*VEdgeInfo, error) {
 	if target.Name == "" {
 		return nil, errors.New("the target is empty")
 	}
@@ -712,6 +712,7 @@ func (mine *cacheContext) CreateVEdge(center, source, name, remark, relation, op
 	db.Created = time.Now().Unix()
 	db.Creator = operator
 	db.Name = name
+	db.Type = tp
 	db.Source = source
 	db.Center = center
 	db.Catalog = relation

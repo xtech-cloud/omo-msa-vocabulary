@@ -590,8 +590,10 @@ func (mine *EntityService) SearchMatch(ctx context.Context, in *pb.ReqEntityMatc
 	var array []*cache.EntityInfo
 	if in.Name == "name" {
 		array = cache.Context().MatchEntitiesByName(in.Owner, in.Keywords)
-	} else {
+	} else if in.Name == "prop" {
 		array = cache.Context().MatchEntitiesByProp(in.Owner, in.Keywords)
+	} else {
+		array = cache.Context().MatchEntitiesByTag(in.Owner, in.Keywords)
 	}
 
 	total, _, list := cache.CheckPage(in.Page, in.Number, array)

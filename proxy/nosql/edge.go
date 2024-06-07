@@ -23,6 +23,7 @@ type VEdge struct {
 	Name      string      `json:"name" bson:"name"`
 	Direction uint8       `json:"direction" bson:"direction"`
 	Weight    uint32      `json:"weight" bson:"weight"`
+	Type      uint32      `json:"type" bson:"type"`
 	Center    string      `json:"center" bson:"center"`
 	Remark    string      `json:"remark" bson:"remark"`
 	Catalog   string      `json:"catalog" bson:"catalog"` //关系类型

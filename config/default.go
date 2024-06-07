@@ -28,7 +28,25 @@ const defaultJson string = `{
 	},
 	"basic": {
 		"tags": 6,
-		"synonyms": 5
+		"synonyms": 5,
+		"kinds":[
+			{
+				"type":1,
+				"name":"活动"
+			},
+			{
+				"type":2,
+				"name":"荣誉"
+			},
+			{
+				"type":3,
+				"name":"证书"
+			},
+			{
+				"type":4,
+				"name":"事件"
+			}
+		]
 	}
 }
 `

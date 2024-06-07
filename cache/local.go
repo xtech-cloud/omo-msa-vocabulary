@@ -60,8 +60,8 @@ func switchNode(info *NodeInfo) *nodeSample {
 	}
 	sample := new(nodeSample)
 	sample.Name = info.Name
-	sample.UID = info.EntityUID
-	tmp := Context().GetEntity(info.EntityUID)
+	sample.UID = info.Entity
+	tmp := Context().GetEntity(info.Entity)
 	if tmp != nil {
 		sample.Type = switchEntityLabel(tmp.Concept)
 		sample.Avatar = tmp.Cover
@@ -74,7 +74,7 @@ func generateGraphJson(uid string, path string) {
 	//if !cacheCtx.graph.HadLinkNode(uid) {
 	//	return
 	//}
-	graph, _ := cacheCtx.graph.GetSubGraph(uid)
+	graph, _ := cacheCtx.graph.GetGraphByCenter(uid)
 	if graph == nil || len(graph.nodes) < 1 {
 		return
 	}

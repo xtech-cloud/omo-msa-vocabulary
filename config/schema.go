@@ -29,9 +29,15 @@ type GraphConfig struct {
 	User     string `json:"user"`
 }
 
+type GraphType struct {
+	Type uint8  `json:"type"`
+	Name string `json:"name"`
+}
+
 type BasicConfig struct {
-	SynonymMax int32 `json:"synonyms"`
-	TagMax     int32 `json:"tags"`
+	SynonymMax int32        `json:"synonyms"`
+	TagMax     int32        `json:"tags"`
+	Kinds      []*GraphType `json:"kinds"`
 }
 
 type SchemaConfig struct {
@@ -39,5 +45,14 @@ type SchemaConfig struct {
 	Logger   LoggerConfig  `json:"logger"`
 	Database DBConfig      `json:"database"`
 	Graph    GraphConfig   `json:"graph"`
-	//Basic   BasicConfig 	`json:"basic"`
+	Basic    BasicConfig   `json:"basic"`
+}
+
+func (mine *BasicConfig) GetName(tp uint8) string {
+	for _, kind := range mine.Kinds {
+		if kind.Type == tp {
+			return kind.Name
+		}
+	}
+	return ""
 }

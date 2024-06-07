@@ -212,6 +212,44 @@ func GetEntitiesByProp2(table, value string) ([]*Entity, error) {
 	return items, nil
 }
 
+func GetEntitiesByTag(table, value string) ([]*Entity, error) {
+	msg := bson.M{"tags": value}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			node.Table = table
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
+func GetEntitiesByOwnerTag(table, scene, value string) ([]*Entity, error) {
+	msg := bson.M{"scene": scene, "tags": value}
+	cursor, err1 := findMany(table, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			node.Table = table
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEntitiesByOwnerProp(table, scene, value string) ([]*Entity, error) {
 	msg := bson.M{"scene": scene, "props": bson.M{"$elemMatch": bson.M{"values": bson.M{"$elemMatch": bson.M{"name": value}}}}}
 	cursor, err1 := findMany(table, msg, 0)

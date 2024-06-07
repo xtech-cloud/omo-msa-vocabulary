@@ -2,9 +2,20 @@ package cache
 
 import (
 	"errors"
+	"fmt"
+	"omo.msa.vocabulary/config"
 	"omo.msa.vocabulary/proxy"
+	"omo.msa.vocabulary/proxy/nosql"
 	"omo.msa.vocabulary/tool"
 	"regexp"
+)
+
+const (
+	GraphTypeFace     = "face"
+	GraphTypeAsset    = "asset"
+	GraphTypeEntity   = "entity"
+	GraphTypeActivity = "activity"
+	GraphTypeHonor    = "honor"
 )
 
 type GraphInfo struct {
@@ -14,7 +25,7 @@ type GraphInfo struct {
 }
 
 func (mine *cacheContext) GetGraphByNode(node string) (*GraphInfo, error) {
-	return mine.graph.GetSubGraph(node)
+	return mine.graph.GetGraphByCenter(node)
 }
 
 func (mine *cacheContext) GetGraphNode(uid string) *NodeInfo {
@@ -99,39 +110,96 @@ func (mine *GraphInfo) initInfo(db *proxy.Graph) {
 	}
 	for i := 0; i < len(db.Links); i += 1 {
 		link := new(LinkInfo)
-		link.initInfo(db.Links[i], mine.GetNodeByID(db.Links[i].From).EntityUID, mine.GetNodeByID(db.Links[i].To).EntityUID)
+		link.initInfo(db.Links[i], mine.GetNodeByID(db.Links[i].From).Entity, mine.GetNodeByID(db.Links[i].To).Entity)
 		mine.links = append(mine.links, link)
 	}
 }
 
-func (mine *GraphInfo) GetSubGraph(entity string) (*GraphInfo, error) {
-	center := mine.GetNode(entity)
-	if center == nil {
-		return nil, errors.New("the node is nil")
+func switchGraphNodeType(tp uint32) string {
+	if tp == EventHonor {
+		return GraphTypeHonor
+	} else if tp == EventActivity {
+		return GraphTypeActivity
+	} else if tp == EventSpec {
+		return GraphTypeActivity
+	} else {
+		return GraphTypeEntity
 	}
+}
+
+func (mine *GraphInfo) GetGraphByCenter(entity string) (*GraphInfo, error) {
 	en := Context().GetEntity(entity)
 	if en == nil {
 		return nil, errors.New("the entity is nil")
 	}
+	dbs, er := nosql.GetVEdgesByCenter(entity)
+	if er != nil {
+		return nil, er
+	}
 	var g = new(GraphInfo)
 	g.construct()
-	g.SetCenter(center.EntityUID)
-	db, err := proxy.FindGraph(entity, switchEntityLabel(en.Concept))
-	if err == nil {
-		for _, node := range db.Nodes {
-			n := new(NodeInfo)
-			n.initInfo(node)
-			mine.AddNode(n)
-			g.AddNode(n)
-		}
-		for _, link := range db.Links {
-			l := new(LinkInfo)
-			l.initInfo(link, g.GetNodeByID(link.From).EntityUID, g.GetNodeByID(link.To).EntityUID)
-			mine.AddEdge(l)
-			g.AddEdge(l)
+	g.SetCenter(entity)
+	_, _ = g.CreateNodeByEntity(en)
+	g.checkVirtual()
+	for _, db := range dbs {
+		if db.Type > 0 {
+			g.CreateByVEdge2(fmt.Sprintf(g.center+"_virtual-%d", db.Type), switchGraphNodeType(db.Type), db)
+		} else {
+			g.CreateByVEdge(switchGraphNodeType(db.Type), db)
 		}
 	}
-	return g, err
+	dbs2, err := nosql.GetVEdgesBySource(entity)
+	if err == nil {
+		for _, db := range dbs2 {
+			if db.Type > 0 {
+				g.CreateByVEdge2(fmt.Sprintf(g.center+"_virtual-%d", db.Type), switchGraphNodeType(db.Type), db)
+			} else {
+				g.CreateByVEdge(switchGraphNodeType(db.Type), db)
+			}
+		}
+	}
+	dbs3, err3 := nosql.GetEventsByType(entity, EventActivity)
+	if err3 == nil {
+		for _, db := range dbs3 {
+			g.CreateByEvent(g.center+"_virtual-1", GraphTypeActivity, db)
+		}
+	}
+	dbs4, err4 := nosql.GetEventsByType(entity, EventHonor)
+	if err4 == nil {
+		for _, db := range dbs4 {
+			g.CreateByEvent(g.center+"_virtual-2", GraphTypeHonor, db)
+		}
+	}
+
+	//db, err := proxy.FindGraph(entity, switchEntityLabel(en.Concept))
+	//if err == nil {
+	//	for _, node := range db.Nodes {
+	//		n := new(NodeInfo)
+	//		n.initInfo(node)
+	//		mine.AppendNode(n)
+	//		g.AppendNode(n)
+	//	}
+	//	for _, link := range db.Links {
+	//		l := new(LinkInfo)
+	//		l.initInfo(link, g.GetNodeByID(link.From).Entity, g.GetNodeByID(link.To).Entity)
+	//		mine.AppendEdge(l)
+	//		g.AppendEdge(l)
+	//	}
+	//}
+	return g, nil
+}
+
+func (mine *GraphInfo) checkVirtual() (string, string, string) {
+	honor := mine.center + "_virtual-2"
+	act := mine.center + "_virtual-1"
+	spec := mine.center + "_virtual-4"
+	_, _ = mine.CreateNode(0, config.Schema.Basic.GetName(EventHonor), honor, "", "", nil)
+	_, _ = mine.CreateNode(0, config.Schema.Basic.GetName(EventActivity), act, "", "", nil)
+	_, _ = mine.CreateNode(0, config.Schema.Basic.GetName(EventSpec), spec, "", "", nil)
+	mine.CreateLinkBy(mine.center, honor, "", "", "", DirectionTypeDouble, 0)
+	mine.CreateLinkBy(mine.center, act, "", "", "", DirectionTypeDouble, 0)
+	mine.CreateLinkBy(mine.center, spec, "", "", "", DirectionTypeDouble, 0)
+	return act, honor, spec
 }
 
 func (mine *GraphInfo) GetOwnerGraph(owner string) *GraphInfo {
@@ -144,14 +212,14 @@ func (mine *GraphInfo) GetOwnerGraph(owner string) *GraphInfo {
 			for _, node := range db.Nodes {
 				n := new(NodeInfo)
 				n.initInfo(node)
-				mine.AddNode(n)
-				g.AddNode(n)
+				mine.AppendNode(n)
+				g.AppendNode(n)
 			}
 			for _, link := range db.Links {
 				l := new(LinkInfo)
-				l.initInfo(link, g.GetNodeByID(link.From).EntityUID, g.GetNodeByID(link.To).EntityUID)
-				mine.AddEdge(l)
-				g.AddEdge(l)
+				l.initInfo(link, g.GetNodeByID(link.From).Entity, g.GetNodeByID(link.To).Entity)
+				mine.AppendEdge(l)
+				g.AppendEdge(l)
 			}
 		}
 	}
@@ -167,14 +235,14 @@ func (mine *GraphInfo) GetPath(from, to string) (*GraphInfo, error) {
 		for _, node := range db.Nodes {
 			n := new(NodeInfo)
 			n.initInfo(node)
-			mine.AddNode(n)
-			g.AddNode(n)
+			mine.AppendNode(n)
+			g.AppendNode(n)
 		}
 		for _, link := range db.Links {
 			l := new(LinkInfo)
-			l.initInfo(link, g.GetNodeByID(link.From).EntityUID, g.GetNodeByID(link.To).EntityUID)
-			mine.AddEdge(l)
-			g.AddEdge(l)
+			l.initInfo(link, g.GetNodeByID(link.From).Entity, g.GetNodeByID(link.To).Entity)
+			mine.AppendEdge(l)
+			g.AppendEdge(l)
 		}
 		g.initInfo(db)
 	}
@@ -199,7 +267,7 @@ func (mine *GraphInfo) Links() []*LinkInfo {
 
 func (mine *GraphInfo) GetNode(uid string) *NodeInfo {
 	for i := 0; i < len(mine.nodes); i += 1 {
-		if mine.nodes[i].EntityUID == uid {
+		if mine.nodes[i].Entity == uid {
 			return mine.nodes[i]
 		}
 	}
@@ -207,7 +275,7 @@ func (mine *GraphInfo) GetNode(uid string) *NodeInfo {
 	if tmp != nil {
 		node := new(NodeInfo)
 		node.initInfo(tmp)
-		mine.AddNode(node)
+		mine.AppendNode(node)
 		return node
 	}
 	return nil
@@ -223,7 +291,7 @@ func (mine *GraphInfo) GetNodeByID(id int64) *NodeInfo {
 	if tmp != nil {
 		node := new(NodeInfo)
 		node.initInfo(tmp)
-		mine.AddNode(node)
+		mine.AppendNode(node)
 		return node
 	}
 	return nil
@@ -293,9 +361,9 @@ func (mine *GraphInfo) HadLinkNode(uid string) bool {
 	return false
 }
 
-func (mine *GraphInfo) HadLink(id int64) bool {
+func (mine *GraphInfo) HadLink(from, to string) bool {
 	for i := 0; i < len(mine.links); i += 1 {
-		if mine.links[i].ID == id {
+		if mine.links[i].From == from && mine.links[i].To == to {
 			return true
 		}
 	}
@@ -304,7 +372,7 @@ func (mine *GraphInfo) HadLink(id int64) bool {
 
 func (mine *GraphInfo) HadNode(uid string) bool {
 	for i := 0; i < len(mine.nodes); i += 1 {
-		if mine.nodes[i].EntityUID == uid {
+		if mine.nodes[i].Entity == uid {
 			return true
 		}
 	}
@@ -324,29 +392,44 @@ func (mine *GraphInfo) CreateNodeByEntity(entity *EntityInfo) (*NodeInfo, error)
 		return nil, errors.New("the entity is nil")
 	}
 	var name = entity.Name
-	if entity.Add != "" {
-		name = entity.Name + "-" + entity.Add
-	}
-	return mine.CreateNode(name, entity.UID, entity.Cover, entity.Concept)
+	//if entity.Add != "" {
+	//	name = entity.Name + "-" + entity.Add
+	//}
+	return mine.CreateNode(int64(entity.ID), name, entity.UID, entity.Cover, GraphTypeEntity, entity.Tags)
 }
 
-func (mine *GraphInfo) CreateNode(name, entity, cover, concept string) (*NodeInfo, error) {
-	t := mine.GetNodeByName(name)
-	if t != nil {
-		return nil, errors.New("the node had existed")
-	}
-	node, err := proxy.CreateNode(name, switchEntityLabel(concept), entity)
-	if err != nil {
-		return nil, err
-	}
+func (mine *GraphInfo) CreateNode(id int64, name, entity, cover, tp string, tags []string) (*NodeInfo, error) {
+	//t := mine.GetNodeByName(name)
+	//if t != nil {
+	//	return nil, errors.New("the node had existed")
+	//}
+	//node, err := proxy.CreateNode(name, switchEntityLabel(concept), entity)
+	//if err != nil {
+	//	return nil, err
+	//}
 	var info = new(NodeInfo)
-	info.ID = node.ID
-	info.Name = node.Name
+	info.ID = id
+	info.Name = name
 	info.Cover = cover
-	info.Labels = node.Labels
-	info.EntityUID = entity
-	mine.AddNode(info)
+	info.Labels = tags
+	info.Type = tp
+	info.Desc = ""
+	info.Entity = entity
+	mine.AppendNode(info)
 	return info, nil
+}
+
+func (mine *GraphInfo) CreateLinkBy(from, to, name, kind, label string, direction DirectionType, wei uint32) {
+	edge := new(LinkInfo)
+	edge.From = from
+	edge.To = to
+	edge.Direction = direction
+	edge.ID = 0
+	edge.Name = name
+	edge.Relation = kind
+	edge.Label = label
+	edge.Weight = wei
+	mine.AppendEdge(edge)
 }
 
 func (mine *GraphInfo) CreateLink(from, to *NodeInfo, kind LinkType, name, relation string, direction DirectionType, weight uint32) (*LinkInfo, error) {
@@ -354,7 +437,7 @@ func (mine *GraphInfo) CreateLink(from, to *NodeInfo, kind LinkType, name, relat
 		return nil, errors.New("from or to node is nil")
 	}
 
-	if mine.HadRelation(from.EntityUID, to.EntityUID, name) {
+	if mine.HadRelation(from.Entity, to.Entity, name) {
 		return nil, errors.New("the link existed")
 	}
 	if kind == "" {
@@ -365,8 +448,8 @@ func (mine *GraphInfo) CreateLink(from, to *NodeInfo, kind LinkType, name, relat
 		return nil, err
 	}
 	var info = new(LinkInfo)
-	info.initInfo(link, from.EntityUID, to.EntityUID)
-	mine.AddEdge(info)
+	info.initInfo(link, from.Entity, to.Entity)
+	mine.AppendEdge(info)
 	return info, nil
 }
 
@@ -396,16 +479,105 @@ func (mine *GraphInfo) RemoveNode(id int64, label string) error {
 	return err
 }
 
-func (mine *GraphInfo) AddNode(node *NodeInfo) {
-	if node == nil || mine.HadNode(node.EntityUID) {
+func (mine *GraphInfo) AppendNode(node *NodeInfo) {
+	if node == nil || mine.HadNode(node.Entity) {
 		return
 	}
 	mine.nodes = append(mine.nodes, node)
 }
 
-func (mine *GraphInfo) AddEdge(link *LinkInfo) {
-	if link == nil || mine.HadLink(link.ID) {
+func (mine *GraphInfo) AppendEdge(link *LinkInfo) {
+	if link == nil || mine.HadLink(link.From, link.To) {
 		return
 	}
 	mine.links = append(mine.links, link)
+}
+
+func (mine *GraphInfo) CreateByEvent(from, tp string, db *nosql.Event) error {
+	if db == nil {
+		return errors.New("the event is nil")
+	}
+	to := db.Quote
+	if len(to) < 1 {
+		return nil
+	}
+	_, _ = mine.CreateNode(0, "", to, "", tp, nil)
+
+	edge := new(LinkInfo)
+	edge.From = from
+	edge.To = to
+	edge.Direction = DirectionTypeFromTo
+	edge.ID = int64(db.ID)
+	edge.Name = db.Name
+	edge.Relation = ""
+	edge.Label = ""
+	edge.Weight = 0
+	mine.AppendEdge(edge)
+	return nil
+}
+
+func (mine *GraphInfo) CreateByVEdge(tp string, db *nosql.VEdge) error {
+	if mine.center != db.Source {
+		from := cacheCtx.GetEntity(db.Source)
+		if from != nil {
+			_, er := mine.CreateNodeByEntity(from)
+			if er != nil {
+				return er
+			}
+			mine.CreateLinkBy(mine.center, from.UID, "", "", "", DirectionTypeFromTo, 0)
+		}
+	}
+	to := db.Target.Entity
+	if len(to) < 1 {
+		to = db.Target.UID
+	}
+	entity := cacheCtx.GetEntity(db.Target.Entity)
+	if entity != nil {
+		_, er := mine.CreateNodeByEntity(entity)
+		if er != nil {
+			return er
+		}
+	} else {
+		_, _ = mine.CreateNode(0, db.Target.Name, to, db.Target.Thumb, tp, nil)
+	}
+
+	edge := new(LinkInfo)
+	edge.From = db.Source
+	edge.To = to
+	edge.Direction = DirectionType(db.Direction)
+	edge.ID = int64(db.ID)
+	edge.Name = db.Name
+	edge.Relation = db.Catalog
+	edge.Label = db.Remark
+	edge.Weight = db.Weight
+	mine.AppendEdge(edge)
+	return nil
+}
+
+func (mine *GraphInfo) CreateByVEdge2(from, tp string, db *nosql.VEdge) error {
+	to := db.Target.Entity
+	if len(to) < 1 {
+		to = db.Target.UID
+	}
+	entity := cacheCtx.GetEntity(db.Target.Entity)
+	if entity != nil {
+		_, er := mine.CreateNodeByEntity(entity)
+		if er != nil {
+			return er
+		}
+	} else {
+		_, _ = mine.CreateNode(0, db.Target.Name, to, db.Target.Thumb, tp, nil)
+	}
+
+	edge := new(LinkInfo)
+	edge.From = from
+	edge.To = to
+	edge.Direction = DirectionType(db.Direction)
+	edge.ID = int64(db.ID)
+	edge.Name = db.Name
+	edge.Relation = db.Catalog
+	edge.Label = db.Remark
+	edge.Weight = db.Weight
+	mine.AppendEdge(edge)
+	return nil
 }

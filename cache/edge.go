@@ -9,6 +9,7 @@ import (
 
 type VEdgeInfo struct {
 	BaseInfo
+	Type      uint8
 	Remark    string      `json:"remark"`
 	Center    string      `json:"center"`    //中心实体或者根节点
 	Direction uint8       `json:"direction"` // 方向
@@ -81,6 +82,7 @@ func (mine *VEdgeInfo) initInfo(db *nosql.VEdge) {
 	mine.Center = db.Center
 	mine.Target = db.Target
 	mine.Weight = db.Weight
+	mine.Type = uint8(db.Type)
 	mine.Direction = db.Direction
 	mine.Relation = db.Catalog
 	mine.Remark = db.Remark

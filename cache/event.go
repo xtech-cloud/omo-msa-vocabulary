@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	EventCustom   = 0
-	EventActivity = 1
-	EventHonor    = 2
-	EventCert     = 3
+	EventCustom   = 0 //普通事件
+	EventActivity = 1 //活动
+	EventHonor    = 2 //荣誉
+	EventCert     = 3 //证书
+	EventSpec     = 4 //特殊事件
 )
 
 const (

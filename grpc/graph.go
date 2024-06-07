@@ -11,9 +11,11 @@ type GraphService struct{}
 
 func switchNode(info *cache.NodeInfo) *pb.NodeInfo {
 	tmp := new(pb.NodeInfo)
-	tmp.Entity = info.EntityUID
+	tmp.Entity = info.Entity
 	tmp.Name = info.Name
 	tmp.Id = info.ID
+	tmp.Type = info.Type
+	tmp.Desc = info.Desc
 	tmp.Labels = info.Labels
 	tmp.Cover = info.Cover
 	return tmp
@@ -47,7 +49,7 @@ func switchGraph(info *cache.GraphInfo) *pb.GraphInfo {
 func (mine *GraphService) AddNode(ctx context.Context, in *pb.ReqNodeAdd, out *pb.ReplyNodeInfo) error {
 	path := "graph.addNode"
 	inLog(path, in)
-	node, err := cache.Context().Graph().CreateNode(in.Name, in.Entity, in.Cover, in.Label)
+	node, err := cache.Context().Graph().CreateNode(-1, in.Name, in.Entity, in.Cover, in.Label, nil)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 		return nil
@@ -181,7 +183,7 @@ func (mine *GraphService) FindGraph(ctx context.Context, in *pb.RequestInfo, out
 		out.Status = outError(path, "the node uid is empty", pbstaus.ResultStatus_Empty)
 		return nil
 	}
-	graph, err := cache.Context().Graph().GetSubGraph(in.Uid)
+	graph, err := cache.Context().Graph().GetGraphByCenter(in.Uid)
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
 	} else {

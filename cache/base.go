@@ -295,7 +295,7 @@ func (mine *cacheContext) CheckSyncNodes() {
 	array := make([]string, 0, 20)
 	call := func(key interface{}, val interface{}) bool {
 		item := val.(*NodeTemp)
-		_, err := mine.graph.CreateNode(item.Name, item.Entity, item.Cover, item.Concept)
+		_, err := mine.graph.CreateNode(0, item.Name, item.Entity, item.Cover, item.Concept, nil)
 		if err == nil {
 			array = append(array, item.Entity)
 		}

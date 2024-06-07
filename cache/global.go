@@ -70,6 +70,24 @@ func (mine *cacheContext) MatchEntitiesByProp(scene, key string) []*EntityInfo {
 	return list
 }
 
+func (mine *cacheContext) MatchEntitiesByTag(scene, key string) []*EntityInfo {
+	list := make([]*EntityInfo, 0, 200)
+	for _, tb := range mine.EntityTables() {
+		var array []*nosql.Entity
+		if len(scene) < 1 {
+			array, _ = nosql.GetEntitiesByTag(tb, key)
+		} else {
+			array, _ = nosql.GetEntitiesByOwnerTag(tb, scene, key)
+		}
+		for _, entity := range array {
+			info := new(EntityInfo)
+			info.initInfo(entity)
+			list = append(list, info)
+		}
+	}
+	return list
+}
+
 func (mine *cacheContext) SearchPersonalEntities(key string) []*EntityInfo {
 	array, err := nosql.GetEntitiesByMatch(UserEntityTable, key)
 	if err != nil {

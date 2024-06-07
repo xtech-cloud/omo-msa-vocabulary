@@ -21,15 +21,19 @@ type NodeInfo struct {
 	*/
 	Cover string
 
+	Type string
+
+	Desc string
+
 	/**
 	Property：数据库的实体UID
 	*/
-	EntityUID string
+	Entity string
 }
 
 func (mine *NodeInfo) initInfo(db *proxy.Node) {
 	mine.Name = db.Name
-	mine.EntityUID = db.UID
+	mine.Entity = db.UID
 	mine.ID = db.ID
 	entity := Context().GetEntity(db.UID)
 	if entity != nil {
