@@ -19,4 +19,5 @@ const (
 	TableArchived     = "archived"
 	TableRecord       = "records"
 	TableEdge         = "edges"
+	TableExamine      = "examines"
 )

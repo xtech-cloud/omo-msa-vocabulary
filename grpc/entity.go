@@ -8,6 +8,7 @@ import (
 	pb "github.com/xtech-cloud/omo-msp-vocabulary/proto/vocabulary"
 	"omo.msa.vocabulary/cache"
 	"omo.msa.vocabulary/proxy"
+	"omo.msa.vocabulary/tool"
 	"strconv"
 	"strings"
 )
@@ -437,28 +438,20 @@ func (mine *EntityService) GetPublishList(ctx context.Context, in *pb.RequestLis
 				out.Systems = append(out.Systems, switchEntity(value, all))
 			}
 		}
-	} else if in.Status == 2 { //获取动态实体数据，非软件采集数据，一般是用户实体数据
-		list, err := cache.Context().GetCustomEntitiesByList(in.List)
-		if err == nil {
-			for _, value := range list {
-				out.Users = append(out.Users, switchEntity(value, all))
-			}
-		}
 	} else {
 		array, err := cache.Context().GetEntitiesByList(cache.EntityStatusUsable, in.List)
 		rest := make([]string, 0, len(in.List))
-		for _, key := range in.List {
-			rest = append(rest, key)
-		}
+		exists := make([]string, 0, len(in.List))
+
 		if err == nil {
 			for _, value := range array {
 				out.Systems = append(out.Systems, switchEntity(value, all))
-				for i := 0; i < len(rest); i += 1 {
-					if rest[i] == value.UID {
-						rest = append(rest[:i], rest[i+1:]...)
-						break
-					}
-				}
+				exists = append(exists, value.UID)
+			}
+		}
+		for _, key := range in.List {
+			if !tool.HasItem(exists, key) {
+				rest = append(rest, key)
 			}
 		}
 		list, err := cache.Context().GetCustomEntitiesByList(rest)

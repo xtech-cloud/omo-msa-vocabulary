@@ -559,6 +559,12 @@ func UpdateEntityBase(table, uid, name, add, concept, quote, mark, operator stri
 	return err
 }
 
+func UpdateEntityName(table, uid, name, add, operator string) error {
+	msg := bson.M{"name": name, "add": add, "operator": operator, TimeUpdated: time.Now().Unix()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
 func UpdateEntityConcept(table, uid, concept, operator string) error {
 	msg := bson.M{"concept": concept, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)

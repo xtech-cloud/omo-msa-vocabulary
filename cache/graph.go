@@ -16,6 +16,7 @@ const (
 	GraphTypeEntity   = "entity"
 	GraphTypeActivity = "activity"
 	GraphTypeHonor    = "honor"
+	GraphTypeEvent    = "event"
 )
 
 type GraphInfo struct {
@@ -143,31 +144,37 @@ func (mine *GraphInfo) GetGraphByCenter(entity string) (*GraphInfo, error) {
 	g.checkVirtual()
 	for _, db := range dbs {
 		if db.Type > 0 {
-			g.CreateByVEdge2(fmt.Sprintf(g.center+"_virtual-%d", db.Type), switchGraphNodeType(db.Type), db)
+			_ = g.CreateByVEdge2(fmt.Sprintf(g.center+"_virtual-%d", db.Type), switchGraphNodeType(db.Type), db)
 		} else {
-			g.CreateByVEdge(switchGraphNodeType(db.Type), db)
+			_ = g.CreateByVEdge(switchGraphNodeType(db.Type), db)
 		}
 	}
 	dbs2, err := nosql.GetVEdgesBySource(entity)
 	if err == nil {
 		for _, db := range dbs2 {
 			if db.Type > 0 {
-				g.CreateByVEdge2(fmt.Sprintf(g.center+"_virtual-%d", db.Type), switchGraphNodeType(db.Type), db)
+				_ = g.CreateByVEdge2(fmt.Sprintf(g.center+"_virtual-%d", db.Type), switchGraphNodeType(db.Type), db)
 			} else {
-				g.CreateByVEdge(switchGraphNodeType(db.Type), db)
+				_ = g.CreateByVEdge(switchGraphNodeType(db.Type), db)
 			}
 		}
 	}
 	dbs3, err3 := nosql.GetEventsByType(entity, EventActivity)
 	if err3 == nil {
 		for _, db := range dbs3 {
-			g.CreateByEvent(g.center+"_virtual-1", GraphTypeActivity, db)
+			_ = g.CreateByEvent(g.center+"_virtual-1", GraphTypeActivity, db)
 		}
 	}
 	dbs4, err4 := nosql.GetEventsByType(entity, EventHonor)
 	if err4 == nil {
 		for _, db := range dbs4 {
-			g.CreateByEvent(g.center+"_virtual-2", GraphTypeHonor, db)
+			_ = g.CreateByEvent(g.center+"_virtual-2", GraphTypeHonor, db)
+		}
+	}
+	dbs5, err5 := nosql.GetEventsByType(entity, EventSpec)
+	if err5 == nil {
+		for _, db := range dbs5 {
+			_ = g.CreateByEvent(g.center+"_virtual-4", GraphTypeEvent, db)
 		}
 	}
 
@@ -412,6 +419,9 @@ func (mine *GraphInfo) CreateNode(id int64, name, entity, cover, tp string, tags
 	info.Name = name
 	info.Cover = cover
 	info.Labels = tags
+	if info.Labels == nil {
+		info.Labels = make([]string, 0, 1)
+	}
 	info.Type = tp
 	info.Desc = ""
 	info.Entity = entity

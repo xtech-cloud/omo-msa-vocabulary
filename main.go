@@ -49,6 +49,7 @@ func main() {
 	_ = proto.RegisterEventServiceHandler(service.Server(), new(grpc.EventService))
 	_ = proto.RegisterBoxServiceHandler(service.Server(), new(grpc.BoxService))
 	_ = proto.RegisterVEdgeServiceHandler(service.Server(), new(grpc.VEdgeService))
+	_ = proto.RegisterExamineServiceHandler(service.Server(), new(grpc.ExamineService))
 
 	//checkTimer()
 	go delayCall()
@@ -82,6 +83,7 @@ func checkTimer() {
 func delayCall() {
 	time.Sleep(5 * time.Second)
 	cache.CheckBoxes()
+	cache.DebugGraph()
 }
 
 func md5hex(_file string) string {

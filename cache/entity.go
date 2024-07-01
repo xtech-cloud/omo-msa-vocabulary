@@ -347,6 +347,30 @@ func (mine *EntityInfo) UpdateBase(name, desc, add, concept, cover, mark, quote,
 	return err
 }
 
+func (mine *EntityInfo) UpdateName(name, operator string) error {
+	if cacheCtx.HadEntityByName(name, mine.Add, mine.Owner) {
+		return errors.New("the name and add existed")
+	}
+	err := nosql.UpdateEntityName(mine.table(), mine.UID, name, mine.Add, operator)
+	if err == nil {
+		mine.Name = name
+		mine.Operator = operator
+		mine.Updated = time.Now().Unix()
+	}
+	return err
+}
+
+func (mine *EntityInfo) UpdateRemark(desc, sum, operator string) error {
+	err := nosql.UpdateEntityRemark(mine.table(), mine.UID, desc, sum, operator)
+	if err == nil {
+		mine.Description = desc
+		mine.Summary = sum
+		mine.Operator = operator
+		mine.Updated = time.Now().Unix()
+	}
+	return err
+}
+
 func (mine *EntityInfo) UpdateStatic(info *EntityInfo, relations []*pb.VEdgeInfo) error {
 	if mine.Status != EntityStatusDraft {
 		return errors.New("the entity is not draft so can not update")

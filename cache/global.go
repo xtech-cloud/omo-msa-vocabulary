@@ -617,7 +617,6 @@ func (mine *cacheContext) GetEntityCount() uint32 {
 //endregion
 
 //region Global Events
-
 func (mine *cacheContext) GetEvent(uid string) *EventInfo {
 	event, err := nosql.GetEvent(uid)
 	if err == nil && event != nil {
