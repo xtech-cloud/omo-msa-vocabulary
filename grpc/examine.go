@@ -110,6 +110,8 @@ func (mine *ExamineService) GetListByFilter(ctx context.Context, in *pb.RequestF
 			return nil
 		}
 		list = cache.Context().GetExaminesByStatus(in.Parent, uint8(tp))
+	} else if in.Key == "scene" {
+
 	}
 	out.List = make([]*pb.ExamineInfo, 0, len(list))
 	for _, value := range list {

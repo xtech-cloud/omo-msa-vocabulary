@@ -713,6 +713,7 @@ func (mine *EntityInfo) UpdateAccess(operator string, acc uint8) error {
 	if info == nil {
 		return errors.New("not found the archived file by entity")
 	}
+	_ = nosql.UpdateEntityAccess(mine.table(), info.UID, operator, uint32(acc))
 	err := nosql.UpdateArchivedAccess(info.UID, operator, acc)
 	if err != nil {
 		return err

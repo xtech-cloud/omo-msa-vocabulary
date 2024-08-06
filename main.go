@@ -83,7 +83,7 @@ func checkTimer() {
 func delayCall() {
 	time.Sleep(5 * time.Second)
 	cache.CheckBoxes()
-	cache.DebugGraph()
+	//cache.DebugGraph()
 }
 
 func md5hex(_file string) string {
