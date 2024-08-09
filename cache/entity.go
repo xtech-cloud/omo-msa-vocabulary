@@ -553,9 +553,9 @@ func (mine *EntityInfo) GetRecords() ([]*nosql.Record, error) {
 }
 
 func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
-	if mine.Status == EntityStatusUsable {
-		return errors.New("the entity had published so can not update")
-	}
+	//if mine.Status == EntityStatusUsable {
+	//	return errors.New(ErrorHadPublished)
+	//}
 	err := nosql.UpdateEntityTags(mine.table(), mine.UID, operator, tags)
 	if err == nil {
 		mine.Tags = tags
@@ -566,9 +566,9 @@ func (mine *EntityInfo) UpdateTags(tags []string, operator string) error {
 }
 
 func (mine *EntityInfo) UpdateSynonyms(list []string, operator string) error {
-	if mine.Status == EntityStatusUsable {
-		return errors.New("the entity had published so can not update")
-	}
+	//if mine.Status == EntityStatusUsable {
+	//	return errors.New(ErrorHadPublished)
+	//}
 	err := nosql.UpdateEntitySynonyms(mine.table(), mine.UID, operator, list)
 	if err == nil {
 		mine.Synonyms = list
@@ -891,10 +891,10 @@ func (mine *EntityInfo) GetPublicEvents() []*EventInfo {
 }
 
 func (mine *EntityInfo) AddEvent(data *pb.ReqEventAdd) (*EventInfo, error) {
-	if mine.Status == EntityStatusUsable {
-		return nil, errors.New("the entity had published so can not update")
-	}
-	mine.initEvents()
+	//if mine.Status == EntityStatusUsable {
+	//	return nil, errors.New(E)
+	//}
+	//mine.initEvents()
 	begin := proxy.Date{}
 	end := proxy.Date{}
 	if data.Date != nil {
@@ -945,6 +945,9 @@ func (mine *EntityInfo) AddEvent(data *pb.ReqEventAdd) (*EventInfo, error) {
 	if err == nil {
 		info := new(EventInfo)
 		info.initInfo(db)
+		if mine.events == nil {
+			mine.events = make([]*EventInfo, 0, 1)
+		}
 		mine.events = append(mine.events, info)
 
 		for i := 0; i < len(relations); i += 1 {
@@ -990,9 +993,9 @@ func (mine *EntityInfo) GetEventBy(time, place string) *EventInfo {
 }
 
 func (mine *EntityInfo) RemoveEvent(uid, operator string) error {
-	if mine.Status == EntityStatusUsable {
-		return errors.New("the entity had published so can not update")
-	}
+	//if mine.Status == EntityStatusUsable {
+	//	return errors.New(ErrorHadPublished)
+	//}
 	mine.initEvents()
 	if !mine.HadEvent(uid) {
 		return errors.New("not found the event")
@@ -1089,9 +1092,9 @@ func (mine *EntityInfo) HadPropertyByEntity(uid string) bool {
 }
 
 func (mine *EntityInfo) RemoveProperty(attribute string) error {
-	if mine.Status == EntityStatusUsable {
-		return errors.New("the entity had published so can not update")
-	}
+	//if mine.Status == EntityStatusUsable {
+	//	return errors.New(ErrorHadPublished)
+	//}
 	if mine.Properties == nil {
 		return errors.New("must call construct fist")
 	}

@@ -173,7 +173,7 @@ func updateTargetValue(target, key, val, operator string, tp ExamineType) error 
 			had = true
 		}
 		if err == nil && had {
-			entity.UpdateStatus(EntityStatusUsable, operator, "")
+			err = entity.UpdateStatus(EntityStatusUsable, operator, "")
 		}
 	} else if tp == ExamineTypeAttribute {
 		att := cacheCtx.GetAttributeByKey(key)

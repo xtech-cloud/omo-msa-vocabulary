@@ -14,6 +14,10 @@ import (
 	"unicode"
 )
 
+const (
+	ErrorHadPublished = "the entity had published so can not update"
+)
+
 type BaseInfo struct {
 	ID       uint64 `json:"id"`
 	UID      string `json:"uid"`
