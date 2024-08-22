@@ -20,4 +20,5 @@ const (
 	TableRecord       = "records"
 	TableEdge         = "edges"
 	TableExamine      = "examines"
+	TableTemplate     = "templates"
 )

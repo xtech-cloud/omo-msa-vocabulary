@@ -50,6 +50,7 @@ func main() {
 	_ = proto.RegisterBoxServiceHandler(service.Server(), new(grpc.BoxService))
 	_ = proto.RegisterVEdgeServiceHandler(service.Server(), new(grpc.VEdgeService))
 	_ = proto.RegisterExamineServiceHandler(service.Server(), new(grpc.ExamineService))
+	_ = proto.RegisterTemplateServiceHandler(service.Server(), new(grpc.TemplateService))
 
 	//checkTimer()
 	go delayCall()
