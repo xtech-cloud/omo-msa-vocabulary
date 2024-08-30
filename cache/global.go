@@ -490,7 +490,7 @@ func (mine *cacheContext) HadOwnerOfAsset(owner string) bool {
 	return false
 }
 
-func (mine *cacheContext) GetEntitiesByRelate(relate string, page, num int32) (int32, int32, []*EntityInfo) {
+func (mine *cacheContext) GetEntitiesByRelate(relate string, page, num int32, exps []string) (int32, int32, []*EntityInfo) {
 	list := make([]*EntityInfo, 0, 200)
 	dbs, err := nosql.GetRecordsByRelate(relate, uint8(OptionSwitch))
 	if err != nil {
@@ -498,7 +498,7 @@ func (mine *cacheContext) GetEntitiesByRelate(relate string, page, num int32) (i
 	}
 	arr := make([]string, 0, 50)
 	for _, db := range dbs {
-		if !tool.HasItem(arr, db.Entity) {
+		if !tool.HasItem(arr, db.Entity) && !tool.HasItem(exps, db.Entity) {
 			arr = append(arr, db.Entity)
 			info := mine.GetEntity(db.Entity)
 			if info != nil {

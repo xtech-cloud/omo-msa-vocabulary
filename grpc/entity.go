@@ -474,7 +474,7 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 	var total int32
 	var pages int32
 	if in.Key == "relate" {
-		total, pages, list = cache.Context().GetEntitiesByRelate(in.Value, in.Page, in.Number)
+		total, pages, list = cache.Context().GetEntitiesByRelate(in.Value, in.Page, in.Number, in.Values)
 	} else if in.Key == "letter" {
 		list = cache.Context().GetUserEntitiesByLetter(in.Parent, in.Value)
 	} else if in.Key == "letters" {
