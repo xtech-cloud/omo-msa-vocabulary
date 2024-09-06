@@ -28,14 +28,21 @@ func switchExamine(info *cache.ExamineInfo) *pb.ExamineInfo {
 func (mine *ExamineService) AddOne(ctx context.Context, in *pb.ReqExamineAdd, out *pb.ReplyExamineInfo) error {
 	path := "examine.addOne"
 	inLog(path, in)
-
-	info, err := cache.Context().CreateExamine(in.Operator, in.Target, in.Key, in.Value, uint8(in.Type))
-	if err == nil {
-		out.Info = switchExamine(info)
-		out.Status = outLog(path, out)
+	var info *cache.ExamineInfo
+	var err error
+	info = cache.Context().GetIdleExamineByTarget(in.Target, in.Key, uint8(in.Type))
+	if info != nil {
+		err = info.UpdateValue(in.Value, in.Operator)
 	} else {
-		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
+		info, err = cache.Context().CreateExamine(in.Operator, in.Target, in.Key, in.Value, uint8(in.Type))
 	}
+
+	if err != nil {
+		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
+		return nil
+	}
+	out.Info = switchExamine(info)
+	out.Status = outLog(path, out)
 	return nil
 }
 

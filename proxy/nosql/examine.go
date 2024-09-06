@@ -52,7 +52,21 @@ func GetExamine(uid string) (*Examine, error) {
 	return model, nil
 }
 
-func GetExamineByTarget(target string) ([]*Examine, error) {
+func GetExamineBy(target, key string, st, tp uint8) (*Examine, error) {
+	filter := bson.M{"target": target, "key": key, "status": st, "type": tp, TimeDeleted: 0}
+	result, err := findOneBy(TableExamine, filter)
+	if err != nil {
+		return nil, err
+	}
+	model := new(Examine)
+	err1 := result.Decode(model)
+	if err1 != nil {
+		return nil, err1
+	}
+	return model, nil
+}
+
+func GetExaminesByTarget(target string) ([]*Examine, error) {
 	var items = make([]*Examine, 0, 20)
 	filter := bson.M{"target": target, TimeDeleted: 0}
 	cursor, err1 := findMany(TableExamine, filter, 0)
@@ -89,7 +103,7 @@ func GetExamineCountByType(target string, tp, st uint8) uint32 {
 	return uint32(num)
 }
 
-func GetExamineByStatus(target string, st uint8) ([]*Examine, error) {
+func GetExaminesByStatus(target string, st uint8) ([]*Examine, error) {
 	var items = make([]*Examine, 0, 20)
 	filter := bson.M{"target": target, "status": st, TimeDeleted: 0}
 	cursor, err1 := findMany(TableExamine, filter, 0)
@@ -108,7 +122,7 @@ func GetExamineByStatus(target string, st uint8) ([]*Examine, error) {
 	return items, nil
 }
 
-func GetExamineByType(target string, tp, st uint8) ([]*Examine, error) {
+func GetExaminesByType(target string, tp, st uint8) ([]*Examine, error) {
 	var items = make([]*Examine, 0, 20)
 	msg := bson.M{"target": target, "type": tp, "status": st, TimeDeleted: 0}
 	cursor, err1 := findMany(TableExamine, msg, 0)
@@ -134,6 +148,12 @@ func RemoveExamine(uid, operator string) error {
 
 func UpdateExamineStatus(uid, operator string, st uint8) error {
 	msg := bson.M{"status": st, "operator": operator, TimeUpdated: time.Now().Unix()}
+	_, err := updateOne(TableExamine, uid, msg)
+	return err
+}
+
+func UpdateExamineValue(uid, val, operator string) error {
+	msg := bson.M{"value": val, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableExamine, uid, msg)
 	return err
 }

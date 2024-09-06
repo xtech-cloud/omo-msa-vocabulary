@@ -70,7 +70,7 @@ func (mine *cacheContext) GetExaminesByTarget(target string) []*ExamineInfo {
 	if target == "" {
 		return nil
 	}
-	dbs, err := nosql.GetExamineByTarget(target)
+	dbs, err := nosql.GetExaminesByTarget(target)
 	list := make([]*ExamineInfo, 0, len(dbs))
 	if err != nil {
 		return list
@@ -84,12 +84,22 @@ func (mine *cacheContext) GetExaminesByTarget(target string) []*ExamineInfo {
 	return list
 }
 
+func (mine *cacheContext) GetIdleExamineByTarget(target, key string, tp uint8) *ExamineInfo {
+	db, _ := nosql.GetExamineBy(target, key, ExamineStatusIdle, tp)
+	if db != nil {
+		tmp := new(ExamineInfo)
+		tmp.initInfo(db)
+		return tmp
+	}
+	return nil
+}
+
 func (mine *cacheContext) GetExaminesByStatus(target string, st uint8) []*ExamineInfo {
 	if target == "" {
 		return nil
 	}
 
-	dbs, err := nosql.GetExamineByStatus(target, st)
+	dbs, err := nosql.GetExaminesByStatus(target, st)
 	list := make([]*ExamineInfo, 0, len(dbs))
 	if err != nil {
 		return list
@@ -107,7 +117,7 @@ func (mine *cacheContext) GetExaminesByType(target string, tp ExamineType) []*Ex
 	if target == "" {
 		return nil
 	}
-	dbs, err := nosql.GetExamineByType(target, uint8(tp), ExamineStatusIdle)
+	dbs, err := nosql.GetExaminesByType(target, uint8(tp), ExamineStatusIdle)
 	list := make([]*ExamineInfo, 0, len(dbs))
 	if err != nil {
 		return list
@@ -145,6 +155,16 @@ func (mine *ExamineInfo) UpdateStatus(st uint8, operator string) error {
 	err := nosql.UpdateExamineStatus(mine.UID, operator, st)
 	if err == nil {
 		mine.Data.Status = st
+		mine.Data.Operator = operator
+		mine.Data.Updated = time.Now().Unix()
+	}
+	return err
+}
+
+func (mine *ExamineInfo) UpdateValue(val, operator string) error {
+	err := nosql.UpdateExamineValue(mine.UID, val, operator)
+	if err == nil {
+		mine.Data.Value = val
 		mine.Data.Operator = operator
 		mine.Data.Updated = time.Now().Unix()
 	}
