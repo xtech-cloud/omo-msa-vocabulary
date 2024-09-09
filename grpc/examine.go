@@ -80,7 +80,7 @@ func (mine *ExamineService) GetStatistic(ctx context.Context, in *pb.RequestFilt
 		}
 		out.Count = cache.Context().GetExamineCountByStatus(in.Parent, uint8(tp))
 	}
-	out.Status = outError(path, "param is empty", pbstaus.ResultStatus_Empty)
+	out.Status = outLog(path, out)
 	return nil
 }
 
