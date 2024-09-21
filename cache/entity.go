@@ -878,6 +878,12 @@ func (mine *EntityInfo) GetPublicEvents() []*EventInfo {
 		info.initInfo(event)
 		list = append(list, info)
 	}
+	arr3, _ := nosql.GetEventsByAccess(mine.UID, AccessPublic)
+	for _, event := range arr3 {
+		info := new(EventInfo)
+		info.initInfo(event)
+		list = append(list, info)
+	}
 
 	if len(mine.StaticEvents) > 0 {
 		for _, event := range mine.StaticEvents {

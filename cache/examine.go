@@ -201,9 +201,9 @@ func updateTargetValue(target, key, val, operator string, tp ExamineType) error 
 			err = entity.UpdateProperty(att.UID, val, operator)
 		}
 	} else if tp == ExamineTypeEvent {
-		event := cacheCtx.GetEvent(key)
+		event := cacheCtx.GetEvent(val)
 		if event != nil {
-
+			err = event.UpdateAccess(operator, AccessPublic)
 		}
 	}
 	return err

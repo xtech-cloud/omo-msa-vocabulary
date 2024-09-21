@@ -23,7 +23,7 @@ func switchEntity(info *cache.EntityInfo, all bool) *pb.EntityInfo {
 		events2 := cache.Context().GetEventsByEntity(info.UID, "", cache.EventActivity)
 		tmp.Events = make([]*pb.EventInfo, 0, len(info.StaticEvents)+len(events)+len(events2))
 		for _, event := range events {
-			if event.Access == cache.AccessRead || event.Access == cache.AccessWR {
+			if event.IsRead() {
 				tmp.Events = append(tmp.Events, switchEntityEvent(event))
 			}
 		}

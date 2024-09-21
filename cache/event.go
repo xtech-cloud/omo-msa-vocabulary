@@ -23,6 +23,7 @@ const (
 	AccessRead    = 0 //可读
 	AccessPrivate = 1 //
 	AccessWR      = 2 //可读写
+	AccessPublic  = 3 //审核通过
 )
 
 const (
@@ -288,6 +289,13 @@ func (mine *EventInfo) UpdateAssets(operator string, list []string) error {
 		mine.Updated = time.Now().Unix()
 	}
 	return err
+}
+
+func (mine *EventInfo) IsRead() bool {
+	if mine.Access == AccessRead || mine.Access == AccessWR || mine.Access == AccessPublic {
+		return true
+	}
+	return false
 }
 
 func (mine *EventInfo) UpdateTags(operator string, tags []string) error {
