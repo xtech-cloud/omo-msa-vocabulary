@@ -71,6 +71,17 @@ func (mine *cacheContext) GetConceptsByAttribute(uid string) []*ConceptInfo {
 	return list
 }
 
+func (mine *cacheContext) GetConceptsByType(tp uint32) []*ConceptInfo {
+	dbs, _ := nosql.GetConceptsByType(tp)
+	all := make([]*ConceptInfo, 0, len(dbs))
+	for _, db := range dbs {
+		tmp := new(ConceptInfo)
+		tmp.initInfo(db, "")
+		all = append(all, tmp)
+	}
+	return all
+}
+
 func (mine *cacheContext) GetConcept(uid string) *ConceptInfo {
 	if uid == "" {
 		return nil
@@ -93,6 +104,30 @@ func (mine *cacheContext) GetTopConcepts() []*ConceptInfo {
 		all = append(all, tmp)
 	}
 	return all
+}
+
+func getConcept(all []*nosql.Concept, uid string) *nosql.Concept {
+	if len(uid) < 2 {
+		return nil
+	}
+	for _, concept := range all {
+		if concept.UID.Hex() == uid {
+			return concept
+		}
+	}
+	return nil
+}
+
+func CheckConcepts() {
+	dbs := nosql.GetConcepts()
+	for _, db := range dbs {
+		if db.Type == 0 {
+			parent := getConcept(dbs, db.Parent)
+			if parent != nil {
+				_ = nosql.UpdateConceptType(db.UID.Hex(), parent.Type)
+			}
+		}
+	}
 }
 
 func (mine *cacheContext) CreateTopConcept(info *ConceptInfo) error {
@@ -230,6 +265,7 @@ func (mine *ConceptInfo) CreateChild(info *ConceptInfo) error {
 	db.Remark = info.Remark
 	db.Parent = mine.UID
 	db.Scene = info.Scene
+	db.Type = info.Type
 	db.Attributes = make([]string, 0, 5)
 	db.Privates = make([]string, 0, 1)
 	err := nosql.CreateConcept(db)
@@ -518,6 +554,15 @@ func (mine *ConceptInfo) UpdateCover(cover string) error {
 	err := nosql.UpdateConceptCover(mine.UID, cover)
 	if err == nil {
 		mine.Cover = cover
+		mine.Updated = time.Now().Unix()
+	}
+	return err
+}
+
+func (mine *ConceptInfo) UpdateType(tp uint8) error {
+	err := nosql.UpdateConceptType(mine.UID, tp)
+	if err == nil {
+		mine.Type = tp
 		mine.Updated = time.Now().Unix()
 	}
 	return err

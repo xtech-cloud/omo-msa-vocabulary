@@ -56,6 +56,24 @@ func GetConcept(uid string) (*Concept, error) {
 	return model, nil
 }
 
+func GetConcepts() []*Concept {
+	var items = make([]*Concept, 0, 20)
+	cursor, err1 := findAllEnable(TableConcept, 0)
+	if err1 != nil {
+		return nil
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Concept)
+		if err := cursor.Decode(node); err != nil {
+			return nil
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items
+}
+
 func GetTopConcepts() ([]*Concept, error) {
 	var items = make([]*Concept, 0, 20)
 	filter := bson.M{"parent": "", TimeDeleted: 0}
@@ -113,6 +131,25 @@ func GetConceptsByAttribute(uid string) ([]*Concept, error) {
 	return items, nil
 }
 
+func GetConceptsByType(tp uint32) ([]*Concept, error) {
+	var items = make([]*Concept, 0, 20)
+	filter := bson.M{"type": tp, TimeDeleted: 0}
+	cursor, err1 := findMany(TableConcept, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Concept)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func HadConceptByName(name string) (bool, error) {
 	msg := bson.M{"name": name}
 	return hadOne(TableConcept, msg)
@@ -126,6 +163,12 @@ func UpdateConceptBase(uid, name, desc, operator string, kind, scene uint8) erro
 
 func UpdateConceptCover(uid string, icon string) error {
 	msg := bson.M{"cover": icon, TimeUpdated: time.Now().Unix()}
+	_, err := updateOne(TableConcept, uid, msg)
+	return err
+}
+
+func UpdateConceptType(uid string, tp uint8) error {
+	msg := bson.M{"type": tp, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(TableConcept, uid, msg)
 	return err
 }

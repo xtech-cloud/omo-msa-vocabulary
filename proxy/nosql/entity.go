@@ -5,6 +5,7 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"omo.msa.vocabulary/proxy"
 	"time"
 )
@@ -35,6 +36,7 @@ type Entity struct {
 	Quote        string                    `json:"quote" bson:"quote"`
 	Pushed       int64                     `json:"pushed" bson:"pushed"`
 	Access       uint8                     `json:"access" bson:"access"`
+	Score        uint32                    `json:"score" bson:"score"`
 	Table        string                    `json:"_" bson:"_"`
 	Synonyms     []string                  `json:"synonyms" bson:"synonyms"`
 	Tags         []string                  `json:"tags" bson:"tags"`
@@ -458,6 +460,26 @@ func GetEntitiesByRelate(table, relate string) ([]*Entity, error) {
 	return items, nil
 }
 
+func GetEntitiesByRankConcept(table, concept string, num int64) ([]*Entity, error) {
+	msg := bson.M{"concept": concept, TimeDeleted: 0}
+	opts := options.Find().SetSort(bson.D{{TimeCreated, -1}}).SetLimit(num)
+	cursor, err1 := findManyByOpts(table, msg, opts)
+	if err1 != nil {
+		return nil, err1
+	}
+	var items = make([]*Entity, 0, 100)
+	for cursor.Next(context.Background()) {
+		var node = new(Entity)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			node.Table = table
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEntitiesByRegex(table, key, val string) ([]*Entity, error) {
 	msg := bson.M{key: bson.M{"$regex": val}, TimeDeleted: 0}
 	cursor, err1 := findMany(table, msg, 0)
@@ -663,6 +685,12 @@ func UpdateEntityTags(table, uid string, operator string, tags []string) error {
 
 func UpdateEntityAdd(table, uid string, add string, operator string) error {
 	msg := bson.M{"add": add, "operator": operator, TimeUpdated: time.Now().Unix()}
+	_, err := updateOne(table, uid, msg)
+	return err
+}
+
+func UpdateEntityScore(table, uid string, score uint32, operator string) error {
+	msg := bson.M{"score": score, "operator": operator, TimeUpdated: time.Now().Unix()}
 	_, err := updateOne(table, uid, msg)
 	return err
 }

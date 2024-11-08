@@ -112,6 +112,7 @@ func (mine *cacheContext) CreateEntity(info *EntityInfo, relations []*pb.VEdgeIn
 	db.Tags = info.Tags
 	db.Pushed = 0
 	db.Thumb = ""
+	db.Score = info.Score
 	db.Access = info.Access
 	db.Synonyms = info.Synonyms
 	db.Events = info.StaticEvents
@@ -172,6 +173,7 @@ func (mine *EntityInfo) initInfo(db *nosql.Entity) bool {
 	mine.Quote = db.Quote
 	mine.Access = db.Access
 	mine.Summary = db.Summary
+	mine.Score = db.Score
 	mine.Thumb = db.Thumb
 	mine.Links = db.Links
 	mine.dbTable = db.Table
@@ -298,6 +300,15 @@ func (mine *EntityInfo) UpdateAdd(add, operator string) error {
 	err := nosql.UpdateEntityAdd(mine.table(), mine.UID, add, operator)
 	if err == nil {
 		mine.Add = add
+		mine.Operator = operator
+	}
+	return err
+}
+
+func (mine *EntityInfo) UpdateScore(score uint32, operator string) error {
+	err := nosql.UpdateEntityScore(mine.table(), mine.UID, score, operator)
+	if err == nil {
+		mine.Score = score
 		mine.Operator = operator
 	}
 	return err

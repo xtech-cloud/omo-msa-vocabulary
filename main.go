@@ -82,7 +82,8 @@ func checkTimer() {
 
 func delayCall() {
 	time.Sleep(5 * time.Second)
-	cache.CheckBoxes()
+	//cache.CheckBoxes()
+	cache.CheckConcepts()
 	//cache.DebugGraph()
 }
 

@@ -504,6 +504,13 @@ func (mine *EntityService) GetByFilter(ctx context.Context, in *pb.RequestFilter
 		}
 	} else if in.Key == "additional" {
 		list, err = cache.Context().GetEntitiesByAdditional(in.Value)
+	} else if in.Key == "type" {
+		tp, er := strconv.Atoi(in.Value)
+		if er != nil {
+			out.Status = outError(path, er.Error(), pbstaus.ResultStatus_FormatError)
+			return nil
+		}
+		list = cache.Context().GetEntitiesByType(uint32(tp), in.Number)
 	} else {
 		err = errors.New("not define the key")
 	}
@@ -987,6 +994,9 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 		}
 	} else if in.Key == "add" {
 		err = entity.UpdateAdd(in.Value, in.Operator)
+	} else if in.Key == "score" {
+		score, _ := strconv.ParseInt(in.Value, 10, 32)
+		err = entity.UpdateScore(uint32(score), in.Operator)
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)

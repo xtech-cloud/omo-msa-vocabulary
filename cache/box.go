@@ -280,6 +280,31 @@ func (mine *cacheContext) GetEntitiesByAdditional(add string) ([]*EntityInfo, er
 	return list, nil
 }
 
+func (mine *cacheContext) GetEntitiesByConceptNum(concept string, num int32) ([]*EntityInfo, error) {
+	array, err := nosql.GetEntitiesByRankConcept(DefaultEntityTable, concept, int64(num))
+	if err != nil {
+		return nil, err
+	}
+	list := make([]*EntityInfo, 0, len(array))
+	for _, entity := range array {
+		info := new(EntityInfo)
+		info.initInfo(entity)
+		list = append(list, info)
+	}
+
+	return list, nil
+}
+
+func (mine *cacheContext) GetEntitiesByType(tp uint32, num int32) []*EntityInfo {
+	tps := mine.GetConceptsByType(tp)
+	all := make([]*EntityInfo, 0, 100)
+	for _, tp1 := range tps {
+		arr, _ := mine.GetEntitiesByConceptNum(tp1.UID, num)
+		all = append(all, arr...)
+	}
+	return all
+}
+
 func (mine *cacheContext) UpdateBoxContentStatus(entity string, st EntityStatus, publish bool) {
 	boxes := mine.GetBoxesByKeyword(entity)
 	var pub uint32 = 0

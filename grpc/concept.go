@@ -153,8 +153,14 @@ func (mine *ConceptService) RemoveOne(ctx context.Context, in *pb.RequestInfo, o
 func (mine *ConceptService) GetAll(ctx context.Context, in *pb.RequestInfo, out *pb.ReplyConceptList) error {
 	path := "concept.getAll"
 	inLog(path, in)
-	all := cache.Context().GetTopConcepts()
-	out.List = make([]*pb.ConceptInfo, 0, len(all))
+	var all []*cache.ConceptInfo
+	if in.Id > 0 {
+		all = cache.Context().GetConceptsByType(uint32(in.Id))
+	} else {
+		all = cache.Context().GetTopConcepts()
+		out.List = make([]*pb.ConceptInfo, 0, len(all))
+	}
+
 	for _, value := range all {
 		out.List = append(out.List, switchConcept(value, in.Operator))
 	}
