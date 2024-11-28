@@ -851,6 +851,22 @@ func (mine *cacheContext) GetEventsByQuotePage(quote string, page, number int32)
 	return CheckPage(page, number, list)
 }
 
+func (mine *cacheContext) GetPendingEventsByQuote(quote string) []*EventInfo {
+	arr, err := nosql.GetPendingEventsByQuote(quote)
+	var list []*EventInfo
+	if err == nil {
+		list = make([]*EventInfo, 0, len(arr))
+		for _, db := range arr {
+			info := new(EventInfo)
+			info.initInfo(db)
+			list = append(list, info)
+		}
+	} else {
+		list = make([]*EventInfo, 0, 1)
+	}
+	return list
+}
+
 func (mine *cacheContext) GetEventsByDuration(quote string, from, end int64) []*EventInfo {
 	arr, err := nosql.GetEventsByDuration(quote, from, end)
 	var list []*EventInfo

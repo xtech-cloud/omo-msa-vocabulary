@@ -141,6 +141,25 @@ func GetExaminesByType(target string, tp, st uint8) ([]*Examine, error) {
 	return items, nil
 }
 
+func GetExaminesByValueType(val string, tp, st uint8) ([]*Examine, error) {
+	var items = make([]*Examine, 0, 20)
+	msg := bson.M{"value": val, "type": tp, "status": st, TimeDeleted: 0}
+	cursor, err1 := findMany(TableExamine, msg, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Examine)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func RemoveExamine(uid, operator string) error {
 	_, err := removeOne(TableExamine, uid, operator)
 	return err

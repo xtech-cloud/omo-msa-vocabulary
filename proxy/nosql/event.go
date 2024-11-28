@@ -325,6 +325,25 @@ func GetEventsByQuote2(quote string) ([]*Event, error) {
 	return items, nil
 }
 
+func GetPendingEventsByQuote(quote string) ([]*Event, error) {
+	var items = make([]*Event, 0, 20)
+	filter := bson.M{"quote": quote, "access": 0, TimeDeleted: 0}
+	cursor, err1 := findMany(TableEvent, filter, 0)
+	if err1 != nil {
+		return nil, err1
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		var node = new(Event)
+		if err := cursor.Decode(node); err != nil {
+			return nil, err
+		} else {
+			items = append(items, node)
+		}
+	}
+	return items, nil
+}
+
 func GetEventsByDuration(quote string, from, to int64) ([]*Event, error) {
 	var items = make([]*Event, 0, 20)
 	filter := bson.M{"quote": quote, TimeCreated: bson.M{"$gt": from, "$lt": to}}

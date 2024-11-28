@@ -200,6 +200,8 @@ func (mine *EventService) GetByFilter(ctx context.Context, in *pb.RequestFilter,
 		list = cache.Context().GetEventsByRelate(in.Parent, in.Value)
 	} else if in.Key == "quote" {
 		total, pages, list = cache.Context().GetEventsByQuotePage(in.Value, in.Page, in.Number)
+	} else if in.Key == "quote_pending" {
+		list = cache.Context().GetPendingEventsByQuote(in.Value)
 	} else if in.Key == "assets" {
 		total, pages, list = cache.Context().GetEventsAssetsByQuote(in.Value, in.Page, in.Number)
 	} else if in.Key == "type" {

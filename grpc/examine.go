@@ -30,7 +30,7 @@ func (mine *ExamineService) AddOne(ctx context.Context, in *pb.ReqExamineAdd, ou
 	inLog(path, in)
 	var info *cache.ExamineInfo
 	var err error
-	info = cache.Context().GetIdleExamineByTarget(in.Target, in.Key, uint8(in.Type))
+	info = cache.Context().GetIdleExamineByTarget(in.Target, in.Key, cache.ExamineType(in.Type))
 	if info != nil {
 		err = info.UpdateValue(in.Value, in.Operator)
 	} else {
@@ -131,26 +131,54 @@ func (mine *ExamineService) GetListByFilter(ctx context.Context, in *pb.RequestF
 func (mine *ExamineService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateFilter, out *pb.ReplyExamineInfo) error {
 	path := "examine.updateByFilter"
 	inLog(path, in)
-	info := cache.Context().GetExamine(in.Uid)
-	if info == nil {
-		out.Status = outError(path, "not found the examine by uid", pbstaus.ResultStatus_NotExisted)
-		return nil
-	}
 	var err error
-	if in.Key == "status" {
-		st, er := strconv.Atoi(in.Value)
-		if er != nil {
-			out.Status = outLog(path, er.Error())
+	if len(in.Uid) < 1 {
+		if in.Key == "activity" {
+			events := cache.Context().GetEventsByQuote(in.Value)
+			for _, event := range events {
+				arr := cache.Context().GetIdleExaminesByValue(event.UID, cache.ExamineTypeEvent)
+				if len(arr) > 0 {
+					for _, ex := range arr {
+						_ = ex.UpdateStatus(cache.ExamineStatusFree, in.Operator)
+					}
+				} else {
+					_ = event.UpdateAccess(in.Operator, cache.AccessPublic)
+				}
+			}
+		} else if in.Key == "event" {
+			arr := cache.Context().GetIdleExaminesByValue(in.Value, cache.ExamineTypeEvent)
+			if len(arr) > 0 {
+				for _, ex := range arr {
+					_ = ex.UpdateStatus(cache.ExamineStatusFree, in.Operator)
+				}
+			} else {
+				event := cache.Context().GetEvent(in.Value)
+				if event != nil {
+					_ = event.UpdateAccess(in.Operator, cache.AccessPublic)
+				}
+			}
+		} else {
+		}
+	} else {
+		info := cache.Context().GetExamine(in.Uid)
+		if info == nil {
+			out.Status = outError(path, "not found the examine by uid", pbstaus.ResultStatus_NotExisted)
 			return nil
 		}
-		err = info.UpdateStatus(uint8(st), in.Operator)
+		if in.Key == "status" {
+			st, er := strconv.Atoi(in.Value)
+			if er != nil {
+				out.Status = outLog(path, er.Error())
+				return nil
+			}
+			err = info.UpdateStatus(uint8(st), in.Operator)
+		}
+		out.Info = switchExamine(info)
 	}
 	if err != nil {
 		out.Status = outLog(path, err.Error())
 		return nil
 	}
-
-	out.Info = switchExamine(info)
 	out.Status = outLog(path, out)
 	return nil
 }

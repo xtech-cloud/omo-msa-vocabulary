@@ -37,7 +37,7 @@ type Entity struct {
 	Pushed       int64                     `json:"pushed" bson:"pushed"`
 	Access       uint8                     `json:"access" bson:"access"`
 	Score        uint32                    `json:"score" bson:"score"`
-	Table        string                    `json:"_" bson:"_"`
+	Table        string                    `json:"-" bson:"-"`
 	Synonyms     []string                  `json:"synonyms" bson:"synonyms"`
 	Tags         []string                  `json:"tags" bson:"tags"`
 	Relates      []string                  `json:"relates" bson:"relates"`
@@ -462,7 +462,7 @@ func GetEntitiesByRelate(table, relate string) ([]*Entity, error) {
 
 func GetEntitiesByRankConcept(table, concept string, num int64) ([]*Entity, error) {
 	msg := bson.M{"concept": concept, TimeDeleted: 0}
-	opts := options.Find().SetSort(bson.D{{TimeCreated, -1}}).SetLimit(num)
+	opts := options.Find().SetSort(bson.D{{"score", -1}}).SetLimit(num)
 	cursor, err1 := findManyByOpts(table, msg, opts)
 	if err1 != nil {
 		return nil, err1

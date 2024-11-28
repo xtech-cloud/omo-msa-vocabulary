@@ -84,14 +84,25 @@ func (mine *cacheContext) GetExaminesByTarget(target string) []*ExamineInfo {
 	return list
 }
 
-func (mine *cacheContext) GetIdleExamineByTarget(target, key string, tp uint8) *ExamineInfo {
-	db, _ := nosql.GetExamineBy(target, key, ExamineStatusIdle, tp)
+func (mine *cacheContext) GetIdleExamineByTarget(target, key string, tp ExamineType) *ExamineInfo {
+	db, _ := nosql.GetExamineBy(target, key, ExamineStatusIdle, uint8(tp))
 	if db != nil {
 		tmp := new(ExamineInfo)
 		tmp.initInfo(db)
 		return tmp
 	}
 	return nil
+}
+
+func (mine *cacheContext) GetIdleExaminesByValue(val string, tp ExamineType) []*ExamineInfo {
+	dbs, _ := nosql.GetExaminesByValueType(val, uint8(tp), ExamineStatusIdle)
+	list := make([]*ExamineInfo, 0, len(dbs))
+	for _, db := range dbs {
+		tmp := new(ExamineInfo)
+		tmp.initInfo(db)
+		list = append(list, tmp)
+	}
+	return list
 }
 
 func (mine *cacheContext) GetExaminesByStatus(target string, st uint8) []*ExamineInfo {

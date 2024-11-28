@@ -997,6 +997,9 @@ func (mine *EntityService) UpdateByFilter(ctx context.Context, in *pb.ReqUpdateF
 	} else if in.Key == "score" {
 		score, _ := strconv.ParseInt(in.Value, 10, 32)
 		err = entity.UpdateScore(uint32(score), in.Operator)
+	} else if in.Key == "score_off" {
+		score, _ := strconv.ParseInt(in.Value, 10, 32)
+		err = entity.UpdateScore(uint32(score)+entity.Score, in.Operator)
 	}
 	if err != nil {
 		out.Status = outError(path, err.Error(), pbstaus.ResultStatus_DBException)
